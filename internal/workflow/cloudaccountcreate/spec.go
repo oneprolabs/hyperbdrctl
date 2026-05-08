@@ -1,0 +1,39 @@
+package cloudaccountcreate
+
+type Spec struct {
+	CloudType              string
+	CloudAuthType          string
+	StorageType            string
+	AccessKeyID            string
+	AccessKeySecret        string
+	RegionID               string
+	RegionName             string
+	AccountName            string
+	AuthRegionID           string
+	AuthURL                string
+	CloudAccountUsername   string
+	CloudAccountPassword   string
+	UserDomainID           string
+	ProjectDomainID        string
+	ProjectID              string
+	ProjectName            string
+	UseInternalIP          string
+	BootLoaderImageID      string
+	BootLoaderImageName    string
+	BootLoaderFlavorID     string
+	LinuxBootImageID       string
+	WindowsBootImageID     string
+	LinuxUEFIBootImageID   string
+	WindowsUEFIBootImageID string
+	CustomName             string
+	DiskBusTypeID          string
+	DiskBusTypeName        string
+	SSHPort                string
+	SSHPass                string
+	LinuxHDUsername        string
+	LinuxHDPassword        string
+	LinuxHDPort            string
+	AutoUploadImages       *int
+	UploadUEFIImage        *int
+	OnlyVerify             *bool
+}

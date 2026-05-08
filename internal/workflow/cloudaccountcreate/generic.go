@@ -1,0 +1,164 @@
+package cloudaccountcreate
+
+import (
+	"fmt"
+	"strings"
+)
+
+func buildGenericBlock(spec Spec) (string, map[string]interface{}, error) {
+	authType, metadata, err := buildGenericMetadata(spec, false)
+	if err != nil {
+		return "", nil, err
+	}
+
+	body := map[string]interface{}{
+		"cloud_account": map[string]interface{}{
+			"cloud_type":      spec.CloudType,
+			"cloud_auth_type": authType,
+			"metadata":        metadata,
+			"storage_type":    nil,
+		},
+		"auto_upload_images": nil,
+		"only_verify":        boolOrNil(spec.OnlyVerify),
+	}
+	return "/hypermotion/v1/cloud_accounts", body, nil
+}
+
+func buildGenericObject(spec Spec) (string, map[string]interface{}, error) {
+	authType, metadata, err := buildGenericMetadata(spec, true)
+	if err != nil {
+		return "", nil, err
+	}
+
+	autoUploadImages := 1
+	if spec.AutoUploadImages != nil {
+		autoUploadImages = *spec.AutoUploadImages
+	} else if hasExplicitObjectImage(spec) {
+		autoUploadImages = 0
+	}
+
+	uploadUEFIImage := 1
+	if spec.UploadUEFIImage != nil {
+		uploadUEFIImage = *spec.UploadUEFIImage
+	}
+	metadata["upload_uefi_image"] = uploadUEFIImage
+
+	body := map[string]interface{}{
+		"cloud_account": map[string]interface{}{
+			"cloud_type":      spec.CloudType,
+			"cloud_auth_type": authType,
+			"metadata":        metadata,
+			"storage_type":    "objectstorage",
+		},
+		"auto_upload_images": autoUploadImages,
+		"only_verify":        boolOrNil(spec.OnlyVerify),
+	}
+	return "/hypermotion/v1/cloud_accounts", body, nil
+}
+
+func buildGenericMetadata(spec Spec, isObject bool) (string, map[string]interface{}, error) {
+	authType := normalizeAuthType(spec.CloudAuthType)
+	if authType == "" {
+		return "", nil, fmt.Errorf("cloud-auth-type is required")
+	}
+
+	metadata := map[string]interface{}{}
+	switch authType {
+	case "aksk":
+		if spec.AccessKeyID == "" {
+			return "", nil, fmt.Errorf("access-key-id is required")
+		}
+		if spec.AccessKeySecret == "" {
+			return "", nil, fmt.Errorf("access-key-secret is required")
+		}
+		metadata["access_key_id"] = spec.AccessKeyID
+		metadata["access_key_secret"] = spec.AccessKeySecret
+	case "password":
+		if spec.AuthURL == "" {
+			return "", nil, fmt.Errorf("auth-url is required")
+		}
+		if spec.CloudAccountUsername == "" {
+			return "", nil, fmt.Errorf("cloud-account-username is required")
+		}
+		if spec.CloudAccountPassword == "" {
+			return "", nil, fmt.Errorf("cloud-account-password is required")
+		}
+		metadata["auth_url"] = spec.AuthURL
+		metadata["username"] = spec.CloudAccountUsername
+		metadata["password"] = spec.CloudAccountPassword
+	default:
+		return "", nil, fmt.Errorf("cloud-auth-type must be aksk or password")
+	}
+
+	setMetadataString(metadata, "cloud_type", spec.CloudType)
+	setMetadataString(metadata, "account_name", spec.AccountName)
+	setMetadataString(metadata, "auth_region_id", spec.AuthRegionID)
+	setMetadataString(metadata, "user_domain_id", spec.UserDomainID)
+	setMetadataString(metadata, "project_domain_id", spec.ProjectDomainID)
+	setMetadataString(metadata, "project_id", spec.ProjectID)
+	setMetadataString(metadata, "project_name", spec.ProjectName)
+	setMetadataString(metadata, "region_id", spec.RegionID)
+	setMetadataString(metadata, "region_name", spec.RegionName)
+	setMetadataString(metadata, "ssh_port", spec.SSHPort)
+	setMetadataString(metadata, "ssh_pass", spec.SSHPass)
+	setMetadataString(metadata, "linux_hd_username", spec.LinuxHDUsername)
+	setMetadataString(metadata, "linux_hd_password", spec.LinuxHDPassword)
+	setMetadataString(metadata, "linux_hd_port", spec.LinuxHDPort)
+
+	if spec.RegionID != "" {
+		metadata["region_type"] = "1"
+		metadata["region_type_list"] = spec.RegionID
+		metadata["region_type_input"] = ""
+		metadata["region_text"] = ""
+		if spec.RegionName != "" {
+			metadata["region_type_list_name"] = spec.RegionName
+		}
+		if authType == "aksk" && spec.AuthRegionID == "" {
+			metadata["auth_region_id"] = spec.RegionID
+		}
+	}
+
+	if isObject {
+		metadata["use_internal_ip_for_control"] = firstNonEmptyString(spec.UseInternalIP, "0")
+		setMetadataString(metadata, "custom_name", spec.CustomName)
+		setMetadataString(metadata, "boot_loader_image_id", spec.BootLoaderImageID)
+		setMetadataString(metadata, "boot_loader_image_name", firstNonEmptyString(spec.BootLoaderImageName, spec.BootLoaderImageID))
+		setMetadataString(metadata, "boot_loader_flavor_id", spec.BootLoaderFlavorID)
+		setMetadataString(metadata, "disk_bus_type_id", spec.DiskBusTypeID)
+		setMetadataString(metadata, "disk_bus_type_name", spec.DiskBusTypeName)
+
+		resolveObjectImage(metadata, "linux_boot_image", spec.LinuxBootImageID)
+		resolveObjectImage(metadata, "windows_boot_image", spec.WindowsBootImageID)
+		resolveObjectImage(metadata, "linux_uefi_boot_image", spec.LinuxUEFIBootImageID)
+		resolveObjectImage(metadata, "windows_uefi_boot_image", spec.WindowsUEFIBootImageID)
+	}
+
+	return authType, metadata, nil
+}
+
+func resolveObjectImage(metadata map[string]interface{}, prefix, id string) {
+	if id == "" {
+		metadata[prefix+"_id"] = "auto_upload"
+		metadata[prefix+"_name"] = autoUploadLabel
+		return
+	}
+	metadata[prefix+"_id"] = id
+	metadata[prefix+"_name"] = id
+}
+
+func setMetadataString(metadata map[string]interface{}, key, value string) {
+	if value != "" {
+		metadata[key] = value
+	}
+}
+
+func hasExplicitObjectImage(spec Spec) bool {
+	return spec.LinuxBootImageID != "" ||
+		spec.WindowsBootImageID != "" ||
+		spec.LinuxUEFIBootImageID != "" ||
+		spec.WindowsUEFIBootImageID != ""
+}
+
+func normalizeAuthType(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
