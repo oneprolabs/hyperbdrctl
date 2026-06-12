@@ -343,14 +343,6 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl source download-url":
-		return []flagHelpSpec{
-			{name: "type", defaultValue: "agent"},
-			{name: "debug"},
-			{name: "lang"},
-			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
-			{name: "help"},
-		}
 	case "hyperbdrctl source agent-install":
 		return []flagHelpSpec{
 			{name: "debug"},

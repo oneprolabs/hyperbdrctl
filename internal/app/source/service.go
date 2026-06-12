@@ -47,11 +47,6 @@ type VMsSpec struct {
 	Query          url.Values
 }
 
-type DownloadURLSpec struct {
-	Type  string
-	Query url.Values
-}
-
 type AgentlessInstallSpec struct {
 	Query url.Values
 }
@@ -117,14 +112,6 @@ func (s Service) VMs(spec VMsSpec) (client.APIResponse, error) {
 	addInt(q, "page", spec.Page)
 	addInt(q, "page_size", spec.PageSize)
 	return s.api.Get("/hypermotion/v1/sources/vms", q)
-}
-
-func (s Service) DownloadURL(spec DownloadURLSpec) (client.APIResponse, error) {
-	q := cloneValues(spec.Query)
-	if spec.Type != "" {
-		q.Set("type", spec.Type)
-	}
-	return s.api.Get("/api/v2/getSourceDownloadUrl", q)
 }
 
 func (s Service) AgentlessInstall(spec AgentlessInstallSpec) (client.APIResponse, error) {

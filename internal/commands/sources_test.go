@@ -577,7 +577,6 @@ func TestSourceHelpUsesGroupLayout(t *testing.T) {
 		"list",
 		"detail",
 		"vms",
-		"download-url",
 		"agent-install",
 		"agentless-install",
 		"sync-nodes",

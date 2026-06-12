@@ -21,7 +21,6 @@ func TestGetCommandsPassUnknownFlagsAsQuery(t *testing.T) {
 		{name: "source list", args: []string{"source", "list", "--type", "vmware", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
 		{name: "source detail", args: []string{"source", "detail", "--id", "conn-1", "--custom-step", "3"}, path: "/api/v2/getConnectionDetail"},
 		{name: "source vms", args: []string{"source", "vms", "--connection-type", "vmware", "--connection-uuid", "conn-1", "--custom-step", "3"}, path: "/hypermotion/v1/sources/vms"},
-		{name: "source download-url", args: []string{"source", "download-url", "--custom-step", "3"}, path: "/api/v2/getSourceDownloadUrl"},
 		{name: "source agent-install", args: []string{"source", "agent-install", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
 		{name: "source agentless-install", args: []string{"source", "agentless-install", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
 		{name: "source sync-nodes", args: []string{"source", "sync-nodes", "--custom-step", "3"}, path: "/hypermotion/v1/synch_nodes"},

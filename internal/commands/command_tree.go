@@ -241,11 +241,6 @@ func newSourcesCommand(ctx *context) *cobra.Command {
 		}, func(args []string) error {
 			return runSources(ctx, append([]string{"vms"}, args...))
 		}),
-		newRawLeafCommand(ctx, "download-url", "cmd.sources.download_url.short", "cmd.sources.download_url.long", "cmd.sources.download_url.examples", "cmd.sources.download_url.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "type")
-		}, func(args []string) error {
-			return runSources(ctx, append([]string{"download-url"}, args...))
-		}),
 		newRawLeafCommand(ctx, "agent-install", "cmd.sources.agent_install.short", "cmd.sources.agent_install.long", "cmd.sources.agent_install.examples", "cmd.sources.agent_install.notes", nil, func(args []string) error {
 			return runSources(ctx, append([]string{"agent-install"}, args...))
 		}),

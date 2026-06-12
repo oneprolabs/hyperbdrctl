@@ -100,21 +100,6 @@ func runSources(ctx *context, args []string) error {
 			return err
 		}
 		return writeResponse(ctx, resp, "vms", vmColumns())
-	case "download-url":
-		fs := newFlagSet("source download-url")
-		downloadType := fs.String("type", "agent", "")
-		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
-			return err
-		}
-		resp, err := service.DownloadURL(appsource.DownloadURLSpec{
-			Type:  *downloadType,
-			Query: q,
-		})
-		if err != nil {
-			return err
-		}
-		return writeResponse(ctx, resp, "", nil)
 	case "agent-install":
 		fs := newFlagSet("source agent-install")
 		q := queryFromPairs()
