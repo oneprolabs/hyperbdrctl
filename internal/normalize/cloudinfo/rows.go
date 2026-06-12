@@ -19,6 +19,20 @@ func ImageRows(data interface{}) []map[string]interface{} {
 	return NormalizeImageRows(rows)
 }
 
+func ZoneRows(data interface{}) []map[string]interface{} {
+	rows := listNestedMaps(data, "cloud_info", "zones")
+	if len(rows) == 0 {
+		rows = listNestedMapsFromParentList(data, []string{"cloud_info", "regions"}, "zones")
+	}
+	if len(rows) == 0 {
+		rows = listNestedMapsFromParentList(data, []string{"cloud_info", "domain", "regions"}, "zones")
+	}
+	if len(rows) == 0 {
+		rows = listFromData(data, "zones")
+	}
+	return NormalizeZoneRows(rows)
+}
+
 func ResourceRows(data interface{}, key string) []map[string]interface{} {
 	rows := listNestedMaps(data, "cloud_info", key)
 	if len(rows) > 0 {
@@ -33,6 +47,20 @@ func ResourceRows(data interface{}, key string) []map[string]interface{} {
 	return listFromData(data, key)
 }
 
+func ResourceValue(data interface{}, key string) interface{} {
+	if m := mapFromData(data); m != nil {
+		if cloudInfo, ok := m["cloud_info"].(map[string]interface{}); ok {
+			if value, ok := cloudInfo[key]; ok {
+				return value
+			}
+		}
+		if value, ok := m[key]; ok {
+			return value
+		}
+	}
+	return nil
+}
+
 func NormalizeRegionRows(rows []map[string]interface{}) []map[string]interface{} {
 	for _, row := range rows {
 		row["region_id"] = firstNonEmptyString(row["region_id"], row["id"], row["value"])
@@ -42,11 +70,39 @@ func NormalizeRegionRows(rows []map[string]interface{}) []map[string]interface{}
 	return rows
 }
 
+func NormalizeZoneRows(rows []map[string]interface{}) []map[string]interface{} {
+	for _, row := range rows {
+		row["id"] = firstNonEmptyString(row["id"], row["zone_id"], row["value"])
+		row["display_name"] = firstNonEmptyString(row["display_name"], row["zone_name"], row["name"], row["local_name"], row["id"])
+	}
+	return rows
+}
+
 func NormalizeImageRows(rows []map[string]interface{}) []map[string]interface{} {
 	for _, row := range rows {
 		row["image_id"] = firstNonEmptyString(row["image_id"], row["id"], row["uuid"])
 		row["image_name"] = firstNonEmptyString(row["image_name"], row["name"], row["display_name"], row["image_id"])
 		row["boot_mode"] = firstNonEmptyString(row["boot_mode"], row["boot_firmware"])
+	}
+	return rows
+}
+
+func listNestedMapsFromParentList(data interface{}, parentPath []string, childKey string) []map[string]interface{} {
+	parents := listNestedMaps(data, parentPath...)
+	if len(parents) == 0 {
+		return nil
+	}
+	rows := make([]map[string]interface{}, 0)
+	for _, parent := range parents {
+		items, ok := parent[childKey].([]interface{})
+		if !ok {
+			continue
+		}
+		for _, item := range items {
+			if row, ok := item.(map[string]interface{}); ok {
+				rows = append(rows, row)
+			}
+		}
 	}
 	return rows
 }
@@ -98,6 +154,13 @@ func listFromData(data interface{}, key string) []map[string]interface{} {
 		}
 	}
 	return rows
+}
+
+func mapFromData(data interface{}) map[string]interface{} {
+	if m, ok := data.(map[string]interface{}); ok {
+		return m
+	}
+	return nil
 }
 
 func firstNonEmptyString(values ...interface{}) string {

@@ -171,6 +171,73 @@ func TestServiceFetchResourcesBuildsRegionDiscoveryRequestWithoutRegionOrBootMod
 	}
 }
 
+func TestServiceFetchResourcesOmitsFetchResWhenNotProvided(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.FetchResources(FetchResourcesSpec{
+		CloudType:       "aliyun_bs",
+		AccessKeyID:     "ak",
+		AccessKeySecret: "sk",
+		StorageType:     "HyperGate",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := api.postBody.(map[string]interface{})
+	if _, ok := body["fetch_res"]; ok {
+		t.Fatalf("body should not contain fetch_res: %+v", body)
+	}
+}
+
+func TestServiceFetchResourcesPreservesExplicitMultiFetchRes(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.FetchResources(FetchResourcesSpec{
+		CloudType:       "aliyun_bs",
+		AccessKeyID:     "ak",
+		AccessKeySecret: "sk",
+		StorageType:     "HyperGate",
+		FetchRes:        "regions,zones",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := api.postBody.(map[string]interface{})
+	if body["fetch_res"] != "regions,zones" {
+		t.Fatalf("body = %+v", body)
+	}
+}
+
+func TestServiceFetchResourcesRequiresRegionOnlyForExplicitRegionScopedResources(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	if _, err := service.FetchResources(FetchResourcesSpec{
+		CloudType:       "aliyun_bs",
+		AccessKeyID:     "ak",
+		AccessKeySecret: "sk",
+		StorageType:     "HyperGate",
+		FetchRes:        "regions,zones",
+	}); err != nil {
+		t.Fatalf("regions,zones should not require region-id: %v", err)
+	}
+
+	_, err := service.FetchResources(FetchResourcesSpec{
+		CloudType:       "aliyun_bs",
+		AccessKeyID:     "ak",
+		AccessKeySecret: "sk",
+		StorageType:     "HyperGate",
+		FetchRes:        "images",
+	})
+	if err == nil || err.Error() != "region-id is required" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestServiceFetchResourcesIncludesBootModeWhenProvided(t *testing.T) {
 	api := &fakeAPI{}
 	service := NewService(api)
@@ -190,6 +257,26 @@ func TestServiceFetchResourcesIncludesBootModeWhenProvided(t *testing.T) {
 	body := api.postBody.(map[string]interface{})
 	if body["boot_mode"] != "bios" || body["region_id"] != "cn-beijing" {
 		t.Fatalf("body = %+v", body)
+	}
+}
+
+func TestServiceFetchOpenStackObjectResourcesOmitsFetchResWhenNotProvided(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.FetchOpenStackObjectResources(FetchOpenStackObjectResourcesSpec{
+		AuthURL:      "http://example.com/v3",
+		Username:     "demo",
+		Password:     "secret",
+		UserDomainID: "default",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := api.postBody.(map[string]interface{})
+	if _, ok := body["fetch_res"]; ok {
+		t.Fatalf("body should not contain fetch_res: %+v", body)
 	}
 }
 

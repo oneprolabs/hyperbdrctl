@@ -171,7 +171,7 @@ func TestCloudAccountsFetchResourcesImagesShowsBootModeFromBootFirmware(t *testi
 	}
 }
 
-func TestCloudAccountsFetchResourcesImagesStillShowEmptyColumnsForOtherCommands(t *testing.T) {
+func TestCloudAccountsFetchResourcesImagesHideEmptyColumns(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -209,8 +209,188 @@ func TestCloudAccountsFetchResourcesImagesStillShowEmptyColumnsForOtherCommands(
 	}
 
 	text := out.String()
-	if !strings.Contains(text, "OS Version") {
-		t.Fatalf("other commands should keep existing columns: %q", text)
+	if strings.Contains(text, "OS Version") {
+		t.Fatalf("output should hide empty columns: %q", text)
+	}
+}
+
+func TestCloudAccountsFetchResourcesZonesRenderTable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v3/postCloudInfoForAuth" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"regions": []map[string]interface{}{
+						{
+							"id": "cn-north-1",
+							"zones": []map[string]interface{}{
+								{"id": "cn-north-1a", "display_name": "AZ1"},
+							},
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-oss-resources", "aliyun",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-north-1",
+		"--fetch-res", "zones",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{"== Zones ==", "Zone ID", "cn-north-1a", "AZ1"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+}
+
+func TestCloudAccountsFetchResourcesMultipleSectionsRenderInOrder(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"regions": []map[string]interface{}{
+						{"id": "cn-beijing", "display_name": "Beijing"},
+					},
+					"zones": []map[string]interface{}{
+						{"id": "cn-beijing-h", "display_name": "Zone H"},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-block-resources", "aliyun",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--fetch-res", "regions,zones",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["fetch_res"] != "regions,zones" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+
+	text := out.String()
+	regions := strings.Index(text, "== Regions ==")
+	zones := strings.Index(text, "== Zones ==")
+	if regions < 0 || zones < 0 || regions >= zones {
+		t.Fatalf("section order mismatch: %q", text)
+	}
+}
+
+func TestCloudAccountsFetchResourcesAutoDetectsSectionsWhenFetchResOmitted(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"regions": []map[string]interface{}{
+						{"id": "cn-beijing", "display_name": "Beijing"},
+					},
+					"zones": []map[string]interface{}{
+						{"id": "cn-beijing-h", "display_name": "Zone H"},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-block-resources", "aliyun",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := gotBody["fetch_res"]; ok {
+		t.Fatalf("body should not contain fetch_res: %+v", gotBody)
+	}
+
+	text := out.String()
+	for _, want := range []string{"== Regions ==", "== Zones ==", "cn-beijing", "cn-beijing-h"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+}
+
+func TestCloudAccountsFetchResourcesBootLoaderImagesAndFlavorsRenderTables(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"boot_loader_images": []map[string]interface{}{
+						{"id": "boot-img-1", "name": "Windows Driver", "os_type": "windows"},
+					},
+					"flavors": []map[string]interface{}{
+						{"id": "ecs.g6.large", "name": "2C4G", "vcpus": 2},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-oss-resources", "aliyun",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-beijing",
+		"--fetch-res", "boot_loader_images,flavors",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{"== Windows Transition Images ==", "Windows Driver", "== Flavors ==", "ecs.g6.large", "Flavor ID"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
 	}
 }
 
@@ -276,8 +456,8 @@ func TestCloudAccountsFetchOSSResourcesOpenStackBuildsValidatedGatewayAuthReques
 	if gotBody["fetch_scene"] != "gateway" || gotBody["rt_tree"].(float64) != 0 {
 		t.Fatalf("body = %+v", gotBody)
 	}
-	if gotBody["fetch_res"] != "region" {
-		t.Fatalf("fetch_res = %+v", gotBody["fetch_res"])
+	if _, ok := gotBody["fetch_res"]; ok {
+		t.Fatalf("fetch_res should be omitted by default: %+v", gotBody["fetch_res"])
 	}
 	for _, key := range []string{"region_id", "project_id", "project_domain_id", "project_name", "compute_zone_id", "block_store_zone_id"} {
 		if gotBody[key] != nil {

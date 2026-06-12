@@ -309,15 +309,15 @@ func TestTargetAccountFetchResourcesProviderHelpUsesFourSectionLayout(t *testing
 	}{
 		{
 			args: []string{"target", "account", "fetch-block-resources", "aliyun", "--help"},
-			want: []string{"Usage Notes:", "--access-key-id", "--fetch-res", "fetch-block-resources aliyun"},
+			want: []string{"Usage Notes:", "--access-key-id", "--fetch-res", "fetch-block-resources aliyun", "regions,zones"},
 		},
 		{
 			args: []string{"target", "account", "fetch-oss-resources", "aliyun", "--help"},
-			want: []string{"Usage Notes:", "--access-key-id", "--fetch-res", "fetch-oss-resources aliyun"},
+			want: []string{"Usage Notes:", "--access-key-id", "--fetch-res", "fetch-oss-resources aliyun", "regions,zones"},
 		},
 		{
 			args: []string{"target", "account", "fetch-oss-resources", "openstack", "--help"},
-			want: []string{"Usage Notes:", "--auth-url", "--user-domain-id", "fetch-oss-resources openstack", "--output json"},
+			want: []string{"Usage Notes:", "--auth-url", "--user-domain-id", "fetch-oss-resources openstack", "--output json", "optional"},
 		},
 	}
 

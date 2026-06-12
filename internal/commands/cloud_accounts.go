@@ -117,7 +117,7 @@ func parseCloudAccountFetchResourcesArgs(commandName string, args []string) (par
 	accessKeySecret := fs.String("access-key-secret", "", "")
 	regionID := fs.String("region-id", "", "")
 	bootMode := fs.String("boot-mode", "", "")
-	fetchRes := fs.String("fetch-res", "images", "")
+	fetchRes := fs.String("fetch-res", "", "")
 
 	if err := fs.Parse(args); err != nil {
 		return parsedCloudAccountFetchResourcesCommand{}, err
@@ -139,7 +139,7 @@ func parseOpenStackObjectFetchResourcesArgs(commandName string, args []string) (
 	username := fs.String("cloud-account-username", "", "")
 	password := fs.String("cloud-account-password", "", "")
 	userDomainID := fs.String("user-domain-id", "", "")
-	fetchRes := fs.String("fetch-res", "region", "")
+	fetchRes := fs.String("fetch-res", "", "")
 	regionID := fs.String("region-id", "", "")
 	projectID := fs.String("project-id", "", "")
 	projectDomainID := fs.String("project-domain-id", "", "")
@@ -189,22 +189,7 @@ func runFetchResourcesForProvider(ctx *context, commandName, cloudType, storageT
 	if err != nil {
 		return err
 	}
-
-	switch parsed.fetchRes {
-	case "regions":
-		if ctx.cfg.Output == "json" {
-			return writeResponse(ctx, resp, "", nil)
-		}
-		return output.Table(ctx.out, ctx.loc, cloudinfo.RegionRows(resp.Data), regionColumns())
-	case "images":
-		if ctx.cfg.Output == "json" {
-			return writeResponse(ctx, resp, "", nil)
-		}
-		rows := cloudinfo.ImageRows(resp.Data)
-		return output.Table(ctx.out, ctx.loc, rows, cloudAccountImageColumns(rows))
-	default:
-		return writeResponse(ctx, resp, "", nil)
-	}
+	return writeAuthResourcesResponse(ctx, resp, parsed.fetchRes)
 }
 
 func runFetchOpenStackObjectResources(ctx *context, commandName string, args []string) error {
@@ -233,17 +218,7 @@ func runFetchOpenStackObjectResources(ctx *context, commandName string, args []s
 	if err != nil {
 		return err
 	}
-
-	if ctx.cfg.Output == "json" {
-		return writeResponse(ctx, resp, "", nil)
-	}
-
-	switch parsed.fetchRes {
-	case "region", "regions":
-		return writeGatewayResourcesResponse(ctx, resp, []string{})
-	default:
-		return writeGatewayResourcesResponse(ctx, resp, []string{})
-	}
+	return writeAuthResourcesResponse(ctx, resp, parsed.fetchRes)
 }
 
 func errDeprecatedFetchResourcesFlags() error {
