@@ -88,137 +88,20 @@ func regionColumns() []output.Column {
 }
 
 type parsedCloudAccountFetchResourcesCommand struct {
-	accessKeyID     string
-	accessKeySecret string
-	regionID        string
-	bootMode        string
-	fetchRes        string
-	remainingArgs   []string
+	spec appcloudaccount.FetchResourcesSpec
 }
 
-type parsedOpenStackObjectFetchResourcesCommand struct {
-	authURL          string
-	username         string
-	password         string
-	userDomainID     string
-	fetchRes         string
-	regionID         string
-	projectID        string
-	projectDomainID  string
-	projectName      string
-	computeZoneID    string
-	blockStoreZoneID string
-	remainingArgs    []string
-}
-
-func parseCloudAccountFetchResourcesArgs(commandName string, args []string) (parsedCloudAccountFetchResourcesCommand, error) {
-	fs := newFlagSet(commandName)
-	accessKeyID := fs.String("access-key-id", "", "")
-	accessKeySecret := fs.String("access-key-secret", "", "")
-	regionID := fs.String("region-id", "", "")
-	bootMode := fs.String("boot-mode", "", "")
-	fetchRes := fs.String("fetch-res", "", "")
-
-	if err := fs.Parse(args); err != nil {
-		return parsedCloudAccountFetchResourcesCommand{}, err
-	}
-
-	return parsedCloudAccountFetchResourcesCommand{
-		accessKeyID:     *accessKeyID,
-		accessKeySecret: *accessKeySecret,
-		regionID:        *regionID,
-		bootMode:        *bootMode,
-		fetchRes:        *fetchRes,
-		remainingArgs:   fs.Args(),
-	}, nil
-}
-
-func parseOpenStackObjectFetchResourcesArgs(commandName string, args []string) (parsedOpenStackObjectFetchResourcesCommand, error) {
-	fs := newFlagSet(commandName)
-	authURL := fs.String("auth-url", "", "")
-	username := fs.String("cloud-account-username", "", "")
-	password := fs.String("cloud-account-password", "", "")
-	userDomainID := fs.String("user-domain-id", "", "")
-	fetchRes := fs.String("fetch-res", "", "")
-	regionID := fs.String("region-id", "", "")
-	projectID := fs.String("project-id", "", "")
-	projectDomainID := fs.String("project-domain-id", "", "")
-	projectName := fs.String("project-name", "", "")
-	computeZoneID := fs.String("compute-zone-id", "", "")
-	blockStoreZoneID := fs.String("block-store-zone-id", "", "")
-
-	if err := fs.Parse(args); err != nil {
-		return parsedOpenStackObjectFetchResourcesCommand{}, err
-	}
-
-	return parsedOpenStackObjectFetchResourcesCommand{
-		authURL:          *authURL,
-		username:         *username,
-		password:         *password,
-		userDomainID:     *userDomainID,
-		fetchRes:         *fetchRes,
-		regionID:         *regionID,
-		projectID:        *projectID,
-		projectDomainID:  *projectDomainID,
-		projectName:      *projectName,
-		computeZoneID:    *computeZoneID,
-		blockStoreZoneID: *blockStoreZoneID,
-		remainingArgs:    fs.Args(),
-	}, nil
-}
-
-func runFetchResourcesForProvider(ctx *context, commandName, cloudType, storageType string, args []string) error {
-	parsed, err := parseCloudAccountFetchResourcesArgs(commandName, args)
+func runFetchResourcesForProvider(ctx *context, commandName, cloudType, storageType string, specialized bool, args []string) error {
+	parsed, err := parseCloudAccountFetchResourcesArgs(commandName, cloudType, storageType, specialized, args)
 	if err != nil {
 		return err
 	}
-	if len(parsed.remainingArgs) > 0 {
-		return errUnknown(commandName, parsed.remainingArgs[0])
-	}
-
 	service := appcloudaccount.NewService(commandPosterAdapter{ctx: ctx})
-	resp, err := service.FetchResources(appcloudaccount.FetchResourcesSpec{
-		CloudType:       cloudType,
-		AccessKeyID:     parsed.accessKeyID,
-		AccessKeySecret: parsed.accessKeySecret,
-		StorageType:     storageType,
-		RegionID:        parsed.regionID,
-		BootMode:        parsed.bootMode,
-		FetchRes:        parsed.fetchRes,
-	})
+	resp, err := service.FetchResources(parsed.spec)
 	if err != nil {
 		return err
 	}
-	return writeAuthResourcesResponse(ctx, resp, parsed.fetchRes)
-}
-
-func runFetchOpenStackObjectResources(ctx *context, commandName string, args []string) error {
-	parsed, err := parseOpenStackObjectFetchResourcesArgs(commandName, args)
-	if err != nil {
-		return err
-	}
-	if len(parsed.remainingArgs) > 0 {
-		return errUnknown(commandName, parsed.remainingArgs[0])
-	}
-
-	service := appcloudaccount.NewService(commandPosterAdapter{ctx: ctx})
-	resp, err := service.FetchOpenStackObjectResources(appcloudaccount.FetchOpenStackObjectResourcesSpec{
-		AuthURL:          parsed.authURL,
-		Username:         parsed.username,
-		Password:         parsed.password,
-		UserDomainID:     parsed.userDomainID,
-		FetchRes:         parsed.fetchRes,
-		RegionID:         parsed.regionID,
-		ProjectID:        parsed.projectID,
-		ProjectDomainID:  parsed.projectDomainID,
-		ProjectName:      parsed.projectName,
-		ComputeZoneID:    parsed.computeZoneID,
-		BlockStoreZoneID: parsed.blockStoreZoneID,
-	})
-	if err != nil {
-		return err
-	}
-	return writeAuthResourcesResponse(ctx, resp, parsed.fetchRes)
+	return writeAuthResourcesResponse(ctx, resp, parsed.spec.FetchRes)
 }
 
 func errDeprecatedFetchResourcesFlags() error {
@@ -657,12 +540,14 @@ func resolveCloudAccountRegionName(ctx *context, spec cloudAccountCreateSpec) st
 
 	service := appcloudaccount.NewService(commandPosterAdapter{ctx: ctx})
 	resp, err := service.FetchResources(appcloudaccount.FetchResourcesSpec{
-		CloudType:       spec.CloudType,
-		AccessKeyID:     spec.AccessKeyID,
-		AccessKeySecret: spec.AccessKeySecret,
-		StorageType:     spec.StorageType,
-		RegionID:        spec.RegionID,
-		FetchRes:        "regions",
+		Spec: workflowcreate.Spec{
+			CloudType:       spec.CloudType,
+			AccessKeyID:     spec.AccessKeyID,
+			AccessKeySecret: spec.AccessKeySecret,
+			StorageType:     spec.StorageType,
+			RegionID:        spec.RegionID,
+		},
+		FetchRes: "regions",
 	})
 	if err != nil {
 		return ""
@@ -687,13 +572,15 @@ func resolveCloudAccountBootLoaderImage(ctx *context, spec cloudAccountCreateSpe
 
 	service := appcloudaccount.NewService(commandPosterAdapter{ctx: ctx})
 	resp, err := service.FetchResources(appcloudaccount.FetchResourcesSpec{
-		CloudType:       spec.CloudType,
-		AccessKeyID:     spec.AccessKeyID,
-		AccessKeySecret: spec.AccessKeySecret,
-		StorageType:     spec.StorageType,
-		RegionID:        spec.RegionID,
-		BootMode:        "bios",
-		FetchRes:        "boot_loader_images",
+		Spec: workflowcreate.Spec{
+			CloudType:       spec.CloudType,
+			AccessKeyID:     spec.AccessKeyID,
+			AccessKeySecret: spec.AccessKeySecret,
+			StorageType:     spec.StorageType,
+			RegionID:        spec.RegionID,
+		},
+		BootMode: "bios",
+		FetchRes: "boot_loader_images",
 	})
 	if err != nil {
 		return "", "", fmt.Errorf("auto-resolve boot-loader-image-id: %w", err)

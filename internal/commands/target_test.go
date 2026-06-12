@@ -309,15 +309,19 @@ func TestTargetAccountFetchResourcesProviderHelpUsesFourSectionLayout(t *testing
 	}{
 		{
 			args: []string{"target", "account", "fetch-block-resources", "aliyun", "--help"},
-			want: []string{"Usage Notes:", "--access-key-id", "--fetch-res", "fetch-block-resources aliyun", "regions,zones"},
+			want: []string{"Usage Notes:", "--cloud-auth-type", "--fetch-res", "fetch-block-resources aliyun", "--access-id + --access-secret => aksk"},
+		},
+		{
+			args: []string{"target", "account", "fetch-block-resources", "openstack", "--help"},
+			want: []string{"Usage Notes:", "--auth-url", "--username", "--user-domain-id", "fetch-block-resources openstack", "regions,projects"},
 		},
 		{
 			args: []string{"target", "account", "fetch-oss-resources", "aliyun", "--help"},
-			want: []string{"Usage Notes:", "--access-key-id", "--fetch-res", "fetch-oss-resources aliyun", "regions,zones"},
+			want: []string{"Usage Notes:", "--cloud-auth-type", "--fetch-res", "fetch-oss-resources aliyun", "--access-id + --access-secret => aksk"},
 		},
 		{
 			args: []string{"target", "account", "fetch-oss-resources", "openstack", "--help"},
-			want: []string{"Usage Notes:", "--auth-url", "--user-domain-id", "fetch-oss-resources openstack", "--output json", "optional"},
+			want: []string{"Usage Notes:", "--auth-url", "--username", "--user-domain-id", "fetch-oss-resources openstack", "--output json", "optional"},
 		},
 	}
 

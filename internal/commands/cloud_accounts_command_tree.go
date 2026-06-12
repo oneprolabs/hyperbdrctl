@@ -132,6 +132,10 @@ func newDeprecatedCloudAccountsFetchResourcesCommand(ctx *context) *cobra.Comman
 func newCloudAccountsFetchBlockResourcesCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "fetch-block-resources", "cmd.cloud_accounts.fetch.block.short", "cmd.cloud_accounts.fetch.block.long", "cmd.cloud_accounts.fetch.block.examples", "cmd.cloud_accounts.fetch.block.notes", "target account fetch-block-resources")
 	for _, entry := range catalog.EnabledBlockClouds() {
+		if entry.Provider == "openstack" {
+			cmd.AddCommand(newCloudAccountFetchResourcesOpenStackCommand(ctx, entry, "block"))
+			continue
+		}
 		cmd.AddCommand(newCloudAccountFetchResourcesProviderCommand(ctx, entry, "block"))
 	}
 	return cmd
@@ -141,7 +145,7 @@ func newCloudAccountsFetchOSSResourcesCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "fetch-oss-resources", "cmd.cloud_accounts.fetch.oss.short", "cmd.cloud_accounts.fetch.oss.long", "cmd.cloud_accounts.fetch.oss.examples", "cmd.cloud_accounts.fetch.oss.notes", "target account fetch-oss-resources")
 	for _, entry := range catalog.EnabledObjectClouds() {
 		if entry.Provider == "openstack" {
-			cmd.AddCommand(newCloudAccountFetchResourcesOpenStackObjectCommand(ctx, entry))
+			cmd.AddCommand(newCloudAccountFetchResourcesOpenStackCommand(ctx, entry, "objectstorage"))
 			continue
 		}
 		cmd.AddCommand(newCloudAccountFetchResourcesProviderCommand(ctx, entry, "objectstorage"))
@@ -164,56 +168,57 @@ func newCloudAccountFetchResourcesProviderCommand(ctx *context, entry catalog.Cl
 			if rawArgsHelp(cmd, args) {
 				return renderHelp(cmd, ctx)
 			}
-			return runFetchResourcesForProvider(ctx, fetchResourcesProviderCommandName(storageType, entry.Provider), entry.CloudType, fetchResourcesStorageType(storageType), args)
+			return runFetchResourcesForProvider(ctx, fetchResourcesProviderCommandName(storageType, entry.Provider), entry.CloudType, storageType, false, args)
 		},
 	}
 
-	for _, name := range []string{"access-key-id", "access-key-secret", "region-id", "boot-mode", "fetch-res"} {
+	for _, name := range []string{"cloud-auth-type", "region-id", "boot-mode", "fetch-res"} {
 		addFlagString(cmd, ctx, name)
 	}
 
 	addHelpLayout(cmd, helpLayoutFourSection)
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(usageLineKey), entry.Provider))
-	addAnnotationValue(cmd, usageNotesAnnotation, fmt.Sprintf(ctx.loc.T(usageNotesKey), entry.Provider, entry.Provider))
+	addAnnotationValue(cmd, usageNotesAnnotation, fmt.Sprintf(ctx.loc.T(usageNotesKey), localizedCloudEntryName(ctx, entry), entry.Provider, entry.Provider, entry.Provider))
 	return cmd
 }
 
-func newCloudAccountFetchResourcesOpenStackObjectCommand(ctx *context, entry catalog.CloudEntry) *cobra.Command {
+func newCloudAccountFetchResourcesOpenStackCommand(ctx *context, entry catalog.CloudEntry, storageType string) *cobra.Command {
 	displayName := localizedCloudEntryName(ctx, entry)
+	shortKey, longKey, usageLineKey, usageNotesKey, exampleKey := cloudAccountFetchOpenStackTextKeys(storageType)
 
 	cmd := &cobra.Command{
 		Use:                entry.Provider,
-		Short:              fmt.Sprintf(ctx.loc.T("cmd.cloud_accounts.fetch.provider.oss.short"), displayName),
-		Long:               fmt.Sprintf(ctx.loc.T("cmd.cloud_accounts.fetch.provider.oss.long"), displayName, entry.CloudType),
-		Example:            strings.TrimSpace(ctx.loc.T("cmd.target.account.fetch_oss_resources.openstack.examples")),
+		Short:              fmt.Sprintf(ctx.loc.T(shortKey), displayName),
+		Long:               fmt.Sprintf(ctx.loc.T(longKey), displayName, entry.CloudType),
+		Example:            strings.TrimSpace(ctx.loc.T(exampleKey)),
 		DisableFlagParsing: true,
 		Args:               cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if rawArgsHelp(cmd, args) {
 				return renderHelp(cmd, ctx)
 			}
-			return runFetchOpenStackObjectResources(ctx, "target account fetch-oss-resources openstack", args)
+			return runFetchResourcesForProvider(ctx, fetchResourcesProviderCommandName(storageType, entry.Provider), entry.CloudType, storageType, true, args)
 		},
 	}
 
-	for _, name := range []string{"auth-url", "cloud-account-username", "cloud-account-password", "user-domain-id", "fetch-res", "region-id", "project-id", "project-domain-id", "project-name", "compute-zone-id", "block-store-zone-id"} {
+	for _, name := range []string{"auth-url", "username", "password", "user-domain-id", "fetch-res", "region-id", "project-id", "project-domain-id", "project-name", "compute-zone-id", "block-store-zone-id"} {
 		addFlagString(cmd, ctx, name)
 	}
-	overrideFlagUsage(cmd, ctx, "auth-url", "help.target_account_fetch_object_openstack.flag.auth-url")
-	overrideFlagUsage(cmd, ctx, "cloud-account-username", "help.target_account_fetch_object_openstack.flag.cloud-account-username")
-	overrideFlagUsage(cmd, ctx, "cloud-account-password", "help.target_account_fetch_object_openstack.flag.cloud-account-password")
-	overrideFlagUsage(cmd, ctx, "user-domain-id", "help.target_account_fetch_object_openstack.flag.user-domain-id")
-	overrideFlagUsage(cmd, ctx, "fetch-res", "help.target_account_fetch_object_openstack.flag.fetch-res")
-	overrideFlagUsage(cmd, ctx, "region-id", "help.target_account_fetch_object_openstack.flag.region-id")
-	overrideFlagUsage(cmd, ctx, "project-id", "help.target_account_fetch_object_openstack.flag.project-id")
-	overrideFlagUsage(cmd, ctx, "project-domain-id", "help.target_account_fetch_object_openstack.flag.project-domain-id")
-	overrideFlagUsage(cmd, ctx, "project-name", "help.target_account_fetch_object_openstack.flag.project-name")
-	overrideFlagUsage(cmd, ctx, "compute-zone-id", "help.target_account_fetch_object_openstack.flag.compute-zone-id")
-	overrideFlagUsage(cmd, ctx, "block-store-zone-id", "help.target_account_fetch_object_openstack.flag.block-store-zone-id")
+	overrideFlagUsage(cmd, ctx, "auth-url", "help.target_account_fetch_openstack.flag.auth-url")
+	overrideFlagUsage(cmd, ctx, "username", "help.target_account_fetch_openstack.flag.username")
+	overrideFlagUsage(cmd, ctx, "password", "help.target_account_fetch_openstack.flag.password")
+	overrideFlagUsage(cmd, ctx, "user-domain-id", "help.target_account_fetch_openstack.flag.user-domain-id")
+	overrideFlagUsage(cmd, ctx, "fetch-res", "help.target_account_fetch_openstack.flag.fetch-res")
+	overrideFlagUsage(cmd, ctx, "region-id", "help.target_account_fetch_openstack.flag.region-id")
+	overrideFlagUsage(cmd, ctx, "project-id", "help.target_account_fetch_openstack.flag.project-id")
+	overrideFlagUsage(cmd, ctx, "project-domain-id", "help.target_account_fetch_openstack.flag.project-domain-id")
+	overrideFlagUsage(cmd, ctx, "project-name", "help.target_account_fetch_openstack.flag.project-name")
+	overrideFlagUsage(cmd, ctx, "compute-zone-id", "help.target_account_fetch_openstack.flag.compute-zone-id")
+	overrideFlagUsage(cmd, ctx, "block-store-zone-id", "help.target_account_fetch_openstack.flag.block-store-zone-id")
 
 	addHelpLayout(cmd, helpLayoutFourSection)
-	addAnnotationValue(cmd, usageLineAnnotation, ctx.loc.T("cmd.target.account.fetch_oss_resources.openstack.usage_line"))
-	addAnnotationValue(cmd, usageNotesAnnotation, ctx.loc.T("cmd.target.account.fetch_oss_resources.openstack.usage_notes"))
+	addAnnotationValue(cmd, usageLineAnnotation, ctx.loc.T(usageLineKey))
+	addAnnotationValue(cmd, usageNotesAnnotation, ctx.loc.T(usageNotesKey))
 	return cmd
 }
 
@@ -536,6 +541,21 @@ func cloudAccountFetchProviderTextKeys(storageType string) (shortKey, longKey, u
 		"cmd.target.account.fetch_oss_resources.provider.usage_line",
 		"cmd.target.account.fetch_oss_resources.provider.usage_notes",
 		"cmd.cloud_accounts.fetch.provider.oss.examples"
+}
+
+func cloudAccountFetchOpenStackTextKeys(storageType string) (shortKey, longKey, usageLineKey, usageNotesKey, exampleKey string) {
+	if storageType == "block" {
+		return "cmd.cloud_accounts.fetch.provider.block.short",
+			"cmd.cloud_accounts.fetch.provider.block.long",
+			"cmd.target.account.fetch_block_resources.openstack.usage_line",
+			"cmd.target.account.fetch_block_resources.openstack.usage_notes",
+			"cmd.target.account.fetch_block_resources.openstack.examples"
+	}
+	return "cmd.cloud_accounts.fetch.provider.oss.short",
+		"cmd.cloud_accounts.fetch.provider.oss.long",
+		"cmd.target.account.fetch_oss_resources.openstack.usage_line",
+		"cmd.target.account.fetch_oss_resources.openstack.usage_notes",
+		"cmd.target.account.fetch_oss_resources.openstack.examples"
 }
 
 func addAnnotationValue(cmd *cobra.Command, key, value string) {

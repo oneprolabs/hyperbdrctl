@@ -94,23 +94,11 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	path := cmd.CommandPath()
 	switch {
 	case strings.HasPrefix(path, "hyperbdrctl target account fetch-block-resources "):
-		return []flagHelpSpec{
-			{name: "access-key-id", required: true},
-			{name: "access-key-secret", required: true},
-			{name: "region-id"},
-			{name: "boot-mode"},
-			{name: "fetch-res"},
-			{name: "debug"},
-			{name: "lang"},
-			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
-			{name: "help"},
-		}
-	case strings.HasPrefix(path, "hyperbdrctl target account fetch-oss-resources "):
-		if path == "hyperbdrctl target account fetch-oss-resources openstack" {
+		if path == "hyperbdrctl target account fetch-block-resources openstack" {
 			return []flagHelpSpec{
 				{name: "auth-url", required: true},
-				{name: "cloud-account-username", required: true},
-				{name: "cloud-account-password", required: true},
+				{name: "username", required: true},
+				{name: "password", required: true},
 				{name: "user-domain-id", required: true},
 				{name: "fetch-res"},
 				{name: "region-id"},
@@ -126,8 +114,37 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			}
 		}
 		return []flagHelpSpec{
-			{name: "access-key-id", required: true},
-			{name: "access-key-secret", required: true},
+			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
+			{name: "region-id"},
+			{name: "boot-mode"},
+			{name: "fetch-res"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case strings.HasPrefix(path, "hyperbdrctl target account fetch-oss-resources "):
+		if path == "hyperbdrctl target account fetch-oss-resources openstack" {
+			return []flagHelpSpec{
+				{name: "auth-url", required: true},
+				{name: "username", required: true},
+				{name: "password", required: true},
+				{name: "user-domain-id", required: true},
+				{name: "fetch-res"},
+				{name: "region-id"},
+				{name: "project-id"},
+				{name: "project-domain-id"},
+				{name: "project-name"},
+				{name: "compute-zone-id"},
+				{name: "block-store-zone-id"},
+				{name: "debug"},
+				{name: "lang"},
+				{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+				{name: "help"},
+			}
+		}
+		return []flagHelpSpec{
+			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 			{name: "region-id"},
 			{name: "boot-mode"},
 			{name: "fetch-res"},

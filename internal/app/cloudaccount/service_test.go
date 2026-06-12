@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"hyperbdr-client/internal/client"
+	workflowcreate "hyperbdr-client/internal/workflow/cloudaccountcreate"
 )
 
 type fakeAPI struct {
@@ -139,11 +140,13 @@ func TestServiceFetchResourcesBuildsRegionDiscoveryRequestWithoutRegionOrBootMod
 	service := NewService(api)
 
 	_, err := service.FetchResources(FetchResourcesSpec{
-		CloudType:       "aliyun_bs",
-		AccessKeyID:     "ak",
-		AccessKeySecret: "sk",
-		StorageType:     "HyperGate",
-		FetchRes:        "regions",
+		Spec: workflowcreate.Spec{
+			CloudType:       "aliyun_bs",
+			AccessKeyID:     "ak",
+			AccessKeySecret: "sk",
+			StorageType:     "HyperGate",
+		},
+		FetchRes: "regions",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -176,10 +179,12 @@ func TestServiceFetchResourcesOmitsFetchResWhenNotProvided(t *testing.T) {
 	service := NewService(api)
 
 	_, err := service.FetchResources(FetchResourcesSpec{
-		CloudType:       "aliyun_bs",
-		AccessKeyID:     "ak",
-		AccessKeySecret: "sk",
-		StorageType:     "HyperGate",
+		Spec: workflowcreate.Spec{
+			CloudType:       "aliyun_bs",
+			AccessKeyID:     "ak",
+			AccessKeySecret: "sk",
+			StorageType:     "HyperGate",
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -196,11 +201,13 @@ func TestServiceFetchResourcesPreservesExplicitMultiFetchRes(t *testing.T) {
 	service := NewService(api)
 
 	_, err := service.FetchResources(FetchResourcesSpec{
-		CloudType:       "aliyun_bs",
-		AccessKeyID:     "ak",
-		AccessKeySecret: "sk",
-		StorageType:     "HyperGate",
-		FetchRes:        "regions,zones",
+		Spec: workflowcreate.Spec{
+			CloudType:       "aliyun_bs",
+			AccessKeyID:     "ak",
+			AccessKeySecret: "sk",
+			StorageType:     "HyperGate",
+		},
+		FetchRes: "regions,zones",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -217,21 +224,25 @@ func TestServiceFetchResourcesRequiresRegionOnlyForExplicitRegionScopedResources
 	service := NewService(api)
 
 	if _, err := service.FetchResources(FetchResourcesSpec{
-		CloudType:       "aliyun_bs",
-		AccessKeyID:     "ak",
-		AccessKeySecret: "sk",
-		StorageType:     "HyperGate",
-		FetchRes:        "regions,zones",
+		Spec: workflowcreate.Spec{
+			CloudType:       "aliyun_bs",
+			AccessKeyID:     "ak",
+			AccessKeySecret: "sk",
+			StorageType:     "HyperGate",
+		},
+		FetchRes: "regions,zones",
 	}); err != nil {
 		t.Fatalf("regions,zones should not require region-id: %v", err)
 	}
 
 	_, err := service.FetchResources(FetchResourcesSpec{
-		CloudType:       "aliyun_bs",
-		AccessKeyID:     "ak",
-		AccessKeySecret: "sk",
-		StorageType:     "HyperGate",
-		FetchRes:        "images",
+		Spec: workflowcreate.Spec{
+			CloudType:       "aliyun_bs",
+			AccessKeyID:     "ak",
+			AccessKeySecret: "sk",
+			StorageType:     "HyperGate",
+		},
+		FetchRes: "images",
 	})
 	if err == nil || err.Error() != "region-id is required" {
 		t.Fatalf("err = %v", err)
@@ -243,12 +254,14 @@ func TestServiceFetchResourcesIncludesBootModeWhenProvided(t *testing.T) {
 	service := NewService(api)
 
 	_, err := service.FetchResources(FetchResourcesSpec{
-		CloudType:       "aliyun_obs",
-		AccessKeyID:     "ak",
-		AccessKeySecret: "sk",
-		RegionID:        "cn-beijing",
-		FetchRes:        "boot_loader_images",
-		BootMode:        "bios",
+		Spec: workflowcreate.Spec{
+			CloudType:       "aliyun_obs",
+			AccessKeyID:     "ak",
+			AccessKeySecret: "sk",
+			RegionID:        "cn-beijing",
+		},
+		FetchRes: "boot_loader_images",
+		BootMode: "bios",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -256,6 +269,105 @@ func TestServiceFetchResourcesIncludesBootModeWhenProvided(t *testing.T) {
 
 	body := api.postBody.(map[string]interface{})
 	if body["boot_mode"] != "bios" || body["region_id"] != "cn-beijing" {
+		t.Fatalf("body = %+v", body)
+	}
+}
+
+func TestServiceFetchResourcesInfersAKSKFromAccessIDAlias(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.FetchResources(FetchResourcesSpec{
+		Spec: workflowcreate.Spec{
+			CloudType:    "huawei_obs",
+			AccessID:     "ak",
+			AccessSecret: "sk",
+			RegionID:     "cn-north-1",
+		},
+		FetchRes: "images",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := api.postBody.(map[string]interface{})
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_auth_type"] != "aksk" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if metadata["access_id"] != "ak" || metadata["access_secret"] != "sk" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+	if _, ok := metadata["access_key_id"]; ok {
+		t.Fatalf("metadata should preserve access_id/access_secret aliases: %+v", metadata)
+	}
+}
+
+func TestServiceFetchResourcesSupportsGenericPasswordAuth(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.FetchResources(FetchResourcesSpec{
+		Spec: workflowcreate.Spec{
+			CloudType:            "vmware_obs",
+			AuthURL:              "https://example.invalid/sdk",
+			CloudAccountUsername: "demo",
+			CloudAccountPassword: "secret",
+			RegionID:             "default-region",
+		},
+		FetchRes: "images",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if api.postPath != "/api/v3/postCloudInfoForAuth" {
+		t.Fatalf("path = %q", api.postPath)
+	}
+	body := api.postBody.(map[string]interface{})
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_auth_type"] != "password" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if metadata["auth_url"] != "https://example.invalid/sdk" || metadata["username"] != "demo" || metadata["password"] != "secret" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestServiceFetchResourcesUsesTargetAuthForOpenStackPassword(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.FetchResources(FetchResourcesSpec{
+		Spec: workflowcreate.Spec{
+			CloudType:            "openstack",
+			CloudAuthType:        "password",
+			StorageType:          "HyperGate",
+			AuthURL:              "http://192.168.10.201:5000/v3",
+			CloudAccountUsername: "demo",
+			CloudAccountPassword: "secret",
+			UserDomainID:         "default",
+			ProjectID:            "project-1",
+		},
+		FetchRes:         "regions",
+		ComputeZoneID:    "nova",
+		BlockStoreZoneID: "cinder",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if api.postPath != "/api/v2/postTargetCloudInfoForAuth" {
+		t.Fatalf("path = %q", api.postPath)
+	}
+	body := api.postBody.(map[string]interface{})
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	if cloudAccount["storage_type"] != "HyperGate" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+	if body["project_id"] != "project-1" || body["compute_zone_id"] != "nova" || body["block_store_zone_id"] != "cinder" {
 		t.Fatalf("body = %+v", body)
 	}
 }

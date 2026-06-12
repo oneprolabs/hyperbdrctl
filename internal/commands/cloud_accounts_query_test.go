@@ -434,8 +434,8 @@ func TestCloudAccountsFetchOSSResourcesOpenStackBuildsValidatedGatewayAuthReques
 	err := Execute(withHost(t, srv.URL,
 		"target", "account", "fetch-oss-resources", "openstack",
 		"--auth-url", "http://192.168.10.201:5000/v3",
-		"--cloud-account-username", "autotest",
-		"--cloud-account-password", "autotest",
+		"--username", "autotest",
+		"--password", "autotest",
 		"--user-domain-id", "default",
 	), &out, &errOut)
 	if err != nil {
@@ -499,8 +499,8 @@ func TestCloudAccountsFetchOSSResourcesOpenStackJSONKeepsRawFields(t *testing.T)
 		"--output", "json",
 		"target", "account", "fetch-oss-resources", "openstack",
 		"--auth-url", "http://192.168.10.201:5000/v3",
-		"--cloud-account-username", "autotest",
-		"--cloud-account-password", "autotest",
+		"--username", "autotest",
+		"--password", "autotest",
 		"--user-domain-id", "default",
 	), &out, &errOut)
 	if err != nil {
@@ -511,6 +511,131 @@ func TestCloudAccountsFetchOSSResourcesOpenStackJSONKeepsRawFields(t *testing.T)
 		if !strings.Contains(text, want) {
 			t.Fatalf("output = %q, missing %q", text, want)
 		}
+	}
+}
+
+func TestCloudAccountsFetchResourcesSupportsAccessIDAlias(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"regions": []map[string]interface{}{
+						{"id": "cn-north-1", "display_name": "CN North 1"},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-oss-resources", "huawei",
+		"--access-id", "ak",
+		"--access-secret", "sk",
+		"--fetch-res", "regions",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cloudAccount := gotBody["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_auth_type"] != "aksk" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if metadata["access_id"] != "ak" || metadata["access_secret"] != "sk" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+	if _, ok := metadata["access_key_id"]; ok {
+		t.Fatalf("metadata should preserve alias keys: %+v", metadata)
+	}
+}
+
+func TestCloudAccountsFetchResourcesRejectsMixedCredentialStylesWithoutExplicitAuthType(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "account", "fetch-block-resources", "huawei",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--username", "demo",
+		"--password", "secret",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "multiple credential styles provided; pass --cloud-auth-type explicitly") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCloudAccountsFetchBlockResourcesOpenStackUsesPasswordPath(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPath string
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"regions": []map[string]interface{}{
+						{"id": "RegionOne", "display_name": "RegionOne"},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-block-resources", "openstack",
+		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--username", "autotest",
+		"--password", "autotest",
+		"--user-domain-id", "default",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if gotPath != "/api/v2/postTargetCloudInfoForAuth" {
+		t.Fatalf("path = %q", gotPath)
+	}
+	cloudAccount := gotBody["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_type"] != "openstack" || cloudAccount["cloud_auth_type"] != "password" || cloudAccount["storage_type"] != "HyperGate" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+}
+
+func TestCloudAccountsFetchResourcesRejectsLegacyOpenStackCredentialFlags(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "account", "fetch-oss-resources", "openstack",
+		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--cloud-account-username", "autotest",
+		"--cloud-account-password", "autotest",
+		"--user-domain-id", "default",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "unknown flag: --cloud-account-username") {
+		t.Fatalf("err = %v", err)
 	}
 }
 

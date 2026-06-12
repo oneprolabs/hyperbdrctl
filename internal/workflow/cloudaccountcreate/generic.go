@@ -162,6 +162,10 @@ func normalizeAuthType(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
 }
 
+func ResolveGenericAuthType(spec Spec) (string, error) {
+	return resolveGenericAuthType(spec)
+}
+
 func resolveGenericAuthType(spec Spec) (string, error) {
 	authType := normalizeAuthType(spec.CloudAuthType)
 	if authType != "" {
