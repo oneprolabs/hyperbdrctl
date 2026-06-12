@@ -338,7 +338,9 @@ func addCloudAccountCreateAliyunBlockFlags(cmd *cobra.Command, ctx *context) {
 	for _, name := range []string{"access-key-id", "access-key-secret", "region-id", "region-name", "account-name", "auth-region-id"} {
 		addFlagString(cmd, ctx, name)
 	}
-	addFlagBool(cmd, ctx, "only-verify")
+	addFlagString(cmd, ctx, "file")
+	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))
+	cmd.Flags().StringArray("set-json", nil, ctx.loc.T("flag.set-json"))
 	addFlagBool(cmd, ctx, "preview-request")
 }
 
@@ -358,7 +360,9 @@ func addCloudAccountCreateOpenStackBlockFlags(cmd *cobra.Command, ctx *context) 
 	overrideFlagUsage(cmd, ctx, "linux-hd-username", "help.target_account_create_block_openstack.flag.linux-hd-username")
 	overrideFlagUsage(cmd, ctx, "linux-hd-password", "help.target_account_create_block_openstack.flag.linux-hd-password")
 	overrideFlagUsage(cmd, ctx, "linux-hd-port", "help.target_account_create_block_openstack.flag.linux-hd-port")
-	addFlagBool(cmd, ctx, "only-verify")
+	addFlagString(cmd, ctx, "file")
+	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))
+	cmd.Flags().StringArray("set-json", nil, ctx.loc.T("flag.set-json"))
 	addFlagBool(cmd, ctx, "preview-request")
 }
 
@@ -366,13 +370,11 @@ func addCloudAccountCreateAliyunObjectFlags(cmd *cobra.Command, ctx *context) {
 	for _, name := range []string{"access-key-id", "access-key-secret", "region-id", "use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "linux-boot-image-id", "windows-boot-image-id", "linux-uefi-boot-image-id", "windows-uefi-boot-image-id"} {
 		addFlagString(cmd, ctx, name)
 	}
-	for _, name := range []string{"region-name", "boot-loader-flavor-id", "custom-name"} {
+	for _, name := range []string{"region-name", "boot-loader-flavor-id", "custom-name", "file"} {
 		addFlagString(cmd, ctx, name)
 	}
-	for _, name := range []string{"auto-upload-images", "upload-uefi-image"} {
-		addFlagInt(cmd, ctx, name)
-	}
-	addFlagBool(cmd, ctx, "only-verify")
+	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))
+	cmd.Flags().StringArray("set-json", nil, ctx.loc.T("flag.set-json"))
 	addFlagBool(cmd, ctx, "preview-request")
 }
 
@@ -397,7 +399,9 @@ func addCloudAccountCreateOpenStackObjectFlags(cmd *cobra.Command, ctx *context)
 	overrideFlagUsage(cmd, ctx, "custom-name", "help.target_account_create_object_openstack.flag.custom-name")
 	overrideFlagUsage(cmd, ctx, "disk-bus-type-id", "help.target_account_create_object_openstack.flag.disk-bus-type-id")
 	overrideFlagUsage(cmd, ctx, "disk-bus-type-name", "help.target_account_create_object_openstack.flag.disk-bus-type-name")
-	addFlagInt(cmd, ctx, "auto-upload-images")
+	addFlagString(cmd, ctx, "file")
+	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))
+	cmd.Flags().StringArray("set-json", nil, ctx.loc.T("flag.set-json"))
 	addFlagBool(cmd, ctx, "preview-request")
 }
 
@@ -406,10 +410,10 @@ func addCloudAccountCreateGenericBlockFlags(cmd *cobra.Command, ctx *context, in
 		addFlagString(cmd, ctx, "cloud-type")
 	}
 	addFlagString(cmd, ctx, "cloud-auth-type")
-	for _, name := range []string{"access-key-id", "access-key-secret", "region-id", "region-name", "account-name", "auth-region-id", "auth-url", "cloud-account-username", "cloud-account-password", "user-domain-id", "project-domain-id", "project-id", "project-name", "ssh-port", "ssh-pass", "linux-hd-username", "linux-hd-password", "linux-hd-port"} {
-		addFlagString(cmd, ctx, name)
-	}
-	addFlagBool(cmd, ctx, "only-verify")
+	addFlagString(cmd, ctx, "account-name")
+	addFlagString(cmd, ctx, "file")
+	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))
+	cmd.Flags().StringArray("set-json", nil, ctx.loc.T("flag.set-json"))
 	addFlagBool(cmd, ctx, "preview-request")
 }
 
@@ -418,13 +422,11 @@ func addCloudAccountCreateGenericOSSFlags(cmd *cobra.Command, ctx *context, incl
 		addFlagString(cmd, ctx, "cloud-type")
 	}
 	addFlagString(cmd, ctx, "cloud-auth-type")
-	for _, name := range []string{"access-key-id", "access-key-secret", "region-id", "region-name", "account-name", "auth-region-id", "auth-url", "cloud-account-username", "cloud-account-password", "user-domain-id", "project-domain-id", "project-id", "project-name", "use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "boot-loader-flavor-id", "linux-boot-image-id", "windows-boot-image-id", "linux-uefi-boot-image-id", "windows-uefi-boot-image-id", "custom-name", "disk-bus-type-id", "disk-bus-type-name"} {
+	for _, name := range []string{"custom-name", "file"} {
 		addFlagString(cmd, ctx, name)
 	}
-	for _, name := range []string{"auto-upload-images", "upload-uefi-image"} {
-		addFlagInt(cmd, ctx, name)
-	}
-	addFlagBool(cmd, ctx, "only-verify")
+	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))
+	cmd.Flags().StringArray("set-json", nil, ctx.loc.T("flag.set-json"))
 	addFlagBool(cmd, ctx, "preview-request")
 }
 

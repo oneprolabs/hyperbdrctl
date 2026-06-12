@@ -57,6 +57,31 @@ func TestServiceCreateBuildsAndPostsRequest(t *testing.T) {
 	}
 }
 
+func TestServicePrepareCreateRetainsBlockRequestOverrides(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	prepared, err := service.PrepareCreate(CreateSpec{
+		CloudType:       "aliyun_bs",
+		AccessKeyID:     "ak",
+		AccessKeySecret: "sk",
+		RegionID:        "cn-beijing",
+		RequestOverrides: map[string]interface{}{
+			"only_verify": true,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if prepared.Path != "/hypermotion/v1/cloud_accounts" {
+		t.Fatalf("path = %q", prepared.Path)
+	}
+	if prepared.Body["only_verify"] != true {
+		t.Fatalf("body = %+v", prepared.Body)
+	}
+}
+
 func TestServiceCreateRawRoutesBlockPayload(t *testing.T) {
 	api := &fakeAPI{}
 	service := NewService(api)

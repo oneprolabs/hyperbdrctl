@@ -34,6 +34,7 @@ func (s Service) Create(spec CreateSpec) (client.APIResponse, error) {
 }
 
 func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
+	spec = workflowcreate.NormalizeSpec(spec)
 	path, reqBody, err := workflowcreate.BuildRequest(spec)
 	if err != nil {
 		return PreparedCreateRequest{}, err

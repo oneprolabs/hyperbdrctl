@@ -36,5 +36,5 @@ func buildAliyunBlock(spec Spec) (string, map[string]interface{}, error) {
 		"auto_upload_images": nil,
 		"only_verify":        boolOrNil(spec.OnlyVerify),
 	}
-	return "/hypermotion/v1/cloud_accounts", body, nil
+	return "/hypermotion/v1/cloud_accounts", finalizeCreateBody(spec, body), nil
 }

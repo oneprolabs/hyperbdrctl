@@ -9,6 +9,7 @@ import (
 	appcloudaccount "hyperbdr-client/internal/app/cloudaccount"
 	"hyperbdr-client/internal/normalize/cloudinfo"
 	"hyperbdr-client/internal/output"
+	workflowcreate "hyperbdr-client/internal/workflow/cloudaccountcreate"
 )
 
 type cloudAccountCreateSpec = appcloudaccount.CreateSpec
@@ -436,30 +437,24 @@ func parseCloudAccountCreateArgs(commandName string, args []string) (parsedCloud
 }
 
 func runCreateCloudAccountForProvider(ctx *context, commandName, cloudType, storageType string, specialized bool, args []string) error {
-	parsed, err := parseCloudAccountCreateArgs(commandName, args)
+	if storageType == "objectstorage" {
+		parsed, err := parseCloudAccountCreateOSSArgs(commandName, cloudType, specialized, args)
+		if err != nil {
+			return err
+		}
+		if !specialized && parsed.spec.CloudAuthType == "" {
+			return fmt.Errorf("cloud-auth-type is required")
+		}
+		return executeCreateCloudAccountSpec(ctx, parsed.spec, parsed.previewRequest)
+	}
+
+	parsed, err := parseCloudAccountCreateBlockArgs(commandName, cloudType, specialized, args)
 	if err != nil {
 		return err
-	}
-	if len(parsed.remainingArgs) > 0 {
-		return errUnknown(commandName, parsed.remainingArgs[0])
-	}
-	if parsed.cloudTypeSet {
-		return fmt.Errorf("cloud-type cannot be used with %s", commandName)
-	}
-	if parsed.storageTypeSet {
-		return fmt.Errorf("storage-type cannot be used with %s", commandName)
-	}
-	if specialized && parsed.cloudAuthTypeSet {
-		return fmt.Errorf("cloud-auth-type cannot be used with %s", commandName)
 	}
 	if !specialized && parsed.spec.CloudAuthType == "" {
 		return fmt.Errorf("cloud-auth-type is required")
 	}
-	if commandName == "target account create-oss openstack" && parsed.spec.OnlyVerify != nil {
-		return fmt.Errorf("only-verify cannot be used with %s", commandName)
-	}
-	parsed.spec.CloudType = cloudType
-	parsed.spec.StorageType = storageType
 	return executeCreateCloudAccountSpec(ctx, parsed.spec, parsed.previewRequest)
 }
 
@@ -559,6 +554,7 @@ func executeCreateCloudAccountRaw(ctx *context, body map[string]interface{}, pre
 
 func executeCreateCloudAccountSpec(ctx *context, spec cloudAccountCreateSpec, previewRequest bool) error {
 	var err error
+	spec = workflowcreate.NormalizeSpec(spec)
 	spec, err = enrichCreateCloudAccountSpec(ctx, spec)
 	if err != nil {
 		return err

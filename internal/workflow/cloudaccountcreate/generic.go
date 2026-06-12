@@ -21,7 +21,7 @@ func buildGenericBlock(spec Spec) (string, map[string]interface{}, error) {
 		"auto_upload_images": nil,
 		"only_verify":        boolOrNil(spec.OnlyVerify),
 	}
-	return "/hypermotion/v1/cloud_accounts", body, nil
+	return "/hypermotion/v1/cloud_accounts", finalizeCreateBody(spec, body), nil
 }
 
 func buildGenericObject(spec Spec) (string, map[string]interface{}, error) {
@@ -53,7 +53,7 @@ func buildGenericObject(spec Spec) (string, map[string]interface{}, error) {
 		"auto_upload_images": autoUploadImages,
 		"only_verify":        boolOrNil(spec.OnlyVerify),
 	}
-	return "/hypermotion/v1/cloud_accounts", body, nil
+	return "/hypermotion/v1/cloud_accounts", finalizeCreateBody(spec, body), nil
 }
 
 func buildGenericMetadata(spec Spec, isObject bool) (string, map[string]interface{}, error) {
@@ -153,10 +153,14 @@ func setMetadataString(metadata map[string]interface{}, key, value string) {
 }
 
 func hasExplicitObjectImage(spec Spec) bool {
-	return spec.LinuxBootImageID != "" ||
-		spec.WindowsBootImageID != "" ||
-		spec.LinuxUEFIBootImageID != "" ||
-		spec.WindowsUEFIBootImageID != ""
+	return isManualObjectImage(spec.LinuxBootImageID) ||
+		isManualObjectImage(spec.WindowsBootImageID) ||
+		isManualObjectImage(spec.LinuxUEFIBootImageID) ||
+		isManualObjectImage(spec.WindowsUEFIBootImageID)
+}
+
+func isManualObjectImage(id string) bool {
+	return id != "" && id != "auto_upload"
 }
 
 func normalizeAuthType(value string) string {

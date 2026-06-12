@@ -36,4 +36,6 @@ type Spec struct {
 	AutoUploadImages       *int
 	UploadUEFIImage        *int
 	OnlyVerify             *bool
+	MetadataOverrides      map[string]interface{}
+	RequestOverrides       map[string]interface{}
 }

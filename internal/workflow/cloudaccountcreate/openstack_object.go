@@ -80,5 +80,5 @@ func buildOpenStackObject(spec Spec) (string, map[string]interface{}, error) {
 		},
 		"auto_upload_images": autoUploadImages,
 	}
-	return "/hypermotion/v1/cloud_accounts", body, nil
+	return "/hypermotion/v1/cloud_accounts", finalizeCreateBody(spec, body), nil
 }
