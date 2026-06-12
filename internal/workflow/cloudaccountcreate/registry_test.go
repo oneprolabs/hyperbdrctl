@@ -117,3 +117,28 @@ func TestBuildRequestRequiresExplicitAuthTypeForMixedCredentialStyles(t *testing
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestBuildRequestGenericObjectTreatsMakeImageAsAutoUpload(t *testing.T) {
+	path, body, err := BuildRequest(Spec{
+		CloudType:            "vmware_obs",
+		StorageType:          "objectstorage",
+		AuthURL:              "https://vc.example.invalid",
+		CloudAccountUsername: "admin",
+		CloudAccountPassword: "secret",
+		LinuxBootImageID:     "make_image",
+	})
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	if path != "/hypermotion/v1/cloud_accounts" {
+		t.Fatalf("path = %q", path)
+	}
+	if body["auto_upload_images"] != 1 {
+		t.Fatalf("body = %+v", body)
+	}
+
+	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	if metadata["linux_boot_image_id"] != "make_image" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}

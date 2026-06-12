@@ -787,6 +787,28 @@ func TestCloudAccountsCreateOSSGenericFileSetAndFlagOverrides(t *testing.T) {
 	}
 }
 
+func TestCloudAccountsCreateOSSGenericMakeImageKeepsAutoUploadImagesEnabled(t *testing.T) {
+	path, body := executeCloudAccountCreateAtPath(t, []string{
+		"target", "account", "create-oss", "vmware",
+		"--auth-url", "https://vc.example.invalid",
+		"--username", "admin",
+		"--password", "secret",
+		"--set", "linux_boot_image_id=make_image",
+	})
+
+	if path != "/hypermotion/v1/cloud_accounts" {
+		t.Fatalf("path = %q", path)
+	}
+	if body["auto_upload_images"] != float64(1) && body["auto_upload_images"] != 1 {
+		t.Fatalf("body = %+v", body)
+	}
+
+	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	if metadata["linux_boot_image_id"] != "make_image" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
 func TestCloudAccountsCreateOSSRejectsLegacyCredentialFlags(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

@@ -155,7 +155,7 @@ func hasExplicitObjectImage(spec Spec) bool {
 }
 
 func isManualObjectImage(id string) bool {
-	return id != "" && id != "auto_upload"
+	return id != "" && id != "auto_upload" && id != "make_image"
 }
 
 func normalizeAuthType(value string) string {
