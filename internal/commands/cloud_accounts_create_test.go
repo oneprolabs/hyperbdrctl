@@ -695,6 +695,24 @@ func TestCloudAccountsCreateOSSHuaweiAcceptsDynamicMetadataFlags(t *testing.T) {
 	}
 }
 
+func TestCloudAccountsCreateOSSHuaweiAutoGeneratesCustomName(t *testing.T) {
+	path, body := executeCloudAccountCreateAtPath(t, []string{
+		"target", "account", "create-oss", "huawei",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-north-1",
+	})
+
+	if path != "/hypermotion/v1/cloud_accounts" {
+		t.Fatalf("path = %q", path)
+	}
+
+	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	if metadata["custom_name"] != "Huawei Cloud(Recommended, SDK v3.1.86)-cn-north-1" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
 func TestCloudAccountsCreateOSSOpenStackKeepsAccessAliasAsDynamicMetadata(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"target", "account", "create-oss", "openstack",

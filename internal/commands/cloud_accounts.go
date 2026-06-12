@@ -550,9 +550,18 @@ func enrichCreateCloudAccountSpec(ctx *context, spec cloudAccountCreateSpec) (cl
 		return enrichAliyunObjectCloudAccountSpec(ctx, spec)
 	case spec.CloudType == "openstack" && spec.StorageType == "objectstorage":
 		return enrichOpenStackObjectCloudAccountSpec(ctx, spec)
+	case spec.StorageType == "objectstorage":
+		return enrichGenericObjectCloudAccountSpec(ctx, spec), nil
 	default:
 		return spec, nil
 	}
+}
+
+func enrichGenericObjectCloudAccountSpec(ctx *context, spec cloudAccountCreateSpec) cloudAccountCreateSpec {
+	if spec.CustomName == "" {
+		spec.CustomName = defaultGenericObjectCloudAccountName(ctx, spec)
+	}
+	return spec
 }
 
 func enrichAliyunObjectCloudAccountSpec(ctx *context, spec cloudAccountCreateSpec) (cloudAccountCreateSpec, error) {
@@ -728,6 +737,20 @@ func defaultOpenStackObjectCloudAccountName(lang, regionLabel string) string {
 		return "OpenStack社区版本(Juno+)-" + label
 	}
 	return "OpenStackCommunity(Juno+)-" + label
+}
+
+func defaultGenericObjectCloudAccountName(ctx *context, spec cloudAccountCreateSpec) string {
+	regionLabel := firstNonEmptyString(spec.RegionName, spec.RegionID, "unknown-region")
+	entry, ok := catalog.FindObjectCloud(spec.CloudType)
+	if !ok {
+		return spec.CloudType + "-" + regionLabel
+	}
+
+	name := entry.NameEn
+	if ctx.loc.Lang() == "zh_cn" {
+		name = entry.NameZhCN
+	}
+	return name + "-" + regionLabel
 }
 
 func preferredRegionLabel(lang string, row map[string]interface{}) string {
