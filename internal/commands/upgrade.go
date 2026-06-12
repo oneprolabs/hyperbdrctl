@@ -16,7 +16,7 @@ func runUpgrade(ctx *context, args []string) error {
 		page := fs.Int("page", 1, "")
 		pageSize := fs.Int("page-size", 10, "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.HostList(appupgrade.HostListSpec{

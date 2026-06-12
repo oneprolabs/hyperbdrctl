@@ -20,7 +20,7 @@ func runBlockStorages(ctx *context, args []string) error {
 		storageType := fs.String("type", "HyperGate", "")
 		cloudAccountID := fs.String("cloud-account-id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		addString(q, "cloud_account_uuid", *cloudAccountID)
@@ -41,7 +41,7 @@ func runBlockStorages(ctx *context, args []string) error {
 		fs := newFlagSet("target cloud-sync-gateway detail")
 		id := fs.String("id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		if *id == "" {
@@ -81,7 +81,7 @@ func runBlockStorages(ctx *context, args []string) error {
 		networkID := fs.String("network-id", "", "")
 		subnetID := fs.String("subnet-id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		return executeGatewaySubnetConfig(ctx, *cloudAccountID, *cloudType, *regionID, *zoneID, *networkID, *subnetID, q)

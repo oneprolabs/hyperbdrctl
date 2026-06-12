@@ -32,7 +32,7 @@ func runAPIRequest(ctx *context, args []string) error {
 	fs.Var(queryFlags, "query", "")
 	fs.Var(headerFlags, "header", "")
 	q := queryFromPairs()
-	if err := parseQueryFlagsInto(fs, args, q); err != nil {
+	if err := parseQueryFlagsIntoPassthrough(fs, args, q); err != nil {
 		return err
 	}
 	normalizedMethod, err := normalizeAPIMethod(*method)

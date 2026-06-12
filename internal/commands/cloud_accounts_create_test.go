@@ -525,6 +525,65 @@ func TestCloudAccountsCreateOSSGenericProviderFallsBackToGenericBuilder(t *testi
 	}
 }
 
+func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetadata(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		wantKey string
+		want    interface{}
+	}{
+		{
+			name: "block host",
+			args: []string{
+				"target", "account", "create-block", "huawei",
+				"--cloud-auth-type", "password",
+				"--auth-url", "https://iam.example.invalid/v3",
+				"--username", "admin",
+				"--password", "secret",
+				"--host", "https://legacy.invalid",
+			},
+			wantKey: "host",
+			want:    "https://legacy.invalid",
+		},
+		{
+			name: "oss scene",
+			args: []string{
+				"target", "account", "create-oss", "vmware",
+				"--cloud-auth-type", "password",
+				"--auth-url", "https://vc.example.invalid",
+				"--username", "admin",
+				"--password", "secret",
+				"--scene", "migration",
+			},
+			wantKey: "scene",
+			want:    "migration",
+		},
+		{
+			name: "oss insecure",
+			args: []string{
+				"target", "account", "create-oss", "vmware",
+				"--cloud-auth-type", "password",
+				"--auth-url", "https://vc.example.invalid",
+				"--username", "admin",
+				"--password", "secret",
+				"--insecure", "true",
+			},
+			wantKey: "insecure",
+			want:    "true",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, body := executeCloudAccountCreateAtPath(t, tc.args)
+			metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+			if metadata[tc.wantKey] != tc.want {
+				t.Fatalf("args=%v metadata=%+v want %s=%v", tc.args, metadata, tc.wantKey, tc.want)
+			}
+		})
+	}
+}
+
 func TestCloudAccountsCreateOSSHuaweiAcceptsDynamicMetadataFlags(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"target", "account", "create-oss", "huawei",

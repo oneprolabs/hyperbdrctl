@@ -251,7 +251,7 @@ func runBootConfigWizardTargetAccounts(ctx *context, args []string, legacyTarget
 	extra := fs.String("extra", "", "")
 	rtTree := fs.String("rt-tree", "", "")
 	q := queryFromPairs()
-	if err := parseQueryFlagsInto(fs, args, q); err != nil {
+	if err := parseQueryFlagsIntoPassthrough(fs, args, q); err != nil {
 		return err
 	}
 	service := appbootconfigwizard.NewService(commandAPIAdapter{ctx: ctx})

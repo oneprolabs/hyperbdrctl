@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -102,9 +101,6 @@ func newRawLeafCommand(ctx *context, use, shortKey, longKey, exampleKey, notesKe
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if rawArgsHelp(cmd, args) {
 				return renderHelp(cmd, ctx)
-			}
-			if err := rejectLegacyGlobalFlags(cmd, args); err != nil {
-				return err
 			}
 			return run(args)
 		},
@@ -408,18 +404,4 @@ func configureBuiltinHelpArtifactsRecursive(cmd *cobra.Command, ctx *context) {
 	for _, child := range cmd.Commands() {
 		configureBuiltinHelpArtifactsRecursive(child, ctx)
 	}
-}
-
-func rejectLegacyGlobalFlags(cmd *cobra.Command, args []string) error {
-	if cmd.CommandPath() == "hyperbdrctl config set" {
-		return nil
-	}
-	for _, arg := range args {
-		key, _, _ := splitFlag(arg)
-		switch key {
-		case "--host", "--username", "--password", "--scene", "--insecure":
-			return fmt.Errorf("unknown flag: %s", key)
-		}
-	}
-	return nil
 }

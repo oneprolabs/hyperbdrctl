@@ -20,7 +20,7 @@ func runBootConfigWizard(ctx *context, args []string) error {
 		storageType := fs.String("type", "", "")
 		status := fs.String("status", "available", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.Storages(appbootconfigwizard.StoragesSpec{
@@ -38,7 +38,7 @@ func runBootConfigWizard(ctx *context, args []string) error {
 		fs := newFlagSet("boot-config-wizard storage-detail")
 		storageID := fs.String("storage-id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.StorageDetail(appbootconfigwizard.StorageDetailSpec{
@@ -87,7 +87,7 @@ func runBootConfigWizard(ctx *context, args []string) error {
 		destBootMode := fs.String("dest-boot-mode", "", "")
 		networkID := fs.String("network-id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.TargetAuthInfo(appbootconfigwizard.TargetAuthInfoSpec{
@@ -134,7 +134,7 @@ func runBootConfigWizard(ctx *context, args []string) error {
 		networkID := fs.String("network-id", "", "")
 		subnetID := fs.String("subnet-id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.SubnetConfig(appbootconfigwizard.SubnetConfigSpec{
@@ -154,7 +154,7 @@ func runBootConfigWizard(ctx *context, args []string) error {
 		fs := newFlagSet("boot-config-wizard host-profile")
 		id := fs.String("id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.HostProfile(appbootconfigwizard.HostProfileSpec{
@@ -172,7 +172,7 @@ func runBootConfigWizard(ctx *context, args []string) error {
 		kw := fs.String("kw", "", "")
 		status := fs.String("status", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.Strategies(appbootconfigwizard.StrategiesSpec{

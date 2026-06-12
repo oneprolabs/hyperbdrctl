@@ -106,6 +106,10 @@ func hasFlagToken(args []string, name string) bool {
 	return false
 }
 
+func errUnknownLongFlag(name string) error {
+	return fmt.Errorf("unknown flag: --%s", name)
+}
+
 func flagValue(args []string, idx int, inline string, hasInline bool) (string, int, error) {
 	if hasInline {
 		return inline, idx, nil
@@ -229,6 +233,14 @@ func newFlagSet(name string) *flag.FlagSet {
 }
 
 func parseQueryFlagSet(fs *flag.FlagSet, args []string) (url.Values, error) {
+	return parseQueryFlagSetWithPassthrough(fs, args, false)
+}
+
+func parseQueryFlagSetPassthrough(fs *flag.FlagSet, args []string) (url.Values, error) {
+	return parseQueryFlagSetWithPassthrough(fs, args, true)
+}
+
+func parseQueryFlagSetWithPassthrough(fs *flag.FlagSet, args []string, allowUnknown bool) (url.Values, error) {
 	known := map[string]bool{}
 	fs.VisitAll(func(f *flag.Flag) {
 		known[f.Name] = true
@@ -258,6 +270,9 @@ func parseQueryFlagSet(fs *flag.FlagSet, args []string) (url.Values, error) {
 			}
 			continue
 		}
+		if !allowUnknown {
+			return nil, errUnknownLongFlag(name)
+		}
 		if !hasValue {
 			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
 				value = args[i+1]
@@ -276,6 +291,15 @@ func parseQueryFlagSet(fs *flag.FlagSet, args []string) (url.Values, error) {
 
 func parseQueryFlagsInto(fs *flag.FlagSet, args []string, q url.Values) error {
 	extra, err := parseQueryFlagSet(fs, args)
+	if err != nil {
+		return err
+	}
+	mergeQuery(q, extra)
+	return nil
+}
+
+func parseQueryFlagsIntoPassthrough(fs *flag.FlagSet, args []string, q url.Values) error {
+	extra, err := parseQueryFlagSetPassthrough(fs, args)
 	if err != nil {
 		return err
 	}

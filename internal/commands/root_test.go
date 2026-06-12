@@ -494,13 +494,62 @@ func TestConfigSetDoesNotSaveOnLoginFailure(t *testing.T) {
 	}
 }
 
-func TestNonConfigCommandsRejectLegacyHostFlag(t *testing.T) {
+func TestNonPassthroughCommandsStillRejectUnknownFlags(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute([]string{"--host", "https://example.invalid", "licenses", "list"}, &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), "unknown flag: --host") {
+	err := Execute(withHost(t, "https://example.invalid", "licenses", "activate", "--kkty", "k", "--ddty", "d", "--custom-step", "3"), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestQueryPassthroughCommandsAllowFormerLegacyConfigFlags(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		args      []string
+		wantQuery string
+	}{
+		{args: []string{"--host", "https://legacy.invalid"}, wantQuery: "host=https%3A%2F%2Flegacy.invalid"},
+		{args: []string{"--username", "legacy-user"}, wantQuery: "username=legacy-user"},
+		{args: []string{"--password", "legacy-pass"}, wantQuery: "password=legacy-pass"},
+		{args: []string{"--scene", "migration"}, wantQuery: "scene=migration"},
+		{args: []string{"--insecure"}, wantQuery: "insecure=true"},
+	}
+
+	for _, tc := range cases {
+		var gotQuery string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotQuery = r.URL.RawQuery
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{"pages": []interface{}{}},
+			})
+		}))
+
+		var out, errOut bytes.Buffer
+		args := append(withHost(t, srv.URL, "licenses", "list"), tc.args...)
+		err := Execute(args, &out, &errOut)
+		srv.Close()
+		if err != nil {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
+		if !strings.Contains(gotQuery, tc.wantQuery) {
+			t.Fatalf("args=%v query=%q missing %q", args, gotQuery, tc.wantQuery)
+		}
+	}
+}
+
+func TestParseQueryFlagsIntoRejectsUnknownFlagsByDefault(t *testing.T) {
+	fs := newFlagSet("test")
+	fs.String("known", "", "")
+	q := queryFromPairs()
+
+	err := parseQueryFlagsInto(fs, []string{"--custom-step", "3"}, q)
+	if err == nil || err.Error() != "unknown flag: --custom-step" {
 		t.Fatalf("err = %v", err)
 	}
 }

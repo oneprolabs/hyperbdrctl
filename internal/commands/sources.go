@@ -25,7 +25,7 @@ func runSources(ctx *context, args []string) error {
 		page := fs.Int("page", 1, "")
 		pageSize := fs.Int("page-size", 10, "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		if *sourceType == "" {
@@ -54,7 +54,7 @@ func runSources(ctx *context, args []string) error {
 		page := fs.Int("page", 1, "")
 		pageSize := fs.Int("page-size", 10, "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		if *id == "" {
@@ -81,7 +81,7 @@ func runSources(ctx *context, args []string) error {
 		page := fs.Int("page", 1, "")
 		pageSize := fs.Int("page-size", 10, "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		if *connectionType == "" {
@@ -103,7 +103,7 @@ func runSources(ctx *context, args []string) error {
 	case "agent-install":
 		fs := newFlagSet("source agent-install")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.AgentInstall(appsource.AgentInstallSpec{Query: q})
@@ -114,7 +114,7 @@ func runSources(ctx *context, args []string) error {
 	case "agentless-install":
 		fs := newFlagSet("source agentless-install")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.AgentlessInstall(appsource.AgentlessInstallSpec{Query: q})
@@ -127,7 +127,7 @@ func runSources(ctx *context, args []string) error {
 		nodeType := fs.String("type", "proxy", "")
 		status := fs.String("status", "online", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.SynchNodes(appsource.SynchNodesSpec{

@@ -102,7 +102,6 @@ func parseCloudAccountCreateOSSArgs(commandName, cloudType string, specialized b
 				i++
 				continue
 			}
-
 			v, next, err := strictFlagValue(args, i, value, hasInline)
 			if err != nil {
 				return parsedCloudAccountCreateCommand{}, err

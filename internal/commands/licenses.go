@@ -16,7 +16,7 @@ func runLicenses(ctx *context, args []string) error {
 		page := fs.Int("page", 1, "")
 		pageSize := fs.Int("page-size", 10, "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.List(applicense.ListSpec{
@@ -31,7 +31,7 @@ func runLicenses(ctx *context, args []string) error {
 	case "reg-code":
 		fs := newFlagSet("licenses reg-code")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.RegCode(applicense.RegCodeSpec{Query: q})

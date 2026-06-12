@@ -17,7 +17,7 @@ func runTasks(ctx *context, args []string) error {
 		page := fs.Int("page", 1, "")
 		pageSize := fs.Int("page-size", 100, "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.List(apptask.ListSpec{
@@ -34,7 +34,7 @@ func runTasks(ctx *context, args []string) error {
 		fs := newFlagSet("tasks steps")
 		taskID := fs.String("task-id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		if *taskID == "" {

@@ -17,7 +17,7 @@ func runObjectStorages(ctx *context, args []string) error {
 		pageSize := fs.Int("page-size", 100, "")
 		storageType := fs.String("type", "objectstorage", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.List(appobjectstorage.ListSpec{
@@ -34,7 +34,7 @@ func runObjectStorages(ctx *context, args []string) error {
 		fs := newFlagSet("target oss detail")
 		id := fs.String("id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		if *id == "" {

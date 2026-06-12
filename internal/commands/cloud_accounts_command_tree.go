@@ -123,9 +123,6 @@ func newDeprecatedCloudAccountsFetchResourcesCommand(ctx *context) *cobra.Comman
 		Args:               cobra.ArbitraryArgs,
 		Hidden:             true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := rejectLegacyGlobalFlags(cmd, args); err != nil {
-				return err
-			}
 			return errDeprecatedFetchResourcesFlags()
 		},
 	}
@@ -167,9 +164,6 @@ func newCloudAccountFetchResourcesProviderCommand(ctx *context, entry catalog.Cl
 			if rawArgsHelp(cmd, args) {
 				return renderHelp(cmd, ctx)
 			}
-			if err := rejectLegacyGlobalFlags(cmd, args); err != nil {
-				return err
-			}
 			return runFetchResourcesForProvider(ctx, fetchResourcesProviderCommandName(storageType, entry.Provider), entry.CloudType, fetchResourcesStorageType(storageType), args)
 		},
 	}
@@ -197,9 +191,6 @@ func newCloudAccountFetchResourcesOpenStackObjectCommand(ctx *context, entry cat
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if rawArgsHelp(cmd, args) {
 				return renderHelp(cmd, ctx)
-			}
-			if err := rejectLegacyGlobalFlags(cmd, args); err != nil {
-				return err
 			}
 			return runFetchOpenStackObjectResources(ctx, "target account fetch-oss-resources openstack", args)
 		},
@@ -264,9 +255,6 @@ func newCloudAccountsCreateProviderCommand(ctx *context, entry catalog.CloudEntr
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if rawArgsHelp(cmd, args) {
 				return renderHelp(cmd, ctx)
-			}
-			if err := rejectLegacyGlobalFlags(cmd, args); err != nil {
-				return err
 			}
 			return runCreateCloudAccountForProvider(ctx, providerCommandName(storageType, entry.Provider), entry.CloudType, storageType, specialized, args)
 		},

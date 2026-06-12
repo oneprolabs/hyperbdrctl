@@ -76,9 +76,6 @@ func newGenericBlockStorageCreateCommand(ctx *context, entry catalog.CloudEntry)
 			if rawArgsHelp(cmd, args) {
 				return renderHelp(cmd, ctx)
 			}
-			if err := rejectLegacyGlobalFlags(cmd, args); err != nil {
-				return err
-			}
 			return runCreateBlockStorageForProvider(ctx, genericBlockStorageCreateCommandName(entry.Provider), entry.CloudType, args)
 		},
 	}

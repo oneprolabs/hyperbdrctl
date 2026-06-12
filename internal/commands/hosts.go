@@ -29,7 +29,7 @@ func runHosts(ctx *context, args []string) error {
 		cloudType := fs.String("cloud-type", "", "")
 		ids := fs.String("ids", "", "")
 		macs := fs.String("macs", "", "")
-		extra, err := parseQueryFlagSet(fs, args[1:])
+		extra, err := parseQueryFlagSetPassthrough(fs, args[1:])
 		if err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func runHosts(ctx *context, args []string) error {
 		fs := newFlagSet("host detail")
 		id := fs.String("id", "", "")
 		q := queryFromPairs()
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		if *id == "" {
@@ -72,7 +72,7 @@ func runHosts(ctx *context, args []string) error {
 		status := fs.String("status", "", "")
 		syncDetail := fs.Bool("sync-detail", false, "")
 		q := queryFromPairs("sheet", "snapshot")
-		if err := parseQueryFlagsInto(fs, args[1:], q); err != nil {
+		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		if *id == "" {
@@ -173,7 +173,7 @@ func runHostsBoot(ctx *context, args []string) error {
 	for _, name := range bootBodyFields() {
 		known[name] = fs.String(strings.ReplaceAll(name, "_", "-"), "", "")
 	}
-	unknown, err := parseBodyFlagSet(fs, args)
+	unknown, err := parseBodyFlagSetPassthrough(fs, args)
 	if err != nil {
 		return err
 	}
@@ -334,6 +334,14 @@ func readObjectFile(path string) (map[string]interface{}, error) {
 }
 
 func parseBodyFlagSet(fs *flag.FlagSet, args []string) (map[string]interface{}, error) {
+	return parseBodyFlagSetWithPassthrough(fs, args, false)
+}
+
+func parseBodyFlagSetPassthrough(fs *flag.FlagSet, args []string) (map[string]interface{}, error) {
+	return parseBodyFlagSetWithPassthrough(fs, args, true)
+}
+
+func parseBodyFlagSetWithPassthrough(fs *flag.FlagSet, args []string, allowUnknown bool) (map[string]interface{}, error) {
 	known := map[string]bool{}
 	fs.VisitAll(func(f *flag.Flag) {
 		known[f.Name] = true
@@ -362,6 +370,9 @@ func parseBodyFlagSet(fs *flag.FlagSet, args []string) (map[string]interface{}, 
 				i++
 			}
 			continue
+		}
+		if !allowUnknown {
+			return nil, errUnknownLongFlag(name)
 		}
 		if !hasValue {
 			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {

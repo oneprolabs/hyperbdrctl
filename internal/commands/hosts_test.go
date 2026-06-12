@@ -269,6 +269,45 @@ func TestHostsRegisterRejectsHostIDFlags(t *testing.T) {
 	}
 }
 
+func TestHostsBootAllowsFormerLegacyConfigFlagsAsBodyOverrides(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		args    []string
+		wantKey string
+		want    interface{}
+	}{
+		{args: []string{"--host", "https://legacy.invalid"}, wantKey: "host", want: "https://legacy.invalid"},
+		{args: []string{"--username", "legacy-user"}, wantKey: "username", want: "legacy-user"},
+		{args: []string{"--password", "legacy-pass"}, wantKey: "password", want: "legacy-pass"},
+		{args: []string{"--scene", "migration"}, wantKey: "scene", want: "migration"},
+		{args: []string{"--insecure"}, wantKey: "insecure", want: true},
+	}
+
+	for _, tc := range cases {
+		var gotBody map[string]interface{}
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+				t.Fatal(err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"accepted": true}})
+		}))
+
+		var out, errOut bytes.Buffer
+		args := append(withHost(t, srv.URL, "host", "boot", "--id", "host-1"), tc.args...)
+		err := Execute(args, &out, &errOut)
+		srv.Close()
+		if err != nil {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
+		item := gotBody["batch_boot"].([]interface{})[0].(map[string]interface{})
+		if item[tc.wantKey] != tc.want {
+			t.Fatalf("args=%v item=%+v want %s=%v", args, item, tc.wantKey, tc.want)
+		}
+	}
+}
+
 func TestHostsBootWithFlags(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
