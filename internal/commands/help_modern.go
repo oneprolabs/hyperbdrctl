@@ -156,8 +156,8 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	case path == "hyperbdrctl target account create-block openstack":
 		return []flagHelpSpec{
 			{name: "auth-url", required: true},
-			{name: "cloud-account-username", required: true},
-			{name: "cloud-account-password", required: true},
+			{name: "username", required: true},
+			{name: "password", required: true},
 			{name: "user-domain-id", required: true},
 			{name: "project-domain-id", required: true},
 			{name: "project-name", required: true},
@@ -216,8 +216,8 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	case path == "hyperbdrctl target account create-oss openstack":
 		return []flagHelpSpec{
 			{name: "auth-url", required: true},
-			{name: "cloud-account-username", required: true},
-			{name: "cloud-account-password", required: true},
+			{name: "username", required: true},
+			{name: "password", required: true},
 			{name: "user-domain-id", required: true},
 			{name: "file"},
 			{name: "set"},

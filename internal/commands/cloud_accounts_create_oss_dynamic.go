@@ -69,6 +69,8 @@ func parseCloudAccountCreateOSSArgs(commandName, cloudType string, specialized b
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("cloud-type cannot be used with %s", commandName)
 		case "storage-type":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("storage-type cannot be used with %s", commandName)
+		case "cloud-account-username", "cloud-account-password":
+			return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
 		case "cloud-auth-type":
 			if specialized {
 				return parsedCloudAccountCreateCommand{}, fmt.Errorf("cloud-auth-type cannot be used with %s", commandName)
@@ -179,7 +181,7 @@ func createOSSExplicitFlagAllowed(cloudType, name string) bool {
 		}
 	case "openstack":
 		switch name {
-		case "auth-url", "cloud-account-username", "cloud-account-password", "user-domain-id", "project-domain-id", "project-id", "project-name", "region-id", "region-name", "use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "linux-boot-image-id", "windows-boot-image-id", "disk-bus-type-id", "disk-bus-type-name":
+		case "auth-url", "username", "password", "user-domain-id", "project-domain-id", "project-id", "project-name", "region-id", "region-name", "use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "linux-boot-image-id", "windows-boot-image-id", "disk-bus-type-id", "disk-bus-type-name":
 			return true
 		}
 	}
@@ -202,9 +204,9 @@ func applyCreateCloudAccountSpecValue(spec *cloudAccountCreateSpec, name, value 
 		spec.RegionName = value
 	case "auth-url":
 		spec.AuthURL = value
-	case "cloud-account-username":
+	case "username":
 		spec.CloudAccountUsername = value
-	case "cloud-account-password":
+	case "password":
 		spec.CloudAccountPassword = value
 	case "user-domain-id":
 		spec.UserDomainID = value
@@ -249,9 +251,9 @@ func applyCreateCloudAccountSpecValue(spec *cloudAccountCreateSpec, name, value 
 
 func createCloudAccountMetadataKey(name string) (string, bool) {
 	switch name {
-	case "cloud-account-username":
+	case "username":
 		return "username", true
-	case "cloud-account-password":
+	case "password":
 		return "password", true
 	case "auth-url":
 		return "auth_url", true

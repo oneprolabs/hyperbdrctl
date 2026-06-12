@@ -7,10 +7,10 @@ func buildOpenStackObject(spec Spec) (string, map[string]interface{}, error) {
 		return "", nil, fmt.Errorf("auth-url is required")
 	}
 	if spec.CloudAccountUsername == "" {
-		return "", nil, fmt.Errorf("cloud-account-username is required")
+		return "", nil, fmt.Errorf("username is required")
 	}
 	if spec.CloudAccountPassword == "" {
-		return "", nil, fmt.Errorf("cloud-account-password is required")
+		return "", nil, fmt.Errorf("password is required")
 	}
 	if spec.UserDomainID == "" {
 		return "", nil, fmt.Errorf("user-domain-id is required")

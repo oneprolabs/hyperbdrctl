@@ -345,12 +345,12 @@ func addCloudAccountCreateAliyunBlockFlags(cmd *cobra.Command, ctx *context) {
 }
 
 func addCloudAccountCreateOpenStackBlockFlags(cmd *cobra.Command, ctx *context) {
-	for _, name := range []string{"auth-url", "cloud-account-username", "cloud-account-password", "user-domain-id", "project-domain-id", "project-name", "region-name", "ssh-port", "ssh-pass", "linux-hd-username", "linux-hd-password", "linux-hd-port"} {
+	for _, name := range []string{"auth-url", "username", "password", "user-domain-id", "project-domain-id", "project-name", "region-name", "ssh-port", "ssh-pass", "linux-hd-username", "linux-hd-password", "linux-hd-port"} {
 		addFlagString(cmd, ctx, name)
 	}
 	overrideFlagUsage(cmd, ctx, "auth-url", "help.target_account_create_block_openstack.flag.auth-url")
-	overrideFlagUsage(cmd, ctx, "cloud-account-username", "help.target_account_create_block_openstack.flag.cloud-account-username")
-	overrideFlagUsage(cmd, ctx, "cloud-account-password", "help.target_account_create_block_openstack.flag.cloud-account-password")
+	overrideFlagUsage(cmd, ctx, "username", "help.target_account_create_block_openstack.flag.username")
+	overrideFlagUsage(cmd, ctx, "password", "help.target_account_create_block_openstack.flag.password")
 	overrideFlagUsage(cmd, ctx, "user-domain-id", "help.target_account_create_block_openstack.flag.user-domain-id")
 	overrideFlagUsage(cmd, ctx, "project-domain-id", "help.target_account_create_block_openstack.flag.project-domain-id")
 	overrideFlagUsage(cmd, ctx, "project-name", "help.target_account_create_block_openstack.flag.project-name")
@@ -379,12 +379,12 @@ func addCloudAccountCreateAliyunObjectFlags(cmd *cobra.Command, ctx *context) {
 }
 
 func addCloudAccountCreateOpenStackObjectFlags(cmd *cobra.Command, ctx *context) {
-	for _, name := range []string{"auth-url", "cloud-account-username", "cloud-account-password", "user-domain-id", "project-domain-id", "project-id", "project-name", "region-id", "region-name", "use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "linux-boot-image-id", "windows-boot-image-id", "custom-name", "disk-bus-type-id", "disk-bus-type-name"} {
+	for _, name := range []string{"auth-url", "username", "password", "user-domain-id", "project-domain-id", "project-id", "project-name", "region-id", "region-name", "use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "linux-boot-image-id", "windows-boot-image-id", "custom-name", "disk-bus-type-id", "disk-bus-type-name"} {
 		addFlagString(cmd, ctx, name)
 	}
 	overrideFlagUsage(cmd, ctx, "auth-url", "help.target_account_create_object_openstack.flag.auth-url")
-	overrideFlagUsage(cmd, ctx, "cloud-account-username", "help.target_account_create_object_openstack.flag.cloud-account-username")
-	overrideFlagUsage(cmd, ctx, "cloud-account-password", "help.target_account_create_object_openstack.flag.cloud-account-password")
+	overrideFlagUsage(cmd, ctx, "username", "help.target_account_create_object_openstack.flag.username")
+	overrideFlagUsage(cmd, ctx, "password", "help.target_account_create_object_openstack.flag.password")
 	overrideFlagUsage(cmd, ctx, "user-domain-id", "help.target_account_create_object_openstack.flag.user-domain-id")
 	overrideFlagUsage(cmd, ctx, "project-domain-id", "help.target_account_create_object_openstack.flag.project-domain-id")
 	overrideFlagUsage(cmd, ctx, "project-id", "help.target_account_create_object_openstack.flag.project-id")

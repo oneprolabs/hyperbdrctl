@@ -78,10 +78,10 @@ func buildGenericMetadata(spec Spec, isObject bool) (string, map[string]interfac
 			return "", nil, fmt.Errorf("auth-url is required")
 		}
 		if spec.CloudAccountUsername == "" {
-			return "", nil, fmt.Errorf("cloud-account-username is required")
+			return "", nil, fmt.Errorf("username is required")
 		}
 		if spec.CloudAccountPassword == "" {
-			return "", nil, fmt.Errorf("cloud-account-password is required")
+			return "", nil, fmt.Errorf("password is required")
 		}
 		metadata["auth_url"] = spec.AuthURL
 		metadata["username"] = spec.CloudAccountUsername

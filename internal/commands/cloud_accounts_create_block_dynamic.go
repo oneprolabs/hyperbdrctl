@@ -64,6 +64,8 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("cloud-type cannot be used with %s", commandName)
 		case "storage-type":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("storage-type cannot be used with %s", commandName)
+		case "cloud-account-username", "cloud-account-password":
+			return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
 		case "cloud-auth-type":
 			if specialized {
 				return parsedCloudAccountCreateCommand{}, fmt.Errorf("cloud-auth-type cannot be used with %s", commandName)
@@ -174,7 +176,7 @@ func createBlockExplicitFlagAllowed(cloudType, name string) bool {
 		}
 	case "openstack":
 		switch name {
-		case "auth-url", "cloud-account-username", "cloud-account-password", "user-domain-id", "project-domain-id", "project-name", "region-name", "ssh-port", "ssh-pass", "linux-hd-username", "linux-hd-password", "linux-hd-port":
+		case "auth-url", "username", "password", "user-domain-id", "project-domain-id", "project-name", "region-name", "ssh-port", "ssh-pass", "linux-hd-username", "linux-hd-password", "linux-hd-port":
 			return true
 		}
 	}

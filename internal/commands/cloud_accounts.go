@@ -322,8 +322,8 @@ func parseCloudAccountCreateArgs(commandName string, args []string) (parsedCloud
 	accountName := fs.String("account-name", "", "")
 	authRegionID := fs.String("auth-region-id", "", "")
 	authURL := fs.String("auth-url", "", "")
-	cloudAccountUsername := fs.String("cloud-account-username", "", "")
-	cloudAccountPassword := fs.String("cloud-account-password", "", "")
+	username := fs.String("username", "", "")
+	password := fs.String("password", "", "")
 	userDomainID := fs.String("user-domain-id", "", "")
 	projectDomainID := fs.String("project-domain-id", "", "")
 	projectID := fs.String("project-id", "", "")
@@ -365,8 +365,8 @@ func parseCloudAccountCreateArgs(commandName string, args []string) (parsedCloud
 		AccountName:            *accountName,
 		AuthRegionID:           *authRegionID,
 		AuthURL:                *authURL,
-		CloudAccountUsername:   *cloudAccountUsername,
-		CloudAccountPassword:   *cloudAccountPassword,
+		CloudAccountUsername:   *username,
+		CloudAccountPassword:   *password,
 		UserDomainID:           *userDomainID,
 		ProjectDomainID:        *projectDomainID,
 		ProjectID:              *projectID,

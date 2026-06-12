@@ -96,8 +96,8 @@ func TestCloudAccountsCreateBlockOpenStackUsesValidatedWorkflow(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"target", "account", "create-block", "openstack",
 		"--auth-url", "http://192.168.10.201:5000/v3",
-		"--cloud-account-username", "autotest",
-		"--cloud-account-password", "0b33333d1f0f3533",
+		"--username", "autotest",
+		"--password", "0b33333d1f0f3533",
 		"--user-domain-id", "default",
 		"--project-domain-id", "default",
 		"--project-name", "autotest",
@@ -302,8 +302,8 @@ func TestCloudAccountsCreateOSSOpenStackUsesValidatedWorkflow(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"target", "account", "create-oss", "openstack",
 		"--auth-url", "http://192.168.10.201:5000/v3",
-		"--cloud-account-username", "autotest",
-		"--cloud-account-password", "0b33333d1f0f3533",
+		"--username", "autotest",
+		"--password", "0b33333d1f0f3533",
 		"--user-domain-id", "default",
 	})
 
@@ -346,8 +346,8 @@ func TestCloudAccountsCreateOSSOpenStackRejectsRemovedRootFlag(t *testing.T) {
 	err := Execute(withHost(t, "https://example.invalid",
 		"target", "account", "create-oss", "openstack",
 		"--auth-url", "http://192.168.10.201:5000/v3",
-		"--cloud-account-username", "autotest",
-		"--cloud-account-password", "autotest",
+		"--username", "autotest",
+		"--password", "autotest",
 		"--user-domain-id", "default",
 		"--only-verify",
 	), &out, &errOut)
@@ -382,8 +382,8 @@ func TestCloudAccountsCreateBlockRejectsRemovedRootFlag(t *testing.T) {
 	err := Execute(withHost(t, "https://example.invalid",
 		"target", "account", "create-block", "openstack",
 		"--auth-url", "http://192.168.10.201:5000/v3",
-		"--cloud-account-username", "autotest",
-		"--cloud-account-password", "autotest",
+		"--username", "autotest",
+		"--password", "autotest",
 		"--user-domain-id", "default",
 		"--project-domain-id", "default",
 		"--project-name", "autotest",
@@ -391,6 +391,26 @@ func TestCloudAccountsCreateBlockRejectsRemovedRootFlag(t *testing.T) {
 		"--only-verify",
 	), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "unknown flag: --only-verify") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCloudAccountsCreateBlockRejectsLegacyCredentialFlags(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "account", "create-block", "openstack",
+		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--cloud-account-username", "autotest",
+		"--cloud-account-password", "autotest",
+		"--user-domain-id", "default",
+		"--project-domain-id", "default",
+		"--project-name", "autotest",
+		"--region-name", "RegionOne",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "unknown flag: --cloud-account-username") {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -410,8 +430,8 @@ func TestCloudAccountsCreateBlockGenericFileSetAndFlagOverrides(t *testing.T) {
 		"--set", "project_id=set-project",
 		"--account-name", "flag-name",
 		"--auth-url", "https://iam.example.invalid/v3",
-		"--cloud-account-username", "admin",
-		"--cloud-account-password", "secret",
+		"--username", "admin",
+		"--password", "secret",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -441,8 +461,8 @@ func TestCloudAccountsCreateBlockOpenStackSupportsFileSetAndDynamicMetadata(t *t
 		"target", "account", "create-block", "openstack",
 		"--file", filePath,
 		"--auth-url", "http://192.168.10.201:5000/v3",
-		"--cloud-account-username", "autotest",
-		"--cloud-account-password", "0b33333d1f0f3533",
+		"--username", "autotest",
+		"--password", "0b33333d1f0f3533",
 		"--user-domain-id", "default",
 		"--project-domain-id", "flag-domain",
 		"--region-name", "RegionOne",
@@ -492,8 +512,8 @@ func TestCloudAccountsCreateOSSGenericProviderFallsBackToGenericBuilder(t *testi
 		"target", "account", "create-oss", "vmware",
 		"--cloud-auth-type", "password",
 		"--auth-url", "https://vc.example.invalid",
-		"--cloud-account-username", "admin",
-		"--cloud-account-password", "secret",
+		"--username", "admin",
+		"--password", "secret",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -540,8 +560,8 @@ func TestCloudAccountsCreateOSSGenericFileSetAndFlagOverrides(t *testing.T) {
 		"--set", "project_id=set-project",
 		"--custom-name", "flag-name",
 		"--auth-url", "https://vc.example.invalid",
-		"--cloud-account-username", "admin",
-		"--cloud-account-password", "secret",
+		"--username", "admin",
+		"--password", "secret",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -560,6 +580,23 @@ func TestCloudAccountsCreateOSSGenericFileSetAndFlagOverrides(t *testing.T) {
 	}
 }
 
+func TestCloudAccountsCreateOSSRejectsLegacyCredentialFlags(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "account", "create-oss", "openstack",
+		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--cloud-account-username", "autotest",
+		"--cloud-account-password", "autotest",
+		"--user-domain-id", "default",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "unknown flag: --cloud-account-username") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestCloudAccountsCreateOSSOpenStackSupportsFileSetAndDynamicMetadata(t *testing.T) {
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "metadata.json")
@@ -571,8 +608,8 @@ func TestCloudAccountsCreateOSSOpenStackSupportsFileSetAndDynamicMetadata(t *tes
 		"target", "account", "create-oss", "openstack",
 		"--file", filePath,
 		"--auth-url", "http://192.168.10.201:5000/v3",
-		"--cloud-account-username", "autotest",
-		"--cloud-account-password", "0b33333d1f0f3533",
+		"--username", "autotest",
+		"--password", "0b33333d1f0f3533",
 		"--user-domain-id", "default",
 		"--set", "project_id=set-project",
 		"--boot-loader-flavor-id", "manual-flavor",
