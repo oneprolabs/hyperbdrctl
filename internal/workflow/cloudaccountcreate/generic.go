@@ -57,22 +57,17 @@ func buildGenericObject(spec Spec) (string, map[string]interface{}, error) {
 }
 
 func buildGenericMetadata(spec Spec, isObject bool) (string, map[string]interface{}, error) {
-	authType := normalizeAuthType(spec.CloudAuthType)
-	if authType == "" {
-		return "", nil, fmt.Errorf("cloud-auth-type is required")
+	authType, err := resolveGenericAuthType(spec)
+	if err != nil {
+		return "", nil, err
 	}
 
 	metadata := map[string]interface{}{}
 	switch authType {
 	case "aksk":
-		if spec.AccessKeyID == "" {
-			return "", nil, fmt.Errorf("access-key-id is required")
+		if err := setGenericAKSKMetadata(metadata, spec); err != nil {
+			return "", nil, err
 		}
-		if spec.AccessKeySecret == "" {
-			return "", nil, fmt.Errorf("access-key-secret is required")
-		}
-		metadata["access_key_id"] = spec.AccessKeyID
-		metadata["access_key_secret"] = spec.AccessKeySecret
 	case "password":
 		if spec.AuthURL == "" {
 			return "", nil, fmt.Errorf("auth-url is required")
@@ -165,4 +160,75 @@ func isManualObjectImage(id string) bool {
 
 func normalizeAuthType(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func resolveGenericAuthType(spec Spec) (string, error) {
+	authType := normalizeAuthType(spec.CloudAuthType)
+	if authType != "" {
+		switch authType {
+		case "aksk", "password":
+			return authType, nil
+		default:
+			return "", fmt.Errorf("cloud-auth-type must be aksk or password")
+		}
+	}
+
+	if spec.HasDirectAKSKStyle || spec.HasDirectPasswordStyle {
+		switch {
+		case spec.HasDirectAKSKStyle && spec.HasDirectPasswordStyle:
+			return "", fmt.Errorf("multiple credential styles provided; pass --cloud-auth-type explicitly")
+		case spec.HasDirectAKSKStyle:
+			return "aksk", nil
+		default:
+			return "password", nil
+		}
+	}
+
+	hasAKSKStyle := hasAnyValue(spec.AccessKeyID, spec.AccessKeySecret, spec.AccessID, spec.AccessSecret)
+	hasPasswordStyle := hasAnyValue(spec.CloudAccountUsername, spec.CloudAccountPassword)
+
+	switch {
+	case hasAKSKStyle && hasPasswordStyle:
+		return "", fmt.Errorf("multiple credential styles provided; pass --cloud-auth-type explicitly")
+	case hasAKSKStyle:
+		return "aksk", nil
+	case hasPasswordStyle:
+		return "password", nil
+	default:
+		return "", fmt.Errorf("cloud-auth-type is required")
+	}
+}
+
+func setGenericAKSKMetadata(metadata map[string]interface{}, spec Spec) error {
+	switch {
+	case spec.AccessKeyID != "" || spec.AccessKeySecret != "":
+		if spec.AccessKeyID == "" {
+			return fmt.Errorf("access-key-id is required")
+		}
+		if spec.AccessKeySecret == "" {
+			return fmt.Errorf("access-key-secret is required")
+		}
+		metadata["access_key_id"] = spec.AccessKeyID
+		metadata["access_key_secret"] = spec.AccessKeySecret
+		return nil
+	default:
+		if spec.AccessID == "" {
+			return fmt.Errorf("access-id is required")
+		}
+		if spec.AccessSecret == "" {
+			return fmt.Errorf("access-secret is required")
+		}
+		metadata["access_id"] = spec.AccessID
+		metadata["access_secret"] = spec.AccessSecret
+		return nil
+	}
+}
+
+func hasAnyValue(values ...string) bool {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return true
+		}
+	}
+	return false
 }

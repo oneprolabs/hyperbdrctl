@@ -417,18 +417,12 @@ func runCreateCloudAccountForProvider(ctx *context, commandName, cloudType, stor
 		if err != nil {
 			return err
 		}
-		if !specialized && parsed.spec.CloudAuthType == "" {
-			return fmt.Errorf("cloud-auth-type is required")
-		}
 		return executeCreateCloudAccountSpec(ctx, parsed.spec, parsed.previewRequest)
 	}
 
 	parsed, err := parseCloudAccountCreateBlockArgs(commandName, cloudType, specialized, args)
 	if err != nil {
 		return err
-	}
-	if !specialized && parsed.spec.CloudAuthType == "" {
-		return fmt.Errorf("cloud-auth-type is required")
 	}
 	return executeCreateCloudAccountSpec(ctx, parsed.spec, parsed.previewRequest)
 }

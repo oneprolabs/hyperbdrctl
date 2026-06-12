@@ -106,6 +106,7 @@ func parseCloudAccountCreateOSSArgs(commandName, cloudType string, specialized b
 			if err != nil {
 				return parsedCloudAccountCreateCommand{}, err
 			}
+			applyCreateCloudAccountSpecValue(&spec, name, v)
 			key := createCloudAccountDynamicMetadataKey(name)
 			if err := validateCreateCloudAccountDynamicMetadataKey(name, key); err != nil {
 				return parsedCloudAccountCreateCommand{}, err
@@ -190,9 +191,17 @@ func createOSSExplicitFlagAllowed(cloudType, name string) bool {
 func applyCreateCloudAccountSpecValue(spec *cloudAccountCreateSpec, name, value string) {
 	switch name {
 	case "access-key-id":
+		spec.HasDirectAKSKStyle = true
 		spec.AccessKeyID = value
 	case "access-key-secret":
+		spec.HasDirectAKSKStyle = true
 		spec.AccessKeySecret = value
+	case "access-id":
+		spec.HasDirectAKSKStyle = true
+		spec.AccessID = value
+	case "access-secret":
+		spec.HasDirectAKSKStyle = true
+		spec.AccessSecret = value
 	case "account-name":
 		spec.AccountName = value
 	case "auth-region-id":
@@ -204,8 +213,10 @@ func applyCreateCloudAccountSpecValue(spec *cloudAccountCreateSpec, name, value 
 	case "auth-url":
 		spec.AuthURL = value
 	case "username":
+		spec.HasDirectPasswordStyle = true
 		spec.CloudAccountUsername = value
 	case "password":
+		spec.HasDirectPasswordStyle = true
 		spec.CloudAccountPassword = value
 	case "user-domain-id":
 		spec.UserDomainID = value

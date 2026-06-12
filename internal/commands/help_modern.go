@@ -178,7 +178,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	case strings.HasPrefix(path, "hyperbdrctl target account create-block "):
 		return []flagHelpSpec{
-			{name: "cloud-auth-type", required: true, choices: []string{"aksk", "password"}},
+			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 			{name: "account-name"},
 			{name: "file"},
 			{name: "set"},
@@ -243,7 +243,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	case strings.HasPrefix(path, "hyperbdrctl target account create-oss "):
 		return []flagHelpSpec{
-			{name: "cloud-auth-type", required: true, choices: []string{"aksk", "password"}},
+			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 			{name: "custom-name"},
 			{name: "file"},
 			{name: "set"},

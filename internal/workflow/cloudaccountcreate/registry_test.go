@@ -5,7 +5,6 @@ import "testing"
 func TestBuildRequestFallsBackToGenericBlock(t *testing.T) {
 	path, body, err := BuildRequest(Spec{
 		CloudType:       "huawei_bs",
-		CloudAuthType:   "aksk",
 		StorageType:     "block",
 		AccessKeyID:     "ak",
 		AccessKeySecret: "sk",
@@ -26,7 +25,6 @@ func TestBuildRequestFallsBackToGenericBlock(t *testing.T) {
 func TestBuildRequestFallsBackToGenericObject(t *testing.T) {
 	path, body, err := BuildRequest(Spec{
 		CloudType:            "vmware_obs",
-		CloudAuthType:        "password",
 		StorageType:          "objectstorage",
 		AuthURL:              "https://vc.example.invalid",
 		CloudAccountUsername: "admin",
@@ -80,5 +78,42 @@ func TestBuildRequestAliyunObjectDefaultsImageSlotsToAutoUpload(t *testing.T) {
 	}
 	if _, ok := metadata["boot_loader_flavor_id"]; ok {
 		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestBuildRequestUsesAccessAliasMetadataWhenProvided(t *testing.T) {
+	_, body, err := BuildRequest(Spec{
+		CloudType:    "huawei_bs",
+		StorageType:  "block",
+		AccessID:     "ak",
+		AccessSecret: "sk",
+	})
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+
+	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	if metadata["access_id"] != "ak" || metadata["access_secret"] != "sk" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+	if _, ok := metadata["access_key_id"]; ok {
+		t.Fatalf("metadata should not contain access_key_id: %+v", metadata)
+	}
+	if _, ok := metadata["access_key_secret"]; ok {
+		t.Fatalf("metadata should not contain access_key_secret: %+v", metadata)
+	}
+}
+
+func TestBuildRequestRequiresExplicitAuthTypeForMixedCredentialStyles(t *testing.T) {
+	_, _, err := BuildRequest(Spec{
+		CloudType:            "vmware_obs",
+		StorageType:          "objectstorage",
+		AccessKeyID:          "ak",
+		AccessKeySecret:      "sk",
+		CloudAccountUsername: "admin",
+		CloudAccountPassword: "secret",
+	})
+	if err == nil || err.Error() != "multiple credential styles provided; pass --cloud-auth-type explicitly" {
+		t.Fatalf("err = %v", err)
 	}
 }

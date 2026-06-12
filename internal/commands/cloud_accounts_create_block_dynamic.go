@@ -101,6 +101,7 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 			if err != nil {
 				return parsedCloudAccountCreateCommand{}, err
 			}
+			applyCreateCloudAccountSpecValue(&spec, name, v)
 			key := createCloudAccountDynamicMetadataKey(name)
 			if err := validateCreateCloudAccountDynamicMetadataKey(name, key); err != nil {
 				return parsedCloudAccountCreateCommand{}, err

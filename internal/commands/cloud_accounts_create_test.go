@@ -187,7 +187,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "block huawei generic",
 			args: []string{"target", "account", "create-block", "huawei", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "--account-name string", "--file string", "--set stringArray", "--set-json stringArray", "create-block huawei", "--foo-bar <value>"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "--account-name string", "--file string", "--set stringArray", "--set-json stringArray", "create-block huawei", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -233,7 +233,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "oss huawei generic",
 			args: []string{"target", "account", "create-oss", "huawei", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "create-oss huawei", "--file string", "--set stringArray", "--set-json stringArray", "--foo-bar <value>"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "create-oss huawei", "--file string", "--set stringArray", "--set-json stringArray", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -359,7 +359,6 @@ func TestCloudAccountsCreateOSSOpenStackRejectsRemovedRootFlag(t *testing.T) {
 func TestCloudAccountsCreateBlockGenericProviderFallsBackToGenericBuilder(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"target", "account", "create-block", "huawei",
-		"--cloud-auth-type", "aksk",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--region-id", "cn-north-1",
@@ -371,6 +370,34 @@ func TestCloudAccountsCreateBlockGenericProviderFallsBackToGenericBuilder(t *tes
 	cloudAccount := body["cloud_account"].(map[string]interface{})
 	if cloudAccount["cloud_type"] != "huawei_bs" || cloudAccount["cloud_auth_type"] != "aksk" {
 		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+}
+
+func TestCloudAccountsCreateBlockGenericProviderInfersAKSKFromAliasFlags(t *testing.T) {
+	path, body := executeCloudAccountCreateAtPath(t, []string{
+		"target", "account", "create-block", "huawei",
+		"--access-id", "ak",
+		"--access-secret", "sk",
+		"--region-id", "cn-north-1",
+	})
+
+	if path != "/hypermotion/v1/cloud_accounts" {
+		t.Fatalf("path = %q", path)
+	}
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_type"] != "huawei_bs" || cloudAccount["cloud_auth_type"] != "aksk" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if metadata["access_id"] != "ak" || metadata["access_secret"] != "sk" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+	if _, ok := metadata["access_key_id"]; ok {
+		t.Fatalf("metadata should not contain access_key_id: %+v", metadata)
+	}
+	if _, ok := metadata["access_key_secret"]; ok {
+		t.Fatalf("metadata should not contain access_key_secret: %+v", metadata)
 	}
 }
 
@@ -510,7 +537,6 @@ func TestCloudAccountsCreateBlockFileRejectsWrapperObject(t *testing.T) {
 func TestCloudAccountsCreateOSSGenericProviderFallsBackToGenericBuilder(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"target", "account", "create-oss", "vmware",
-		"--cloud-auth-type", "password",
 		"--auth-url", "https://vc.example.invalid",
 		"--username", "admin",
 		"--password", "secret",
@@ -521,6 +547,72 @@ func TestCloudAccountsCreateOSSGenericProviderFallsBackToGenericBuilder(t *testi
 	}
 	cloudAccount := body["cloud_account"].(map[string]interface{})
 	if cloudAccount["cloud_type"] != "vmware_obs" || cloudAccount["cloud_auth_type"] != "password" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+}
+
+func TestCloudAccountsCreateGenericProviderMixedCredentialStylesRequireCloudAuthType(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "account", "create-oss", "vmware",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--username", "admin",
+		"--password", "secret",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "multiple credential styles provided; pass --cloud-auth-type explicitly") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCloudAccountsCreateGenericProviderExplicitCloudAuthTypeAllowsMixedCredentialStyles(t *testing.T) {
+	path, body := executeCloudAccountCreateAtPath(t, []string{
+		"target", "account", "create-oss", "vmware",
+		"--cloud-auth-type", "password",
+		"--auth-url", "https://vc.example.invalid",
+		"--username", "admin",
+		"--password", "secret",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+	})
+
+	if path != "/hypermotion/v1/cloud_accounts" {
+		t.Fatalf("path = %q", path)
+	}
+
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_auth_type"] != "password" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if metadata["access_key_id"] != "ak" || metadata["access_key_secret"] != "sk" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestCloudAccountsCreateGenericProviderDirectCredentialStyleOverridesFileInference(t *testing.T) {
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "metadata.json")
+	if err := os.WriteFile(filePath, []byte(`{"access_key_id":"file-ak","access_key_secret":"file-sk"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	path, body := executeCloudAccountCreateAtPath(t, []string{
+		"target", "account", "create-oss", "vmware",
+		"--file", filePath,
+		"--auth-url", "https://vc.example.invalid",
+		"--username", "admin",
+		"--password", "secret",
+	})
+
+	if path != "/hypermotion/v1/cloud_accounts" {
+		t.Fatalf("path = %q", path)
+	}
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_auth_type"] != "password" {
 		t.Fatalf("cloud_account = %+v", cloudAccount)
 	}
 }
@@ -587,7 +679,6 @@ func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetada
 func TestCloudAccountsCreateOSSHuaweiAcceptsDynamicMetadataFlags(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"target", "account", "create-oss", "huawei",
-		"--cloud-auth-type", "aksk",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--region-id", "cn-north-4",
@@ -601,6 +692,45 @@ func TestCloudAccountsCreateOSSHuaweiAcceptsDynamicMetadataFlags(t *testing.T) {
 	metadata := cloudAccount["metadata"].(map[string]interface{})
 	if metadata["access_key_id"] != "ak" || metadata["project_domain_id"] != "domain-1" || metadata["region_id"] != "cn-north-4" {
 		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestCloudAccountsCreateOSSOpenStackKeepsAccessAliasAsDynamicMetadata(t *testing.T) {
+	path, body := executeCloudAccountCreateAtPath(t, []string{
+		"target", "account", "create-oss", "openstack",
+		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--username", "autotest",
+		"--password", "0b33333d1f0f3533",
+		"--user-domain-id", "default",
+		"--access-id", "ak",
+		"--access-secret", "sk",
+	})
+
+	if path != "/hypermotion/v1/cloud_accounts" {
+		t.Fatalf("path = %q", path)
+	}
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_auth_type"] != "password" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if metadata["access_id"] != "ak" || metadata["access_secret"] != "sk" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestCloudAccountsCreateBlockGenericAliasValidationKeepsFieldErrors(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "account", "create-block", "huawei",
+		"--access-id", "ak",
+		"--region-id", "cn-north-1",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "access-secret is required") {
+		t.Fatalf("err = %v", err)
 	}
 }
 

@@ -8,8 +8,7 @@ import (
 func NormalizeSpec(spec Spec) Spec {
 	metadata := spec.MetadataOverrides
 
-	spec.AccessKeyID = firstNonEmptyString(spec.AccessKeyID, overrideStringValue(metadata, "access_key_id"))
-	spec.AccessKeySecret = firstNonEmptyString(spec.AccessKeySecret, overrideStringValue(metadata, "access_key_secret"))
+	spec = normalizeAccessKeySpec(spec, metadata)
 	spec.RegionID = firstNonEmptyString(spec.RegionID, overrideStringValue(metadata, "region_id"))
 	spec.RegionName = firstNonEmptyString(spec.RegionName, overrideStringValue(metadata, "region_name"))
 	spec.AccountName = firstNonEmptyString(spec.AccountName, overrideStringValue(metadata, "account_name"))
@@ -54,6 +53,24 @@ func NormalizeSpec(spec Spec) Spec {
 		}
 	}
 
+	return spec
+}
+
+func normalizeAccessKeySpec(spec Spec, metadata map[string]interface{}) Spec {
+	switch {
+	case spec.AccessKeyID != "" || spec.AccessKeySecret != "":
+		spec.AccessKeyID = firstNonEmptyString(spec.AccessKeyID, overrideStringValue(metadata, "access_key_id"))
+		spec.AccessKeySecret = firstNonEmptyString(spec.AccessKeySecret, overrideStringValue(metadata, "access_key_secret"))
+	case spec.AccessID != "" || spec.AccessSecret != "":
+		spec.AccessID = firstNonEmptyString(spec.AccessID, overrideStringValue(metadata, "access_id"))
+		spec.AccessSecret = firstNonEmptyString(spec.AccessSecret, overrideStringValue(metadata, "access_secret"))
+	case overrideStringValue(metadata, "access_key_id", "access_key_secret") != "":
+		spec.AccessKeyID = firstNonEmptyString(spec.AccessKeyID, overrideStringValue(metadata, "access_key_id"))
+		spec.AccessKeySecret = firstNonEmptyString(spec.AccessKeySecret, overrideStringValue(metadata, "access_key_secret"))
+	default:
+		spec.AccessID = firstNonEmptyString(spec.AccessID, overrideStringValue(metadata, "access_id"))
+		spec.AccessSecret = firstNonEmptyString(spec.AccessSecret, overrideStringValue(metadata, "access_secret"))
+	}
 	return spec
 }
 

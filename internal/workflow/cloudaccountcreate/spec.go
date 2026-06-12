@@ -4,8 +4,12 @@ type Spec struct {
 	CloudType              string
 	CloudAuthType          string
 	StorageType            string
+	HasDirectAKSKStyle     bool
+	HasDirectPasswordStyle bool
 	AccessKeyID            string
 	AccessKeySecret        string
+	AccessID               string
+	AccessSecret           string
 	RegionID               string
 	RegionName             string
 	AccountName            string
