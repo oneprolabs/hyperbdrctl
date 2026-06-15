@@ -264,6 +264,10 @@ func newSourcesCommand(ctx *context) *cobra.Command {
 		addHelpLayout(child, helpLayoutFourSection)
 		addUsageLine(child, ctx, "cmd.sources."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_line")
 		addUsageNotes(child, ctx, "cmd.sources."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_notes")
+		switch child.Name() {
+		case "create", "sync-nodes", "vms":
+			addHelpDescription(child, ctx, "cmd.sources."+strings.ReplaceAll(child.Name(), "-", "_")+".help_title")
+		}
 	}
 	return cmd
 }

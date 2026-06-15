@@ -71,7 +71,10 @@ func renderFourSectionHelp(cmd *cobra.Command, ctx *context) error {
 }
 
 func renderDescription(ctx *context, cmd *cobra.Command) {
-	description := strings.TrimSpace(cmd.Short)
+	description := strings.TrimSpace(cmd.Annotations[helpDescriptionAnnotation])
+	if description == "" {
+		description = strings.TrimSpace(cmd.Short)
+	}
 	if description == "" {
 		description = strings.TrimSpace(cmd.Long)
 	}

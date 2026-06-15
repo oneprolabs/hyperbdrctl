@@ -19,6 +19,7 @@ const (
 	flagsTitleAnnotation          = "flags-title"
 	usageNotesAnnotation          = "usage-notes"
 	usageLineAnnotation           = "usage-line"
+	helpDescriptionAnnotation     = "help-description"
 	helpLayoutAnnotation          = "help-layout"
 
 	helpLayoutLegacy      = "legacy"
@@ -209,6 +210,10 @@ func addUsageNotes(cmd *cobra.Command, ctx *context, key string) {
 
 func addUsageLine(cmd *cobra.Command, ctx *context, key string) {
 	addLocalizedAnnotation(cmd, ctx, usageLineAnnotation, key)
+}
+
+func addHelpDescription(cmd *cobra.Command, ctx *context, key string) {
+	addLocalizedAnnotation(cmd, ctx, helpDescriptionAnnotation, key)
 }
 
 func addHelpLayout(cmd *cobra.Command, layout string) {
