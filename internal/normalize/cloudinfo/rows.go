@@ -19,6 +19,19 @@ func ImageRows(data interface{}) []map[string]interface{} {
 	return NormalizeImageRows(rows)
 }
 
+func SystemVolumeTypeRows(data interface{}) []map[string]interface{} {
+	rows := ResourceRows(data, "system_volume_types")
+	for _, row := range rows {
+		if row["min_gb"] == nil {
+			row["min_gb"] = row["min_GB"]
+		}
+		if row["max_gb"] == nil {
+			row["max_gb"] = row["max_GB"]
+		}
+	}
+	return rows
+}
+
 func ZoneRows(data interface{}) []map[string]interface{} {
 	rows := listNestedMaps(data, "cloud_info", "zones")
 	if len(rows) == 0 {

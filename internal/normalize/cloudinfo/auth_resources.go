@@ -119,7 +119,10 @@ func authAutoDetectedResources(data interface{}) []string {
 		"images",
 		"boot_loader_images",
 		"boot_loader_flavors",
+		"system_volume_types",
 		"zones",
+		"networks",
+		"subnets",
 	}
 	detected := make([]string, 0, len(ordered))
 	seen := map[string]bool{}
@@ -163,7 +166,7 @@ func authExtraResourceKeys(data interface{}, seen map[string]bool) []string {
 
 func authResourceHasData(data interface{}, resource string) bool {
 	switch resource {
-	case "regions", "zones", "images", "boot_loader_images", "flavors", "projects", "compute_zones", "boot_loader_flavors":
+	case "regions", "zones", "images", "boot_loader_images", "flavors", "projects", "compute_zones", "boot_loader_flavors", "system_volume_types", "networks", "subnets":
 		return len(authResourceRows(data, resource)) > 0
 	default:
 		return ResourceValue(data, resource) != nil
@@ -178,9 +181,11 @@ func authResourceRows(data interface{}, resource string) []map[string]interface{
 		return ZoneRows(data)
 	case "images":
 		return ImageRows(data)
+	case "system_volume_types":
+		return SystemVolumeTypeRows(data)
 	case "boot_loader_images":
 		return NormalizeImageRows(ResourceRows(data, resource))
-	case "flavors", "projects", "compute_zones", "boot_loader_flavors":
+	case "flavors", "projects", "compute_zones", "boot_loader_flavors", "networks", "subnets":
 		return ResourceRows(data, resource)
 	default:
 		return nil
@@ -189,10 +194,12 @@ func authResourceRows(data interface{}, resource string) []map[string]interface{
 
 func authResourceTitleKey(resource string) string {
 	switch resource {
-	case "regions", "zones", "flavors", "images", "boot_loader_images", "compute_zones", "projects":
+	case "regions", "zones", "flavors", "images", "boot_loader_images", "compute_zones", "projects", "networks", "subnets":
 		return "resource." + resource
 	case "boot_loader_flavors":
 		return "resource.boot_loader_flavors"
+	case "system_volume_types":
+		return "resource.volume_types"
 	default:
 		return resource
 	}

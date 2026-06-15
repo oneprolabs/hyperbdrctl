@@ -93,6 +93,18 @@ var authResourceRenderers = map[string]authResourceRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
 		columns:   func(rows []map[string]interface{}) []output.Column { return gatewayComputeZoneColumns() },
 	},
+	authRendererKey("generic", "system_volume_types"): authTableRenderer{
+		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
+		columns:   func(rows []map[string]interface{}) []output.Column { return gatewaySystemDiskTypeColumns() },
+	},
+	authRendererKey("generic", "networks"): authTableRenderer{
+		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
+		columns:   func(rows []map[string]interface{}) []output.Column { return gatewayNetworkColumns() },
+	},
+	authRendererKey("generic", "subnets"): authTableRenderer{
+		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
+		columns:   func(rows []map[string]interface{}) []output.Column { return gatewaySubnetColumns() },
+	},
 	authRendererKey("huawei", "flavors"): authTableRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) {
 			return filterHuaweiFlavorRows(cloudinfo.NormalizeHuaweiFlavorRows(section.Rows), section.Meta)

@@ -619,6 +619,128 @@ func TestCloudAccountsFetchResourcesHuaweiFlavorsPassesZoneIDAndFiltersInCLI(t *
 	}
 }
 
+func TestCloudAccountsFetchResourcesNetworksAndSubnetsRenderTables(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"networks": []map[string]interface{}{
+						{
+							"id":           "24e0103e-1fbc-4b4d-8b37-916cc41843f0",
+							"name":         "vpc-ray",
+							"cidr_block":   "10.0.0.0/8",
+							"display_name": "vpc-ray(10.0.0.0/8)",
+						},
+					},
+					"subnets": []map[string]interface{}{
+						{
+							"id":           "6abbb2f0-d351-4a0f-9b33-9d2babcad652",
+							"name":         "subnet-ray",
+							"network_id":   "24e0103e-1fbc-4b4d-8b37-916cc41843f0",
+							"zone_id":      "cn-north-1c",
+							"cidr_block":   "10.0.0.0/24",
+							"display_name": "subnet-ray(10.0.0.0/24)",
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-oss-resources", "huawei",
+		"--access-id", "ak",
+		"--access-secret", "sk",
+		"--region-id", "cn-north-1",
+		"--fetch-res", "networks,subnets",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"== Networks ==",
+		"== Subnets ==",
+		"vpc-ray",
+		"10.0.0.0/8",
+		"subnet-ray",
+		"24e0103e-1fbc-4b4d-8b37-916cc41843f0",
+		"cn-north-1c",
+		"10.0.0.0/24",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+	if strings.Contains(text, "\"networks\"") || strings.Contains(text, "\"subnets\"") {
+		t.Fatalf("output should render tables instead of raw JSON: %q", text)
+	}
+}
+
+func TestCloudAccountsFetchResourcesSystemVolumeTypesRenderTable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"system_volume_types": []map[string]interface{}{
+						{
+							"id":           "09edebca-2128-49b8-9aa3-4c69c3c6e7f6",
+							"display_name": "通用型SSD",
+							"min_GB":       40,
+							"max_GB":       32768,
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-oss-resources", "huawei",
+		"--access-id", "ak",
+		"--access-secret", "sk",
+		"--region-id", "cn-north-1",
+		"--zone-id", "cn-north-1a",
+		"--fetch-res", "system_volume_types",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"== System Volume Types ==",
+		"Disk Type",
+		"Display Name",
+		"Min GB",
+		"Max GB",
+		"09edebca-2128-49b8-9aa3-4c69c3c6e7f6",
+		"通用型SSD",
+		"40",
+		"32768",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+	if strings.Contains(text, "\"system_volume_types\"") {
+		t.Fatalf("output should render a table instead of raw JSON: %q", text)
+	}
+}
+
 func TestCloudAccountsFetchOSSResourcesOpenStackBuildsValidatedGatewayAuthRequest(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
