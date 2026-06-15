@@ -53,6 +53,7 @@ var en = map[string]string{
 	"table.current_domain":                      "Current Domain",
 	"table.cloud_type":                          "Cloud Type",
 	"table.storage_type":                        "Storage Type",
+	"table.auth_url":                            "Auth URL",
 	"table.url":                                 "URL",
 	"table.message":                             "Message",
 	"table.step":                                "Step",

@@ -1053,7 +1053,12 @@ func TestCloudAccountsListBuildsQuery(t *testing.T) {
 			"code": "00000000",
 			"data": map[string]interface{}{
 				"cloud_accounts": []map[string]interface{}{
-					{"id": "account-1", "name": "aliyun-account"},
+					{
+						"id":           "account-1",
+						"name":         "aliyun-account",
+						"cloud_type":   "aliyun_obs",
+						"storage_type": "objectstorage",
+					},
 				},
 			},
 		})
@@ -1074,6 +1079,12 @@ func TestCloudAccountsListBuildsQuery(t *testing.T) {
 	for _, want := range []string{"page=2", "page_size=50", "storage_type=objectstorage", "custom_filter=x"} {
 		if !strings.Contains(gotQuery, want) {
 			t.Fatalf("query = %q, missing %q", gotQuery, want)
+		}
+	}
+	text := out.String()
+	for _, want := range []string{"Cloud Type", "Storage Type", "aliyun_obs", "objectstorage"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
 		}
 	}
 }

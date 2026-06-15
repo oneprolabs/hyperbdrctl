@@ -235,6 +235,101 @@ func TestObjectStoragesListDefaultsToObjectStorage(t *testing.T) {
 	}
 }
 
+func TestObjectStoragesListRendersFlattenedTableColumns(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"storages": []map[string]interface{}{
+					{
+						"id":           "storage-1",
+						"uuid":         "uuid-1",
+						"display_name": "华为对象存储-北京一",
+						"status":       "available",
+						"config": map[string]interface{}{
+							"bucket_name": "data-sync-storage-cli-test",
+							"region_id":   "cn-north-1",
+							"auth_url":    "obs.cn-north-1.myhuaweicloud.com",
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "target", "oss", "list"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"ID",
+		"Name",
+		"Bucket Name",
+		"Region",
+		"Auth URL",
+		"Status",
+		"storage-1",
+		"华为对象存储-北京一",
+		"data-sync-storage-cli-test",
+		"cn-north-1",
+		"obs.cn-north-1.myhuaweicloud.com",
+		"available",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+	for _, unwanted := range []string{"UUID", "Storage Type"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("output = %q, should not contain %q", text, unwanted)
+		}
+	}
+}
+
+func TestObjectStoragesListJSONKeepsRawFields(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"storages": []map[string]interface{}{
+					{
+						"id":           "storage-1",
+						"display_name": "aliyun-beijing",
+						"config": map[string]interface{}{
+							"bucket_name": "bucket-1",
+							"auth_url":    "oss-cn-beijing.aliyuncs.com",
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--output", "json", "target", "oss", "list"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{`"storages"`, `"config"`, `"bucket_name"`, `"auth_url"`} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+}
+
 func TestObjectStoragesDetailRequiresID(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

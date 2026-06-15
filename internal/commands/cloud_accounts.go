@@ -74,6 +74,7 @@ func cloudAccountColumns() []output.Column {
 		{HeaderKey: "table.uuid", Field: "uuid"},
 		{HeaderKey: "table.name", Field: "name"},
 		{HeaderKey: "table.cloud_type", Field: "cloud_type"},
+		{HeaderKey: "table.storage_type", Field: "storage_type"},
 		{HeaderKey: "table.status", Field: "status"},
 		{HeaderKey: "table.created_at", Field: "created_at"},
 	}

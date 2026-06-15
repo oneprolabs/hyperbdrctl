@@ -2,6 +2,7 @@ package commands
 
 import (
 	appobjectstorage "hyperbdr-client/internal/app/objectstorage"
+	"hyperbdr-client/internal/client"
 	"hyperbdr-client/internal/output"
 )
 
@@ -29,7 +30,7 @@ func runObjectStorages(ctx *context, args []string) error {
 		if err != nil {
 			return err
 		}
-		return writeResponse(ctx, resp, "storages", objectStorageColumns())
+		return writeObjectStorageListResponse(ctx, resp)
 	case "detail":
 		fs := newFlagSet("target oss detail")
 		id := fs.String("id", "", "")
@@ -174,6 +175,17 @@ func runTargetOSS(ctx *context, args []string) error {
 func objectStorageColumns() []output.Column {
 	return []output.Column{
 		{HeaderKey: "table.id", Field: "id"},
+		{HeaderKey: "table.name", Field: "name"},
+		{HeaderKey: "table.bucket_name", Field: "bucket_name"},
+		{HeaderKey: "table.region", Field: "region"},
+		{HeaderKey: "table.auth_url", Field: "auth_url"},
+		{HeaderKey: "table.status", Field: "status"},
+	}
+}
+
+func wizardObjectStorageColumns() []output.Column {
+	return []output.Column{
+		{HeaderKey: "table.id", Field: "id"},
 		{HeaderKey: "table.uuid", Field: "uuid"},
 		{HeaderKey: "table.name", Field: "name"},
 		{HeaderKey: "table.storage_type", Field: "type"},
@@ -188,4 +200,34 @@ func objectStorageBucketColumns() []output.Column {
 		{HeaderKey: "table.location", Field: "location"},
 		{HeaderKey: "table.created_at", Field: "created_at"},
 	}
+}
+
+func writeObjectStorageListResponse(ctx *context, resp client.APIResponse) error {
+	if ctx.cfg.Output == "json" {
+		return writeResponse(ctx, resp, "storages", nil)
+	}
+	return output.Table(ctx.out, ctx.loc, normalizeObjectStorageListRows(resp.Data), objectStorageColumns())
+}
+
+func normalizeObjectStorageListRows(data interface{}) []map[string]interface{} {
+	rows := listFromData(data, "storages")
+	normalized := make([]map[string]interface{}, 0, len(rows))
+	for _, row := range rows {
+		config := nestedMap(row, "config")
+		normalized = append(normalized, map[string]interface{}{
+			"id":          firstNonEmptyString(mapString(row, "id"), mapString(row, "uuid")),
+			"name":        firstNonEmptyString(mapString(row, "display_name", "name"), mapString(config, "display_name", "name")),
+			"bucket_name": firstNonEmptyString(mapString(row, "bucket_name"), mapString(config, "bucket_name")),
+			"region": firstNonEmptyString(
+				mapString(row, "region_name", "display_region_name", "region_display_name", "region_id"),
+				mapString(config, "region_name", "region_id"),
+			),
+			"auth_url": firstNonEmptyString(
+				mapString(row, "auth_url"),
+				mapString(config, "auth_url", "public_endpoint", "internal_endpoint"),
+			),
+			"status": firstNonEmptyString(mapString(row, "display_status", "status"), mapString(config, "status")),
+		})
+	}
+	return normalized
 }

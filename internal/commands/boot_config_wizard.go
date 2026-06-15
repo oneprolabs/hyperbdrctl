@@ -33,7 +33,7 @@ func runBootConfigWizard(ctx *context, args []string) error {
 		if err != nil {
 			return err
 		}
-		return writeResponse(ctx, resp, "storages", objectStorageColumns())
+		return writeResponse(ctx, resp, "storages", wizardObjectStorageColumns())
 	case "storage-detail":
 		fs := newFlagSet("boot-config-wizard storage-detail")
 		storageID := fs.String("storage-id", "", "")

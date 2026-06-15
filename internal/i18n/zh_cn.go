@@ -53,6 +53,7 @@ var zhCN = map[string]string{
 	"table.current_domain":                      "当前域",
 	"table.cloud_type":                          "云类型",
 	"table.storage_type":                        "存储类型",
+	"table.auth_url":                            "鉴权地址",
 	"table.url":                                 "URL",
 	"table.message":                             "消息",
 	"table.step":                                "步骤",
