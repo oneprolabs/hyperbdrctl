@@ -392,6 +392,231 @@ func TestCloudAccountsFetchResourcesBootLoaderImagesAndFlavorsRenderTables(t *te
 			t.Fatalf("output = %q, missing %q", text, want)
 		}
 	}
+	for _, unwanted := range []string{"Quota Rate", "Quota PPS", "Zone ID"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("output = %q, should not contain %q for generic flavors", text, unwanted)
+		}
+	}
+}
+
+func TestCloudAccountsFetchResourcesHuaweiFlavorsUseProviderSpecificColumns(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"boot_loader_images": []map[string]interface{}{
+						{"id": "boot-img-1", "name": "Windows Driver", "os_type": "windows"},
+					},
+					"flavors": []map[string]interface{}{
+						{
+							"id":           "s3.large.2",
+							"name":         "s3.large.2",
+							"vcpus":        2,
+							"ram":          4,
+							"zone_id":      "cn-north-1a",
+							"GHz":          "Intel SkyLake 6161 2.2GHz",
+							"quota_rate":   "0.2 / 0.8 Gbit/s",
+							"quota_pps":    "100,000 PPS",
+							"max_nic_num":  12,
+							"max_disk_num": 24,
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-oss-resources", "huawei",
+		"--access-id", "ak",
+		"--access-secret", "sk",
+		"--region-id", "cn-north-1",
+		"--fetch-res", "boot_loader_images,flavors",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	bootImages := strings.Index(text, "== Windows Transition Images ==")
+	flavors := strings.Index(text, "== Flavors ==")
+	if bootImages < 0 || flavors < 0 || bootImages >= flavors {
+		t.Fatalf("section order mismatch: %q", text)
+	}
+	for _, want := range []string{
+		"Flavor ID",
+		"Flavor Name",
+		"RAM (GiB)",
+		"Zone ID",
+		"GHz",
+		"Quota Rate",
+		"Quota PPS",
+		"Max NICs",
+		"Max Disk Num",
+		"s3.large.2",
+		"cn-north-1a",
+		"0.2 / 0.8 Gbit/s",
+		"100,000 PPS",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+}
+
+func TestCloudAccountsFetchResourcesHuaweiBootLoaderFlavorsRenderTable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"boot_loader_flavors": []map[string]interface{}{
+						{
+							"id":           "boot-flavor-1",
+							"name":         "boot-flavor-1",
+							"vcpus":        2,
+							"ram_GB":       8,
+							"zone_id":      "cn-north-1b",
+							"quota_rate":   "0.4 / 1.5 Gbit/s",
+							"quota_pps":    "150,000 PPS",
+							"max_nic_num":  12,
+							"max_disk_num": 24,
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-block-resources", "huawei",
+		"--access-id", "ak",
+		"--access-secret", "sk",
+		"--region-id", "cn-north-1",
+		"--fetch-res", "boot_loader_flavors",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"== Windows Transition Flavors ==",
+		"Flavor ID",
+		"RAM (GiB)",
+		"Zone ID",
+		"Quota Rate",
+		"Quota PPS",
+		"boot-flavor-1",
+		"cn-north-1b",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+	if strings.Contains(text, "\"boot_loader_flavors\"") {
+		t.Fatalf("output should render a table instead of raw JSON: %q", text)
+	}
+}
+
+func TestCloudAccountsFetchResourcesHuaweiFlavorsPassesZoneIDAndFiltersInCLI(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"flavors": []map[string]interface{}{
+						{
+							"id":   "u-2",
+							"name": "2C",
+							"children": []interface{}{
+								map[string]interface{}{
+									"id":   "u-2-m-4",
+									"name": "4GB",
+									"children": []interface{}{
+										map[string]interface{}{
+											"id":           "c3.large.2",
+											"name":         "c3.large.2",
+											"vcpus":        2,
+											"ram_GB":       4,
+											"zone_id":      "cn-north-1a",
+											"quota_rate":   "0.6 / 1.5 Gbit/s",
+											"quota_pps":    "300,000 PPS",
+											"max_nic_num":  12,
+											"max_disk_num": 24,
+										},
+										map[string]interface{}{
+											"id":           "c3.xlarge.2",
+											"name":         "c3.xlarge.2",
+											"vcpus":        4,
+											"ram_GB":       8,
+											"zone_id":      "cn-north-1a",
+											"quota_rate":   "1 / 3 Gbit/s",
+											"quota_pps":    "500,000 PPS",
+											"max_nic_num":  12,
+											"max_disk_num": 24,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "account", "fetch-block-resources", "huawei",
+		"--access-id", "ak",
+		"--access-secret", "sk",
+		"--region-id", "cn-north-1",
+		"--zone-id", "cn-north-1a",
+		"--fetch-res", "flavors",
+		"--flavor-vcpus", "2",
+		"--flavor-ram", "4",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if gotBody["zone_id"] != "cn-north-1a" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+	if _, ok := gotBody["flavor_vcpus"]; ok {
+		t.Fatalf("body should not contain flavor_vcpus: %+v", gotBody)
+	}
+	if _, ok := gotBody["flavor_ram"]; ok {
+		t.Fatalf("body should not contain flavor_ram: %+v", gotBody)
+	}
+
+	text := out.String()
+	if !strings.Contains(text, "c3.large.2") {
+		t.Fatalf("output = %q, missing filtered row", text)
+	}
+	if strings.Contains(text, "c3.xlarge.2") {
+		t.Fatalf("output = %q, should filter non-matching flavor", text)
+	}
 }
 
 func TestCloudAccountsFetchOSSResourcesOpenStackBuildsValidatedGatewayAuthRequest(t *testing.T) {

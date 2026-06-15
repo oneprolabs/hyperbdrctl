@@ -273,6 +273,31 @@ func TestServiceFetchResourcesIncludesBootModeWhenProvided(t *testing.T) {
 	}
 }
 
+func TestServiceFetchResourcesIncludesZoneIDWhenProvided(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.FetchResources(FetchResourcesSpec{
+		Spec: workflowcreate.Spec{
+			CloudType:    "huawei_bs",
+			AccessID:     "ak",
+			AccessSecret: "sk",
+			RegionID:     "cn-north-1",
+			StorageType:  "HyperGate",
+		},
+		FetchRes: "flavors",
+		ZoneID:   "cn-north-1a",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := api.postBody.(map[string]interface{})
+	if body["zone_id"] != "cn-north-1a" {
+		t.Fatalf("body = %+v", body)
+	}
+}
+
 func TestServiceFetchResourcesInfersAKSKFromAccessIDAlias(t *testing.T) {
 	api := &fakeAPI{}
 	service := NewService(api)

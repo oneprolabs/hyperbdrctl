@@ -168,7 +168,7 @@ func newCloudAccountFetchResourcesProviderCommand(ctx *context, entry catalog.Cl
 			if rawArgsHelp(cmd, args) {
 				return renderHelp(cmd, ctx)
 			}
-			return runFetchResourcesForProvider(ctx, fetchResourcesProviderCommandName(storageType, entry.Provider), entry.CloudType, storageType, false, args)
+			return runFetchResourcesForProvider(ctx, fetchResourcesProviderCommandName(storageType, entry.Provider), entry.Provider, entry.CloudType, storageType, false, args)
 		},
 	}
 
@@ -197,7 +197,7 @@ func newCloudAccountFetchResourcesOpenStackCommand(ctx *context, entry catalog.C
 			if rawArgsHelp(cmd, args) {
 				return renderHelp(cmd, ctx)
 			}
-			return runFetchResourcesForProvider(ctx, fetchResourcesProviderCommandName(storageType, entry.Provider), entry.CloudType, storageType, true, args)
+			return runFetchResourcesForProvider(ctx, fetchResourcesProviderCommandName(storageType, entry.Provider), entry.Provider, entry.CloudType, storageType, true, args)
 		},
 	}
 

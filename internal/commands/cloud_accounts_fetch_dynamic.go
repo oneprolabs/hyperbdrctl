@@ -54,6 +54,27 @@ func parseCloudAccountFetchResourcesArgs(commandName, cloudType, storageType str
 			}
 			spec.FetchRes = v
 			i = next
+		case "zone-id":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedCloudAccountFetchResourcesCommand{}, err
+			}
+			spec.ZoneID = v
+			i = next
+		case "flavor-vcpus":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedCloudAccountFetchResourcesCommand{}, err
+			}
+			spec.FlavorVCPUs = v
+			i = next
+		case "flavor-ram":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedCloudAccountFetchResourcesCommand{}, err
+			}
+			spec.FlavorRAM = v
+			i = next
 		case "compute-zone-id":
 			v, next, err := strictFlagValue(args, i, value, hasInline)
 			if err != nil {

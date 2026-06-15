@@ -12,6 +12,9 @@ type FetchResourcesSpec struct {
 	workflowcreate.Spec
 	BootMode         string
 	FetchRes         string
+	ZoneID           string
+	FlavorVCPUs      string
+	FlavorRAM        string
 	ComputeZoneID    string
 	BlockStoreZoneID string
 }
@@ -71,6 +74,9 @@ func (s Service) FetchResources(spec FetchResourcesSpec) (client.APIResponse, er
 	}
 	if spec.RegionID != "" {
 		body["region_id"] = spec.RegionID
+	}
+	if spec.ZoneID != "" {
+		body["zone_id"] = spec.ZoneID
 	}
 	if spec.BootMode != "" {
 		body["boot_mode"] = spec.BootMode

@@ -91,7 +91,7 @@ type parsedCloudAccountFetchResourcesCommand struct {
 	spec appcloudaccount.FetchResourcesSpec
 }
 
-func runFetchResourcesForProvider(ctx *context, commandName, cloudType, storageType string, specialized bool, args []string) error {
+func runFetchResourcesForProvider(ctx *context, commandName, provider, cloudType, storageType string, specialized bool, args []string) error {
 	parsed, err := parseCloudAccountFetchResourcesArgs(commandName, cloudType, storageType, specialized, args)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func runFetchResourcesForProvider(ctx *context, commandName, cloudType, storageT
 	if err != nil {
 		return err
 	}
-	return writeAuthResourcesResponse(ctx, resp, parsed.spec.FetchRes)
+	return writeAuthResourcesResponse(ctx, resp, provider, cloudType, parsed.spec.StorageType, parsed.spec.FetchRes, parsed.spec.FlavorVCPUs, parsed.spec.FlavorRAM)
 }
 
 func errDeprecatedFetchResourcesFlags() error {
