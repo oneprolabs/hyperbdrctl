@@ -71,3 +71,50 @@ func TestServiceListBuildsQuery(t *testing.T) {
 		t.Fatalf("query = %+v", api.getQuery)
 	}
 }
+
+func TestServicePrepareCreateAutoGeneratesDisplayName(t *testing.T) {
+	service := NewService(&fakeAPI{})
+
+	prepared, err := service.PrepareCreate(CreateSpec{
+		AuthURL:         "oss-cn-beijing.aliyuncs.com",
+		RegionID:        "oss-cn-beijing",
+		AccessKeyID:     "ak",
+		AccessKeySecret: "sk",
+		BucketName:      "bucket-1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := prepared.Body.(map[string]interface{})
+	if body["display_name"] != "aliyun-oss-cn-beijing" {
+		t.Fatalf("body = %+v", body)
+	}
+	if body["cloud_type"] != "aliyun" {
+		t.Fatalf("body = %+v", body)
+	}
+}
+
+func TestServicePrepareCreateInfersHuaweiCloudTypeFromAuthURL(t *testing.T) {
+	service := NewService(&fakeAPI{})
+
+	prepared, err := service.PrepareCreate(CreateSpec{
+		AuthURL:         "obs.cn-north-1.myhuaweicloud.com",
+		RegionID:        "cn-north-1",
+		AccessKeyID:     "ak",
+		AccessKeySecret: "sk",
+		BucketName:      "bucket-1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := prepared.Body.(map[string]interface{})
+	if body["cloud_type"] != "huawei" || body["display_name"] != "huawei-cn-north-1" {
+		t.Fatalf("body = %+v", body)
+	}
+	metadata := body["metadata"].(map[string]interface{})
+	if metadata["cloud_type_select"] != "huawei,cn-north-1" {
+		t.Fatalf("body = %+v", body)
+	}
+}

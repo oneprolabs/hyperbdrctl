@@ -547,8 +547,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	case "hyperbdrctl target oss create":
 		return []flagHelpSpec{
 			{name: "file"},
-			{name: "display-name", noteKey: "help.note_required_unless_file"},
-			{name: "cloud-type", defaultValue: "aliyun"},
+			{name: "display-name"},
 			{name: "auth-url", noteKey: "help.note_required_unless_file"},
 			{name: "region-id", noteKey: "help.note_required_unless_file"},
 			{name: "access-key-id", noteKey: "help.note_required_unless_file"},

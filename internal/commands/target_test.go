@@ -221,6 +221,9 @@ func TestTargetAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 				t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
 			}
 		}
+		if len(tt.args) >= 3 && tt.args[0] == "target" && tt.args[1] == "oss" && tt.args[2] == "create" && strings.Contains(text, "--cloud-type") {
+			t.Fatalf("target oss create help should not expose --cloud-type: %q", text)
+		}
 		if strings.Contains(text, "\nCommands:\n") {
 			t.Fatalf("leaf help should not include commands section args=%v: %q", tt.args, text)
 		}
@@ -584,7 +587,7 @@ func TestTargetOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 		},
 		{
 			args: []string{"target", "oss", "create", "--help"},
-			want: []string{"Usage Notes:", "required unless --file is used", "existing / new"},
+			want: []string{"Usage Notes:", "--display-name", "<cloud-type>-<region-id>", "existing / new"},
 		},
 	}
 

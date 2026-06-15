@@ -92,7 +92,6 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 	fs := newFlagSet("target oss create")
 	file := fs.String("file", "", "")
 	displayName := fs.String("display-name", "", "")
-	cloudType := fs.String("cloud-type", "aliyun", "")
 	authURL := fs.String("auth-url", "", "")
 	regionID := fs.String("region-id", "", "")
 	accessKeyID := fs.String("access-key-id", "", "")
@@ -126,7 +125,6 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 		prepared, err := service.PrepareCreate(appobjectstorage.CreateSpec{
 			RawBody:          rawBody,
 			DisplayName:      *displayName,
-			CloudType:        *cloudType,
 			AuthURL:          *authURL,
 			RegionID:         *regionID,
 			AccessKeyID:      *accessKeyID,
@@ -149,7 +147,6 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 	resp, err := service.Create(appobjectstorage.CreateSpec{
 		RawBody:          rawBody,
 		DisplayName:      *displayName,
-		CloudType:        *cloudType,
 		AuthURL:          *authURL,
 		RegionID:         *regionID,
 		AccessKeyID:      *accessKeyID,

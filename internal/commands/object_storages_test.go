@@ -86,7 +86,6 @@ func TestObjectStoragesCreateBuildsValidatedAliyunNewBucketPayload(t *testing.T)
 		"--output", "json",
 		"target", "oss", "create",
 		"--display-name", "aliyun-beijing",
-		"--cloud-type", "aliyun",
 		"--auth-url", "oss-cn-beijing.aliyuncs.com",
 		"--region-id", "oss-cn-beijing",
 		"--access-key-id", "ak",
@@ -132,7 +131,6 @@ func TestObjectStoragesCreatePreviewRequestPrintsRequestBody(t *testing.T) {
 		"--output", "json",
 		"target", "oss", "create",
 		"--display-name", "aliyun-beijing",
-		"--cloud-type", "aliyun",
 		"--auth-url", "oss-cn-beijing.aliyuncs.com",
 		"--region-id", "oss-cn-beijing",
 		"--access-key-id", "ak",
@@ -162,12 +160,28 @@ func TestObjectStoragesCreatePreviewRequestPrintsRequestBody(t *testing.T) {
 	}
 }
 
-func TestObjectStoragesCreateRequiresDisplayNameWithoutFile(t *testing.T) {
+func TestObjectStoragesCreateAutoGeneratesDisplayNameWithoutFlag(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"storage": map[string]interface{}{
+					"uuid": "storage-1",
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid",
+	err := Execute(withHost(t, srv.URL,
 		"target", "oss", "create",
 		"--auth-url", "oss-cn-beijing.aliyuncs.com",
 		"--region-id", "oss-cn-beijing",
@@ -175,7 +189,24 @@ func TestObjectStoragesCreateRequiresDisplayNameWithoutFile(t *testing.T) {
 		"--access-key-secret", "sk",
 		"--bucket-name", "bucket-1",
 	), &out, &errOut)
-	if err == nil || err.Error() != "display-name is required" {
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["display_name"] != "aliyun-oss-cn-beijing" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+}
+
+func TestObjectStoragesCreateRejectsRemovedCloudTypeFlag(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "oss", "create",
+		"--cloud-type", "huawei",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined: -cloud-type") {
 		t.Fatalf("err = %v", err)
 	}
 }

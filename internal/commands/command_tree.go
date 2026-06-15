@@ -302,7 +302,7 @@ func newTargetOSSCommand(ctx *context) *cobra.Command {
 			return runTargetOSS(ctx, append([]string{"buckets"}, args...))
 		}),
 		newRawLeafCommand(ctx, "create", "cmd.target.oss.create.short", "cmd.target.oss.create.long", "cmd.target.oss.create.examples", "cmd.target.oss.create.notes", func(cmd *cobra.Command) {
-			for _, name := range []string{"file", "display-name", "cloud-type", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup", "bucket-mode", "bucket-name", "public-endpoint", "internal-endpoint", "cloud-type-select", "app-id"} {
+			for _, name := range []string{"file", "display-name", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup", "bucket-mode", "bucket-name", "public-endpoint", "internal-endpoint", "cloud-type-select", "app-id"} {
 				addFlagString(cmd, ctx, name)
 			}
 			addFlagBool(cmd, ctx, "use-tls")

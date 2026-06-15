@@ -125,9 +125,7 @@ func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
 			Body: spec.RawBody,
 		}, nil
 	}
-	if spec.DisplayName == "" {
-		return PreparedCreateRequest{}, fmt.Errorf("display-name is required")
-	}
+	spec.CloudType = normalizeObjectStorageCloudType(spec.CloudType, spec.AuthURL)
 	if spec.AuthURL == "" {
 		return PreparedCreateRequest{}, fmt.Errorf("auth-url is required")
 	}
@@ -143,13 +141,13 @@ func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
 	if spec.BucketName == "" {
 		return PreparedCreateRequest{}, fmt.Errorf("bucket-name is required")
 	}
+	if spec.DisplayName == "" {
+		spec.DisplayName = defaultObjectStorageDisplayName(spec.CloudType, spec.RegionID)
+	}
 
 	normalizedMode, err := normalizeBucketMode(spec.BucketMode)
 	if err != nil {
 		return PreparedCreateRequest{}, err
-	}
-	if spec.CloudType == "" {
-		spec.CloudType = "aliyun"
 	}
 	if spec.Protocol == "" {
 		spec.Protocol = "s3"
@@ -190,6 +188,31 @@ func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
 			},
 		},
 	}, nil
+}
+
+func normalizeObjectStorageCloudType(value, authURL string) string {
+	normalized := strings.TrimSpace(strings.ToLower(value))
+	if normalized != "" {
+		return normalized
+	}
+	authURL = strings.TrimSpace(strings.ToLower(authURL))
+	switch {
+	case strings.Contains(authURL, "myhuaweicloud.com"):
+		return "huawei"
+	case strings.Contains(authURL, "aliyuncs.com"):
+		return "aliyun"
+	default:
+		return "aliyun"
+	}
+}
+
+func defaultObjectStorageDisplayName(cloudType, regionID string) string {
+	cloudType = strings.TrimSpace(cloudType)
+	regionID = strings.TrimSpace(regionID)
+	if regionID == "" {
+		return cloudType
+	}
+	return cloudType + "-" + regionID
 }
 
 func normalizeBucketLookup(value string) string {
