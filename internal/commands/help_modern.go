@@ -323,6 +323,14 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl boot-config get":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl boot-config fetch-block-resources":
 		return []flagHelpSpec{
 			{name: "debug"},

@@ -38,6 +38,100 @@ func TestTopLevelBootConfigApplyHelpShowsOverrideFlags(t *testing.T) {
 	}
 }
 
+func TestTopLevelBootConfigHelpShowsGetSubcommand(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"help", "boot-config"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	for _, want := range []string{"Commands:", "get", "apply", "fetch-block-resources", "fetch-oss-resources", "Usage Notes:"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("help missing %q: %q", want, got)
+		}
+	}
+}
+
+func TestTopLevelBootConfigGetHelpUsesModernLayout(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"help", "boot-config", "get"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	for _, want := range []string{
+		"Usage:",
+		"\nFlags:\n",
+		"--id",
+		"Usage Notes:",
+		"hyperbdrctl boot-config get --id <host_id>",
+		"hyperbdrctl --output json boot-config get --id <host_id>",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("help missing %q: %q", want, got)
+		}
+	}
+	for _, unwanted := range []string{"\nExamples:\n", "\nCommands:\n", "\nNotes:\n", "\nGlobal Flags:\n"} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, got)
+		}
+	}
+	assertNoHelpFooter(t, got)
+}
+
+func TestTopLevelBootConfigGetAvailable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPaths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPaths = append(gotPaths, r.URL.Path)
+		switch r.URL.Path {
+		case "/api/v2/getHostDetail":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"id":             "host-1",
+					"boot_config_id": "cfg-1",
+					"boot_config":    map[string]interface{}{},
+				},
+			})
+		case "/api/v2/batchGetBootConfigs":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"boot_configs": []map[string]interface{}{
+						{
+							"id":           "cfg-1",
+							"migration_id": "host-1",
+							"storage_id":   "storage-1",
+						},
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path %q", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--output", "json", "boot-config", "get", "--id", "host-1"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gotPaths) != 2 || gotPaths[0] != "/api/v2/getHostDetail" || gotPaths[1] != "/api/v2/batchGetBootConfigs" {
+		t.Fatalf("paths = %+v", gotPaths)
+	}
+	if !strings.Contains(out.String(), `"boot_configs"`) || !strings.Contains(out.String(), `"migration_id"`) {
+		t.Fatalf("output = %q", out.String())
+	}
+}
+
 func TestTopLevelBootConfigApplyPreviewRequestCreate(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

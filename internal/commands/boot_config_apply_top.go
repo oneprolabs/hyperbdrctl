@@ -16,6 +16,16 @@ func newTopLevelBootConfigCommand(ctx *context) *cobra.Command {
 	addHelpLayout(cmd, helpLayoutGroup)
 	addUsageLine(cmd, ctx, "cmd.boot_config_top.usage_line")
 	addUsageNotes(cmd, ctx, "cmd.boot_config_top.usage_notes")
+
+	getCmd := newRawLeafCommand(ctx, "get", "cmd.boot_config.get.short", "cmd.boot_config.get.long", "cmd.boot_config.get.examples", "cmd.boot_config.get.notes", func(cmd *cobra.Command) {
+		addFlagString(cmd, ctx, "id")
+	}, func(args []string) error {
+		return runBootConfig(ctx, append([]string{"get"}, args...))
+	})
+	addHelpLayout(getCmd, helpLayoutFourSection)
+	addUsageLine(getCmd, ctx, "cmd.boot_config_top.get.usage_line")
+	addUsageNotes(getCmd, ctx, "cmd.boot_config_top.get.usage_notes")
+
 	applyCmd := newRawLeafCommand(ctx, "apply", "cmd.boot_config_top.apply.short", "cmd.boot_config_top.apply.long", "cmd.boot_config_top.apply.examples", "cmd.boot_config_top.apply.notes", func(cmd *cobra.Command) {
 		addFlagString(cmd, ctx, "id")
 		addFlagString(cmd, ctx, "file")
@@ -29,6 +39,7 @@ func newTopLevelBootConfigCommand(ctx *context) *cobra.Command {
 	addMinimumFlags(applyCmd, ctx, "cmd.boot_config_top.apply.minimum_flags")
 	addRelatedCommands(applyCmd, ctx, "cmd.boot_config_top.apply.related")
 	cmd.AddCommand(
+		getCmd,
 		applyCmd,
 		newBootConfigFetchBlockResourcesCommand(ctx),
 		newBootConfigFetchOSSResourcesCommand(ctx),
