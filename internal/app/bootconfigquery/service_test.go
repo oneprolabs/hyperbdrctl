@@ -42,6 +42,9 @@ func TestServiceResourcesBuildsQuery(t *testing.T) {
 	if api.q.Get("cloud_type") != "aliyun_obs" || api.q.Get("storage_type") != "objectstorage" {
 		t.Fatalf("query = %+v", api.q)
 	}
+	if api.q.Get("rt_flatten") != "1" {
+		t.Fatalf("query = %+v", api.q)
+	}
 }
 
 func TestServiceResourcesRequiresCloudAccountID(t *testing.T) {
@@ -49,5 +52,23 @@ func TestServiceResourcesRequiresCloudAccountID(t *testing.T) {
 	_, err := service.Resources(ResourcesSpec{CloudType: "aliyun_obs", StorageType: "objectstorage"})
 	if err == nil || err.Error() != "cloud-account-id is required" {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestServiceResourcesPreservesExplicitRTFlatten(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Resources(ResourcesSpec{
+		CloudAccountID: "account-1",
+		CloudType:      "aliyun_obs",
+		StorageType:    "objectstorage",
+		Query:          url.Values{"rt_flatten": []string{"0"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.q.Get("rt_flatten") != "0" {
+		t.Fatalf("query = %+v", api.q)
 	}
 }

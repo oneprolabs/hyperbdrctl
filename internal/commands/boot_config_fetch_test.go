@@ -144,6 +144,7 @@ func TestBootConfigFetchOSSAliyunRegionsZonesDoesNotRequireRegionID(t *testing.T
 		"cloud_type=aliyun_obs",
 		"storage_type=objectstorage",
 		"fetch_res=regions%2Czones",
+		"rt_flatten=1",
 	} {
 		if !strings.Contains(gotQuery, want) {
 			t.Fatalf("query = %q, want contains %q", gotQuery, want)
@@ -220,6 +221,7 @@ func TestBootConfigFetchOSSHuaweiRegionsZonesDoesNotRequireRegionID(t *testing.T
 		"cloud_type=huawei_obs",
 		"storage_type=objectstorage",
 		"fetch_res=regions%2Czones",
+		"rt_flatten=1",
 	} {
 		if !strings.Contains(gotQuery, want) {
 			t.Fatalf("query = %q, want contains %q", gotQuery, want)
@@ -319,6 +321,7 @@ func TestBootConfigFetchBlockResourcesGenericProviderUsesFixedCloudTypeAndPassth
 		"cloud_type=openstack",
 		"storage_type=HyperGate",
 		"fetch_res=projects",
+		"rt_flatten=1",
 		"project_id=project-1",
 		"foo_bar=baz",
 	} {
@@ -328,6 +331,45 @@ func TestBootConfigFetchBlockResourcesGenericProviderUsesFixedCloudTypeAndPassth
 	}
 	if !strings.Contains(out.String(), "\"projects\"") {
 		t.Fatalf("json output = %q", out.String())
+	}
+}
+
+func TestBootConfigFetchResourcesAllowsRTFlattenOverride(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"projects": []map[string]interface{}{
+						{"id": "project-1", "name": "Project One"},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"boot-config", "fetch-block-resources", "openstack",
+		"--cloud-account-id", "account-1",
+		"--fetch-res", "projects",
+		"--rt-flatten", "0",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(gotQuery, "rt_flatten=0") {
+		t.Fatalf("query = %q", gotQuery)
+	}
+	if strings.Contains(gotQuery, "rt_flatten=1") {
+		t.Fatalf("query should preserve override: %q", gotQuery)
 	}
 }
 

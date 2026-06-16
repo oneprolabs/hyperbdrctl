@@ -62,6 +62,9 @@ func (s Service) Resources(spec ResourcesSpec) (client.APIResponse, error) {
 	}
 
 	q := cloneValues(spec.Query)
+	if q.Get("rt_flatten") == "" {
+		q.Set("rt_flatten", "1")
+	}
 	q.Set("cloud_account_id", spec.CloudAccountID)
 	q.Set("cloud_type", spec.CloudType)
 	q.Set("storage_type", spec.StorageType)
