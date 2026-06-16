@@ -1,51 +1,51 @@
 # hyperbdrctl
 
-`hyperbdrctl` 是 HyperBDR / HyperMotion 平台的命令行客户端，使用 Go 开发，面向日常运维、批量执行和脚本集成场景。
+`hyperbdrctl` is the command-line client for HyperBDR / HyperMotion. It is written in Go and designed for daily operations, batch execution, and script integration.
 
-CLI 通过统一的 HTTP API 与平台交互，支持 `dr` 和 `migration` 两种场景。
+The CLI talks to the platform through a unified HTTP API and supports both `dr` and `migration` scenes.
 
-## 核心能力
+## Core Capabilities
 
-- 管理本地连接配置、语言和默认输出格式
-- 查询主机、快照、任务、许可证和升级信息
-- 执行主机注册、同步、引导、注销和等待类操作
-- 管理主机启动配置与顶层 `boot-config apply` 流程
-- 管理源连接，包括 Agent / Agentless 安装信息和 Agentless 源连接创建
-- 管理目标侧云账号、云同步网关和对象存储
-- 通过 `api request` 直接访问已认证 API，便于排障和补充自动化
+- Manage local connection settings, language, and default output mode
+- Query hosts, snapshots, tasks, licenses, and upgrade information
+- Run host lifecycle operations such as register, sync, boot, deregister, and wait
+- Manage host boot configurations and the top-level `boot-config apply` flow
+- Manage source connections, including Agent / Agentless install metadata and Agentless source creation
+- Manage target-side cloud accounts, cloud sync gateways, and object storage
+- Use `api request` to call authenticated APIs directly for troubleshooting and additional automation
 
-## 适用场景
+## Typical Use Cases
 
-- 需要将 HyperBDR / HyperMotion 操作纳入 Shell、CI/CD 或批处理脚本
-- 需要通过 JSON 输出对接自定义自动化系统
-- 需要统一管理多环境配置，并在 `dr` / `migration` 场景间切换
-- 需要在不登录 Web 页面时完成常见运维动作
+- Integrate HyperBDR / HyperMotion operations into shell scripts, CI/CD jobs, or batch tasks
+- Consume raw JSON output from custom automation systems
+- Manage multiple environments and switch between `dr` and `migration`
+- Complete common operational tasks without using the web UI
 
-## 环境要求
+## Requirements
 
-- Go 1.18 或更高版本
-- 可访问的 HyperBDR / HyperMotion 平台地址，例如 `https://<host>:10443`
-- 有效的平台用户名和密码
+- Go 1.18 or later
+- A reachable HyperBDR / HyperMotion endpoint, for example `https://<host>:10443`
+- Valid platform credentials
 
-## 构建
+## Build
 
-在项目根目录执行：
+Run in the current module directory:
 
 ```sh
 go build -o hyperbdrctl ./cmd/hyperbdrctl
 ```
 
-如需生成更适合分发的精简二进制，可执行：
+To generate a smaller binary for distribution:
 
 ```sh
 go build -trimpath -ldflags="-s -w" -o hyperbdrctl ./cmd/hyperbdrctl
 ```
 
-Windows 下可根据需要输出为 `hyperbdrctl.exe`。
+On Windows, output `hyperbdrctl.exe` if needed.
 
-## 快速开始
+## Quick Start
 
-### 1. 保存本地默认配置
+### 1. Save Local Default Configuration
 
 ```sh
 hyperbdrctl config set \
@@ -56,15 +56,15 @@ hyperbdrctl config set \
   --lang zh_cn
 ```
 
-如果是测试环境，且确实需要跳过证书校验，可显式增加：
+If you are in a test environment and must skip TLS verification, add:
 
 ```sh
 --insecure
 ```
 
-`config set` 会先执行登录校验；如果认证失败，不会写入本地配置。
+`config set` validates the final merged credentials before saving. If authentication fails, nothing is written to the local config.
 
-### 2. 执行基础查询
+### 2. Run Basic Queries
 
 ```sh
 hyperbdrctl host list --page 1 --page-size 10
@@ -72,30 +72,30 @@ hyperbdrctl target account list
 hyperbdrctl tasks list
 ```
 
-### 3. 在脚本中使用 JSON 输出
+### 3. Use JSON Output in Scripts
 
 ```sh
 hyperbdrctl host list --page 1 --page-size 10 --output json
 ```
 
-默认输出为表格；当使用 `--output json` 时，CLI 输出原始 API 字段名，便于脚本直接消费。
+The default output mode is table. When `--output json` is used, the CLI returns raw API field names for direct script consumption.
 
-## 配置方式
+## Configuration Sources
 
-CLI 支持以下配置来源：
+The CLI supports these configuration sources:
 
-1. 命令行参数
-2. 环境变量
-3. 本地配置文件
-4. 默认值
+1. Command-line flags
+2. Environment variables
+3. Local config file
+4. Defaults
 
-固定优先级为：
+The fixed priority order is:
 
 ```text
-命令行参数 > 环境变量 > 配置文件 > 默认值
+command-line flags > environment variables > config file > defaults
 ```
 
-常用环境变量如下：
+Common environment variables:
 
 ```text
 HYPERBDR_HOST
@@ -108,17 +108,17 @@ HYPERBDR_INSECURE
 HYPERBDR_DEBUG
 ```
 
-说明：
+Notes:
 
-- `--lang` 同时控制 CLI 文案和 HTTP 请求头 `X-LANG`
-- 支持语言值：`en`、`zh_cn`
-- 默认输出格式：`table`
-- `config get` 默认隐藏密码
-- TLS 默认校验证书，仅在测试环境下建议显式使用 `--insecure`
+- `--lang` controls both CLI text and the HTTP `X-LANG` header
+- Supported languages are `en` and `zh_cn`
+- The default output mode is `table`
+- `config get` hides saved passwords by default
+- TLS verification is enabled by default, and `--insecure` should only be used explicitly in test environments
 
-## 典型工作流
+## Common Workflows
 
-### 主机与启动配置
+### Hosts and Boot Configuration
 
 ```sh
 hyperbdrctl host list
@@ -128,14 +128,14 @@ hyperbdrctl boot-config apply --id <host_id> --file ./boot-config.json
 hyperbdrctl host wait --id <host_id>
 ```
 
-说明：
+Notes:
 
-- 稳定的主机级启动配置管理使用 `host boot-config`
-- 独立的顶层单主机覆盖式 apply 流程使用 `boot-config apply`
+- Stable host-level boot configuration management uses `host boot-config`
+- The independent single-host override apply flow uses top-level `boot-config apply`
 
-### 源连接
+### Source Connections
 
-查看源端安装信息：
+Inspect source-side install metadata:
 
 ```sh
 hyperbdrctl source agent-install
@@ -143,7 +143,7 @@ hyperbdrctl source agentless-install
 hyperbdrctl source sync-nodes
 ```
 
-创建 Agentless 源连接：
+Create an Agentless source connection:
 
 ```sh
 hyperbdrctl source create \
@@ -154,13 +154,13 @@ hyperbdrctl source create \
   --auth-cert <password>
 ```
 
-创建完成后，可执行：
+After creation, validate the binding result:
 
 ```sh
 hyperbdrctl source list --type vmware --binding-status binding
 ```
 
-### 目标云账号
+### Target Cloud Accounts
 
 ```sh
 hyperbdrctl target supports
@@ -170,9 +170,9 @@ hyperbdrctl target account create-block aliyun --help
 hyperbdrctl target account create-oss openstack --help
 ```
 
-CLI 通过按云厂商拆分的子命令承载写入类流程。当前支持的 provider 列表以运行时 `target supports` 和对应 `create-* --help` 输出为准。
+Write operations are exposed through provider-specific subcommands. The supported providers should be confirmed with `target supports` and the corresponding `create-* --help` output at runtime.
 
-### 云同步网关
+### Cloud Sync Gateways
 
 ```sh
 hyperbdrctl target cloud-sync-gateway list
@@ -181,14 +181,14 @@ hyperbdrctl target cloud-sync-gateway create aliyun --help
 hyperbdrctl target cloud-sync-gateway wait --id <storage_id>
 ```
 
-建议流程：
+Recommended sequence:
 
-1. 先确认或创建目标云账号
-2. 查询创建所需资源
-3. 按云厂商执行网关创建
-4. 通过 `wait` 等待最终状态
+1. Confirm or create the target cloud account
+2. Query the required creation resources
+3. Run the provider-specific gateway creation command
+4. Use `wait` to confirm the final state
 
-### 对象存储
+### Object Storage
 
 ```sh
 hyperbdrctl target oss list
@@ -197,7 +197,15 @@ hyperbdrctl target oss buckets --help
 hyperbdrctl target oss create --help
 ```
 
-## 命令总览
+### License Management
+
+```sh
+hyperbdrctl license list
+hyperbdrctl license reg-code
+hyperbdrctl license activate --kkty <reg_code> --ddty <activation_code>
+```
+
+## Command Overview
 
 ```text
 hyperbdrctl
@@ -211,7 +219,7 @@ hyperbdrctl
 |- host
 |  |- list / detail / snapshots / register / sync / boot / cleanup-validation-host / deregister / wait
 |  `- boot-config
-|- licenses
+|- license
 |- source
 |  |- list / detail / vms / agent-install / agentless-install / sync-nodes / create
 |- target
@@ -223,7 +231,7 @@ hyperbdrctl
 `- upgrade
 ```
 
-如需查看某个命令的完整参数和示例，请执行：
+For full flags and examples for a specific command, run:
 
 ```sh
 hyperbdrctl --help
@@ -234,17 +242,17 @@ hyperbdrctl target account create-block --help
 hyperbdrctl target cloud-sync-gateway create --help
 ```
 
-## 发布与集成建议
+## Release and Integration Notes
 
-- 优先为自动化场景固定 `--output json`
-- 在多环境切换时，建议显式设置 `--scene`
-- 生产环境不要默认开启 `--insecure`
-- 如果需要最小化人工输入，优先使用环境变量或预置配置文件
-- 如需排障，可附加 `--debug` 输出请求调试日志
+- Prefer `--output json` for automation scenarios
+- Set `--scene` explicitly when switching across environments
+- Do not enable `--insecure` by default in production
+- To minimize manual input, prefer environment variables or a pre-populated config file
+- Add `--debug` when request-level troubleshooting is needed
 
-## 开发验证
+## Development Verification
 
-在仓库规范下，涉及代码修改时应在项目根目录执行：
+When code changes are made, run the standard verification commands in this module directory:
 
 ```sh
 gofmt -w cmd internal
