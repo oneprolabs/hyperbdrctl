@@ -176,6 +176,46 @@ func TestBootConfigFetchOSSAliyunFlavorsRequireZoneID(t *testing.T) {
 	}
 }
 
+func TestBootConfigFetchOSSAliyunNetworksDoesNotRequireZoneID(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"networks": []map[string]interface{}{
+						{"id": "vpc-1", "name": "vpc-one", "cidr_block": "192.168.0.0/16"},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"boot-config", "fetch-oss-resources", "aliyun",
+		"--cloud-account-id", "account-1",
+		"--fetch-res", "networks",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(gotQuery, "zone_id=") {
+		t.Fatalf("query must not contain zone_id: %q", gotQuery)
+	}
+	text := out.String()
+	for _, want := range []string{"== Networks ==", "vpc-1", "vpc-one"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+}
+
 func TestBootConfigFetchOSSHuaweiRegionsZonesDoesNotRequireRegionID(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

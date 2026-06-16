@@ -186,7 +186,7 @@ func validateAliyunObjectBootConfigFetchResources(spec appbootconfigquery.Resour
 	needFlavor := false
 	for _, resource := range requested {
 		switch resource {
-		case "flavors", "os_types", "networks", "subnets", "security_groups":
+		case "flavors", "os_types", "subnets", "security_groups":
 			needZone = true
 		case "system_volume_types", "volume_types":
 			needZone = true
