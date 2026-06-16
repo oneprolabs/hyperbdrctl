@@ -426,6 +426,39 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl license":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl license list":
+		return []flagHelpSpec{
+			{name: "page", defaultValue: "1"},
+			{name: "page-size", defaultValue: "10"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl license reg-code":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl license activate":
+		return []flagHelpSpec{
+			{name: "kkty", noteKey: "help.note_required_unless_file"},
+			{name: "ddty", noteKey: "help.note_required_unless_file"},
+			{name: "file"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl target":
 		return []flagHelpSpec{
 			{name: "debug"},

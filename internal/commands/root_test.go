@@ -47,8 +47,8 @@ func TestUsageIsLocalized(t *testing.T) {
 	if !strings.Contains(out.String(), "用法") {
 		t.Fatalf("usage = %q", out.String())
 	}
-	if !strings.Contains(out.String(), "licenses") {
-		t.Fatalf("usage missing licenses = %q", out.String())
+	if !strings.Contains(out.String(), "license") {
+		t.Fatalf("usage missing license = %q", out.String())
 	}
 	if !strings.Contains(out.String(), "api") {
 		t.Fatalf("usage missing api = %q", out.String())
@@ -70,6 +70,9 @@ func TestUsageIsLocalized(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "sources") {
 		t.Fatalf("usage should hide deprecated sources alias = %q", out.String())
+	}
+	if strings.Contains(out.String(), "licenses") {
+		t.Fatalf("usage should hide deprecated licenses alias = %q", out.String())
 	}
 }
 
@@ -499,7 +502,7 @@ func TestNonPassthroughCommandsStillRejectUnknownFlags(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "licenses", "activate", "--kkty", "k", "--ddty", "d", "--custom-step", "3"), &out, &errOut)
+	err := Execute(withHost(t, "https://example.invalid", "license", "activate", "--kkty", "k", "--ddty", "d", "--custom-step", "3"), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined") {
 		t.Fatalf("err = %v", err)
 	}
@@ -531,7 +534,7 @@ func TestQueryPassthroughCommandsAllowFormerLegacyConfigFlags(t *testing.T) {
 		}))
 
 		var out, errOut bytes.Buffer
-		args := append(withHost(t, srv.URL, "licenses", "list"), tc.args...)
+		args := append(withHost(t, srv.URL, "license", "list"), tc.args...)
 		err := Execute(args, &out, &errOut)
 		srv.Close()
 		if err != nil {
@@ -541,6 +544,64 @@ func TestQueryPassthroughCommandsAllowFormerLegacyConfigFlags(t *testing.T) {
 			t.Fatalf("args=%v query=%q missing %q", args, gotQuery, tc.wantQuery)
 		}
 	}
+}
+
+func TestLicenseHelpShowsModernGuidance(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"license", "--help"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"Usage Notes:",
+		"hyperbdrctl license list",
+		"hyperbdrctl license reg-code",
+		"hyperbdrctl license activate --kkty <reg_code> --ddty <activation_code>",
+		"hyperbdrctl license activate --file ./tmp/license-activate.json",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, text)
+		}
+	}
+	assertNoHelpFooter(t, text)
+}
+
+func TestLicenseActivateHelpShowsFileAwareFlags(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"license", "activate", "--help"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"--kkty",
+		"--ddty",
+		"--file",
+		"required unless --file is used",
+		"hyperbdrctl license activate --file ./tmp/license-activate.json",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, text)
+		}
+	}
+	assertNoHelpFooter(t, text)
 }
 
 func TestParseQueryFlagsIntoRejectsUnknownFlagsByDefault(t *testing.T) {

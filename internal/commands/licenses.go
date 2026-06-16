@@ -7,12 +7,12 @@ import (
 
 func runLicenses(ctx *context, args []string) error {
 	if len(args) == 0 {
-		return errUnknown("licenses", "")
+		return errUnknown("license", "")
 	}
 	service := applicense.NewService(commandAPIAdapter{ctx: ctx})
 	switch args[0] {
 	case "list":
-		fs := newFlagSet("licenses list")
+		fs := newFlagSet("license list")
 		page := fs.Int("page", 1, "")
 		pageSize := fs.Int("page-size", 10, "")
 		q := queryFromPairs()
@@ -29,7 +29,7 @@ func runLicenses(ctx *context, args []string) error {
 		}
 		return writeResponse(ctx, resp, "pages", licenseColumns())
 	case "reg-code":
-		fs := newFlagSet("licenses reg-code")
+		fs := newFlagSet("license reg-code")
 		q := queryFromPairs()
 		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
@@ -40,7 +40,7 @@ func runLicenses(ctx *context, args []string) error {
 		}
 		return writeResponse(ctx, resp, "", nil)
 	case "activate":
-		fs := newFlagSet("licenses activate")
+		fs := newFlagSet("license activate")
 		kkty := fs.String("kkty", "", "")
 		ddty := fs.String("ddty", "", "")
 		file := fs.String("file", "", "")
@@ -67,7 +67,7 @@ func runLicenses(ctx *context, args []string) error {
 		}
 		return writeResponse(ctx, resp, "", nil)
 	default:
-		return errUnknown("licenses", args[0])
+		return errUnknown("license", args[0])
 	}
 }
 

@@ -42,7 +42,7 @@ func TestLicensesList(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "licenses", "list", "--page", "2", "--page-size", "3"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "license", "list", "--page", "2", "--page-size", "3"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestLicensesRegCode(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "licenses", "reg-code"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "license", "reg-code"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestLicensesJSONKeepsRawFields(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "licenses", "reg-code"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "license", "reg-code"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func TestLicensesActivateWithFlags(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "licenses", "activate", "--kkty", "k", "--ddty", "d"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "license", "activate", "--kkty", "k", "--ddty", "d"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestLicensesActivateWithFile(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "licenses", "activate", "--file", bodyPath), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "license", "activate", "--file", bodyPath), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}

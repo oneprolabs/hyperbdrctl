@@ -324,25 +324,40 @@ func newTargetOSSCommand(ctx *context) *cobra.Command {
 }
 
 func newLicensesCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "licenses", "cmd.licenses.short", "cmd.licenses.long", "cmd.licenses.examples", "cmd.licenses.notes", "licenses")
-	cmd.AddCommand(
-		newRawLeafCommand(ctx, "list", "cmd.licenses.list.short", "cmd.licenses.list.long", "cmd.licenses.list.examples", "cmd.licenses.list.notes", func(cmd *cobra.Command) {
-			addFlagInt(cmd, ctx, "page")
-			addFlagInt(cmd, ctx, "page-size")
-		}, func(args []string) error {
-			return runLicenses(ctx, append([]string{"list"}, args...))
-		}),
-		newRawLeafCommand(ctx, "reg-code", "cmd.licenses.reg_code.short", "cmd.licenses.reg_code.long", "cmd.licenses.reg_code.examples", "cmd.licenses.reg_code.notes", nil, func(args []string) error {
-			return runLicenses(ctx, append([]string{"reg-code"}, args...))
-		}),
-		newRawLeafCommand(ctx, "activate", "cmd.licenses.activate.short", "cmd.licenses.activate.long", "cmd.licenses.activate.examples", "cmd.licenses.activate.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "kkty")
-			addFlagString(cmd, ctx, "ddty")
-			addFlagString(cmd, ctx, "file")
-		}, func(args []string) error {
-			return runLicenses(ctx, append([]string{"activate"}, args...))
-		}),
-	)
+	cmd := newGroupCommand(ctx, "license", "cmd.licenses.short", "cmd.licenses.long", "cmd.licenses.examples", "cmd.licenses.notes", "license")
+	addHelpLayout(cmd, helpLayoutGroup)
+	addUsageLine(cmd, ctx, "cmd.licenses.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.licenses.usage_notes")
+
+	listCmd := newRawLeafCommand(ctx, "list", "cmd.licenses.list.short", "cmd.licenses.list.long", "cmd.licenses.list.examples", "cmd.licenses.list.notes", func(cmd *cobra.Command) {
+		addFlagInt(cmd, ctx, "page")
+		addFlagInt(cmd, ctx, "page-size")
+	}, func(args []string) error {
+		return runLicenses(ctx, append([]string{"list"}, args...))
+	})
+	addHelpLayout(listCmd, helpLayoutFourSection)
+	addUsageLine(listCmd, ctx, "cmd.licenses.list.usage_line")
+	addUsageNotes(listCmd, ctx, "cmd.licenses.list.usage_notes")
+
+	regCodeCmd := newRawLeafCommand(ctx, "reg-code", "cmd.licenses.reg_code.short", "cmd.licenses.reg_code.long", "cmd.licenses.reg_code.examples", "cmd.licenses.reg_code.notes", nil, func(args []string) error {
+		return runLicenses(ctx, append([]string{"reg-code"}, args...))
+	})
+	addHelpLayout(regCodeCmd, helpLayoutFourSection)
+	addUsageLine(regCodeCmd, ctx, "cmd.licenses.reg_code.usage_line")
+	addUsageNotes(regCodeCmd, ctx, "cmd.licenses.reg_code.usage_notes")
+
+	activateCmd := newRawLeafCommand(ctx, "activate", "cmd.licenses.activate.short", "cmd.licenses.activate.long", "cmd.licenses.activate.examples", "cmd.licenses.activate.notes", func(cmd *cobra.Command) {
+		addFlagString(cmd, ctx, "kkty")
+		addFlagString(cmd, ctx, "ddty")
+		addFlagString(cmd, ctx, "file")
+	}, func(args []string) error {
+		return runLicenses(ctx, append([]string{"activate"}, args...))
+	})
+	addHelpLayout(activateCmd, helpLayoutFourSection)
+	addUsageLine(activateCmd, ctx, "cmd.licenses.activate.usage_line")
+	addUsageNotes(activateCmd, ctx, "cmd.licenses.activate.usage_notes")
+
+	cmd.AddCommand(listCmd, regCodeCmd, activateCmd)
 	return cmd
 }
 
