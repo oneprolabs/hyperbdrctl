@@ -91,6 +91,79 @@ func TestServiceSnapshotsRequiresID(t *testing.T) {
 	}
 }
 
+func TestServiceBootUsesLatestSnapshotWhenSnapshotIDOmitted(t *testing.T) {
+	api := &fakeAPI{
+		gets: []func(string, url.Values) (client.APIResponse, error){
+			func(path string, q url.Values) (client.APIResponse, error) {
+				if path != "/api/v2/getHostDetail" {
+					t.Fatalf("path = %q", path)
+				}
+				if q.Get("host_id") != "host-1" || q.Get("sheet") != "snapshot" {
+					t.Fatalf("query = %+v", q)
+				}
+				return client.APIResponse{Data: map[string]interface{}{
+					"snapshots": []interface{}{
+						map[string]interface{}{"id": "snap-old", "created_at": "2026-06-15T10:00:00Z"},
+						map[string]interface{}{"id": "snap-new", "created_at": "2026-06-16T10:00:00Z"},
+					},
+				}}, nil
+			},
+		},
+	}
+	service := NewService(api)
+
+	_, err := service.Boot(BootSpec{
+		ID:    "host-1",
+		Known: map[string]string{"boot_instance_purpose": "drill"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.postPath != "/api/v2/batchBoot" {
+		t.Fatalf("path = %q", api.postPath)
+	}
+	item := api.postBody.(map[string]interface{})["batch_boot"].([]map[string]interface{})[0]
+	if item["migration_id"] != "host-1" || item["snapshot_id"] != "snap-new" {
+		t.Fatalf("body = %+v", api.postBody)
+	}
+}
+
+func TestServiceBootKeepsExplicitSnapshotID(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Boot(BootSpec{
+		ID:    "host-1",
+		Known: map[string]string{"snapshot_id": "snap-explicit"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(api.gets) != 0 || api.getPath != "" {
+		t.Fatalf("boot should not query snapshots when snapshot_id is explicit")
+	}
+	item := api.postBody.(map[string]interface{})["batch_boot"].([]map[string]interface{})[0]
+	if item["snapshot_id"] != "snap-explicit" {
+		t.Fatalf("body = %+v", api.postBody)
+	}
+}
+
+func TestServiceBootFailsWhenHostHasNoSnapshots(t *testing.T) {
+	api := &fakeAPI{
+		gets: []func(string, url.Values) (client.APIResponse, error){
+			func(path string, q url.Values) (client.APIResponse, error) {
+				return client.APIResponse{Data: map[string]interface{}{"snapshots": []interface{}{}}}, nil
+			},
+		},
+	}
+	service := NewService(api)
+
+	_, err := service.Boot(BootSpec{ID: "host-1"})
+	if err == nil || err.Error() != "host has no snapshots" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestServiceWaitUsesHostDetailPolling(t *testing.T) {
 	api := &fakeAPI{
 		gets: []func(string, url.Values) (client.APIResponse, error){

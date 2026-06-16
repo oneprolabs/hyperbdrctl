@@ -146,7 +146,15 @@ func (s Service) Register(spec RegisterSpec) (client.APIResponse, error) {
 }
 
 func (s Service) Boot(spec BootSpec) (client.APIResponse, error) {
-	body, err := bootBody(spec.RawBody, spec.ID, spec.Known, spec.Unknown)
+	known := cloneStringMap(spec.Known)
+	if spec.RawBody == nil && spec.ID != "" && strings.TrimSpace(known["snapshot_id"]) == "" {
+		snapshotID, err := s.latestSnapshotID(spec.ID)
+		if err != nil {
+			return client.APIResponse{}, err
+		}
+		known["snapshot_id"] = snapshotID
+	}
+	body, err := bootBody(spec.RawBody, spec.ID, known, spec.Unknown)
 	if err != nil {
 		return client.APIResponse{}, err
 	}
@@ -257,6 +265,31 @@ func (s Service) fetchHostDetail(hostID string) (map[string]interface{}, bool, e
 		return nil, false, err
 	}
 	return mapFromData(resp.Data), false, nil
+}
+
+func (s Service) latestSnapshotID(hostID string) (string, error) {
+	q := url.Values{}
+	q.Set("host_id", hostID)
+	q.Set("sheet", "snapshot")
+	resp, err := s.api.Get("/api/v2/getHostDetail", q)
+	if err != nil {
+		return "", err
+	}
+	snapshots := listFromData(resp.Data, "snapshots")
+	if len(snapshots) == 0 {
+		return "", fmt.Errorf("host has no snapshots")
+	}
+	latest := snapshots[0]
+	for _, snapshot := range snapshots[1:] {
+		if snapshotNewerThan(snapshot, latest) {
+			latest = snapshot
+		}
+	}
+	snapshotID := stringValue(latest["id"])
+	if snapshotID == "" {
+		return "", fmt.Errorf("latest snapshot has no id")
+	}
+	return snapshotID, nil
 }
 
 func waitHostState(host map[string]interface{}, operation string) (status, displayStatus, taskID, taskError string) {
@@ -543,4 +576,59 @@ func InferValue(value string) interface{} {
 		return i
 	}
 	return value
+}
+
+func cloneStringMap(src map[string]string) map[string]string {
+	if src == nil {
+		return map[string]string{}
+	}
+	cloned := make(map[string]string, len(src))
+	for key, value := range src {
+		cloned[key] = value
+	}
+	return cloned
+}
+
+func snapshotNewerThan(left, right map[string]interface{}) bool {
+	leftTime, leftOK := snapshotTime(left)
+	rightTime, rightOK := snapshotTime(right)
+	switch {
+	case leftOK && rightOK:
+		if leftTime.Equal(rightTime) {
+			return stringValue(left["id"]) > stringValue(right["id"])
+		}
+		return leftTime.After(rightTime)
+	case leftOK:
+		return true
+	case rightOK:
+		return false
+	default:
+		return stringValue(left["id"]) > stringValue(right["id"])
+	}
+}
+
+func snapshotTime(snapshot map[string]interface{}) (time.Time, bool) {
+	for _, key := range []string{"created_at", "updated_at"} {
+		if ts, ok := parseSnapshotTime(stringValue(snapshot[key])); ok {
+			return ts, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func parseSnapshotTime(value string) (time.Time, bool) {
+	if value == "" {
+		return time.Time{}, false
+	}
+	for _, layout := range []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04:05Z07:00",
+	} {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
 }

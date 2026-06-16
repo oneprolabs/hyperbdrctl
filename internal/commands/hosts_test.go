@@ -288,10 +288,24 @@ func TestHostsBootAllowsFormerLegacyConfigFlagsAsBodyOverrides(t *testing.T) {
 	for _, tc := range cases {
 		var gotBody map[string]interface{}
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-				t.Fatal(err)
+			switch r.URL.Path {
+			case "/api/v2/getHostDetail":
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"code": "00000000",
+					"data": map[string]interface{}{
+						"snapshots": []map[string]interface{}{
+							{"id": "snap-1", "created_at": "2026-06-16T10:00:00Z"},
+						},
+					},
+				})
+			case "/api/v2/batchBoot":
+				if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+					t.Fatal(err)
+				}
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"accepted": true}})
+			default:
+				t.Fatalf("path = %q", r.URL.Path)
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"accepted": true}})
 		}))
 
 		var out, errOut bytes.Buffer
@@ -346,6 +360,77 @@ func TestHostsBootWithFlags(t *testing.T) {
 		item["cloud_type"] != "vmware_obs" ||
 		item["custom_number"].(float64) != 3 {
 		t.Fatalf("body = %+v", gotBody)
+	}
+}
+
+func TestHostsBootUsesLatestSnapshotByDefault(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPaths []string
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPaths = append(gotPaths, r.URL.Path+"?"+r.URL.RawQuery)
+		switch r.URL.Path {
+		case "/api/v2/getHostDetail":
+			if r.URL.Query().Get("host_id") != "host-1" || r.URL.Query().Get("sheet") != "snapshot" {
+				t.Fatalf("query = %q", r.URL.RawQuery)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"snapshots": []map[string]interface{}{
+						{"id": "snap-1", "created_at": "2026-06-15T10:00:00Z"},
+						{"id": "snap-2", "created_at": "2026-06-16T10:00:00Z"},
+					},
+				},
+			})
+		case "/api/v2/batchBoot":
+			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+				t.Fatal(err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"accepted": true}})
+		default:
+			t.Fatalf("unexpected path = %q", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "host", "boot", "--id", "host-1"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gotPaths) != 2 {
+		t.Fatalf("paths = %+v", gotPaths)
+	}
+	item := gotBody["batch_boot"].([]interface{})[0].(map[string]interface{})
+	if item["migration_id"] != "host-1" || item["snapshot_id"] != "snap-2" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+}
+
+func TestHostsBootFailsWhenLatestSnapshotCannotBeResolved(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v2/getHostDetail" {
+			t.Fatalf("path = %q", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"snapshots": []map[string]interface{}{},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "host", "boot", "--id", "host-1"), &out, &errOut)
+	if err == nil || err.Error() != "host has no snapshots" {
+		t.Fatalf("err = %v", err)
 	}
 }
 
