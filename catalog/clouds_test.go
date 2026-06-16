@@ -165,6 +165,58 @@ func TestEnabledHelpersReturnCopies(t *testing.T) {
 	}
 }
 
+func TestBlockCloudArchitectures(t *testing.T) {
+	tests := []struct {
+		name      string
+		cloudType string
+		want      string
+	}{
+		{name: "bs provider uses AtomyV2", cloudType: "aliyun_bs", want: AtomyV2},
+		{name: "legacy provider uses NotAtomy", cloudType: "openstack", want: NotAtomy},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := findCloudEntryByType(t, BlockClouds, tt.cloudType)
+			if got.Architecture != tt.want {
+				t.Fatalf("BlockClouds %q architecture = %q, want %q", tt.cloudType, got.Architecture, tt.want)
+			}
+		})
+	}
+}
+
+func TestObjectCloudArchitectures(t *testing.T) {
+	tests := []struct {
+		name      string
+		cloudType string
+		want      string
+	}{
+		{name: "obs provider uses AtomyV2", cloudType: "aliyun_obs", want: AtomyV2},
+		{name: "legacy provider uses NotAtomy", cloudType: "vmware", want: NotAtomy},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := findCloudEntryByType(t, ObjectClouds, tt.cloudType)
+			if got.Architecture != tt.want {
+				t.Fatalf("ObjectClouds %q architecture = %q, want %q", tt.cloudType, got.Architecture, tt.want)
+			}
+		})
+	}
+}
+
+func TestEnabledCloudsPreserveArchitecture(t *testing.T) {
+	block := findCloudEntryByType(t, EnabledBlockClouds(), "open_telekom_bs")
+	if block.Architecture != AtomyV2 {
+		t.Fatalf("EnabledBlockClouds() architecture for %q = %q, want %q", block.CloudType, block.Architecture, AtomyV2)
+	}
+
+	object := findCloudEntryByType(t, EnabledObjectClouds(), "openstack")
+	if object.Architecture != NotAtomy {
+		t.Fatalf("EnabledObjectClouds() architecture for %q = %q, want %q", object.CloudType, object.Architecture, NotAtomy)
+	}
+}
+
 func containsCloudType(items []CloudEntry, cloudType string) bool {
 	for _, item := range items {
 		if item.CloudType == cloudType {
@@ -172,6 +224,19 @@ func containsCloudType(items []CloudEntry, cloudType string) bool {
 		}
 	}
 	return false
+}
+
+func findCloudEntryByType(t *testing.T, items []CloudEntry, cloudType string) CloudEntry {
+	t.Helper()
+
+	for _, item := range items {
+		if item.CloudType == cloudType {
+			return item
+		}
+	}
+
+	t.Fatalf("cloud type %q not found", cloudType)
+	return CloudEntry{}
 }
 
 func assertUniqueProviders(t *testing.T, name string, items []CloudEntry) {
