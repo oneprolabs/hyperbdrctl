@@ -116,13 +116,16 @@ func authAutoDetectedResources(data interface{}) []string {
 		"projects",
 		"compute_zones",
 		"flavors",
+		"os_types",
 		"images",
 		"boot_loader_images",
 		"boot_loader_flavors",
 		"system_volume_types",
+		"volume_types",
 		"zones",
 		"networks",
 		"subnets",
+		"security_groups",
 	}
 	detected := make([]string, 0, len(ordered))
 	seen := map[string]bool{}
@@ -166,7 +169,7 @@ func authExtraResourceKeys(data interface{}, seen map[string]bool) []string {
 
 func authResourceHasData(data interface{}, resource string) bool {
 	switch resource {
-	case "regions", "zones", "images", "boot_loader_images", "flavors", "projects", "compute_zones", "boot_loader_flavors", "system_volume_types", "networks", "subnets":
+	case "regions", "zones", "images", "boot_loader_images", "flavors", "os_types", "projects", "compute_zones", "boot_loader_flavors", "system_volume_types", "volume_types", "networks", "subnets", "security_groups":
 		return len(authResourceRows(data, resource)) > 0
 	default:
 		return ResourceValue(data, resource) != nil
@@ -185,7 +188,7 @@ func authResourceRows(data interface{}, resource string) []map[string]interface{
 		return SystemVolumeTypeRows(data)
 	case "boot_loader_images":
 		return NormalizeImageRows(ResourceRows(data, resource))
-	case "flavors", "projects", "compute_zones", "boot_loader_flavors", "networks", "subnets":
+	case "flavors", "os_types", "projects", "compute_zones", "boot_loader_flavors", "volume_types", "networks", "subnets", "security_groups":
 		return ResourceRows(data, resource)
 	default:
 		return nil
@@ -194,12 +197,14 @@ func authResourceRows(data interface{}, resource string) []map[string]interface{
 
 func authResourceTitleKey(resource string) string {
 	switch resource {
-	case "regions", "zones", "flavors", "images", "boot_loader_images", "compute_zones", "projects", "networks", "subnets":
+	case "regions", "zones", "flavors", "os_types", "images", "boot_loader_images", "compute_zones", "projects", "networks", "subnets", "security_groups":
 		return "resource." + resource
 	case "boot_loader_flavors":
 		return "resource.boot_loader_flavors"
 	case "system_volume_types":
-		return "resource.volume_types"
+		return "resource.system_volume_types"
+	case "volume_types":
+		return "resource.data_volume_types"
 	default:
 		return resource
 	}

@@ -96,6 +96,10 @@ func rootFlagSpecs() []flagHelpSpec {
 func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	path := cmd.CommandPath()
 	switch {
+	case strings.HasPrefix(path, "hyperbdrctl boot-config fetch-block-resources "):
+		return bootConfigFetchProviderFlagSpecs()
+	case strings.HasPrefix(path, "hyperbdrctl boot-config fetch-oss-resources "):
+		return bootConfigFetchProviderFlagSpecs()
 	case strings.HasPrefix(path, "hyperbdrctl target account fetch-block-resources "):
 		if path == "hyperbdrctl target account fetch-block-resources openstack" {
 			return []flagHelpSpec{
@@ -312,6 +316,27 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	}
 
 	switch path {
+	case "hyperbdrctl boot-config":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl boot-config fetch-block-resources":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl boot-config fetch-oss-resources":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl config":
 		return []flagHelpSpec{
 			{name: "help"},
@@ -693,6 +718,40 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	default:
 		return nil
+	}
+}
+
+func bootConfigFetchProviderFlagSpecs() []flagHelpSpec {
+	return []flagHelpSpec{
+		{name: "cloud-account-id", required: true},
+		{name: "fetch-res"},
+		{name: "host-id"},
+		{name: "storage-id"},
+		{name: "network-addr-for-write-data"},
+		{name: "network-addr-for-read-data"},
+		{name: "region-id"},
+		{name: "zone-id"},
+		{name: "cloud-account-username"},
+		{name: "cloud-account-use-public"},
+		{name: "flavor-id"},
+		{name: "boot-loader-flavor-id"},
+		{name: "arch"},
+		{name: "os-type-id"},
+		{name: "os-type"},
+		{name: "flavors"},
+		{name: "flavor-vcpus"},
+		{name: "flavor-ram"},
+		{name: "max-nic-num"},
+		{name: "system-volume-type-id"},
+		{name: "volume-type-id"},
+		{name: "default-volume-type-id"},
+		{name: "default-pool-id"},
+		{name: "dest-boot-mode"},
+		{name: "network-id"},
+		{name: "debug"},
+		{name: "lang"},
+		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+		{name: "help"},
 	}
 }
 

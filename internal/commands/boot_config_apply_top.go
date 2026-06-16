@@ -13,6 +13,9 @@ import (
 
 func newTopLevelBootConfigCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "boot-config", "cmd.boot_config_top.short", "cmd.boot_config_top.long", "cmd.boot_config_top.examples", "cmd.boot_config_top.notes", "boot-config")
+	addHelpLayout(cmd, helpLayoutGroup)
+	addUsageLine(cmd, ctx, "cmd.boot_config_top.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.boot_config_top.usage_notes")
 	applyCmd := newRawLeafCommand(ctx, "apply", "cmd.boot_config_top.apply.short", "cmd.boot_config_top.apply.long", "cmd.boot_config_top.apply.examples", "cmd.boot_config_top.apply.notes", func(cmd *cobra.Command) {
 		addFlagString(cmd, ctx, "id")
 		addFlagString(cmd, ctx, "file")
@@ -25,7 +28,11 @@ func newTopLevelBootConfigCommand(ctx *context) *cobra.Command {
 	addAutomaticBehavior(applyCmd, ctx, "cmd.boot_config_top.apply.automatic_behavior")
 	addMinimumFlags(applyCmd, ctx, "cmd.boot_config_top.apply.minimum_flags")
 	addRelatedCommands(applyCmd, ctx, "cmd.boot_config_top.apply.related")
-	cmd.AddCommand(applyCmd)
+	cmd.AddCommand(
+		applyCmd,
+		newBootConfigFetchBlockResourcesCommand(ctx),
+		newBootConfigFetchOSSResourcesCommand(ctx),
+	)
 	return cmd
 }
 

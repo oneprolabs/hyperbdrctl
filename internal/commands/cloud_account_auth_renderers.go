@@ -85,6 +85,10 @@ var authResourceRenderers = map[string]authResourceRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
 		columns:   func(rows []map[string]interface{}) []output.Column { return gatewayFlavorColumns() },
 	},
+	authRendererKey("generic", "os_types"): authTableRenderer{
+		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
+		columns:   func(rows []map[string]interface{}) []output.Column { return bootConfigOSTypeColumns() },
+	},
 	authRendererKey("generic", "projects"): authTableRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
 		columns:   func(rows []map[string]interface{}) []output.Column { return gatewayProjectColumns() },
@@ -97,6 +101,10 @@ var authResourceRenderers = map[string]authResourceRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
 		columns:   func(rows []map[string]interface{}) []output.Column { return gatewaySystemDiskTypeColumns() },
 	},
+	authRendererKey("generic", "volume_types"): authTableRenderer{
+		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
+		columns:   func(rows []map[string]interface{}) []output.Column { return gatewayVolumeTypeColumns() },
+	},
 	authRendererKey("generic", "networks"): authTableRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
 		columns:   func(rows []map[string]interface{}) []output.Column { return gatewayNetworkColumns() },
@@ -104,6 +112,10 @@ var authResourceRenderers = map[string]authResourceRenderer{
 	authRendererKey("generic", "subnets"): authTableRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
 		columns:   func(rows []map[string]interface{}) []output.Column { return gatewaySubnetColumns() },
+	},
+	authRendererKey("generic", "security_groups"): authTableRenderer{
+		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
+		columns:   func(rows []map[string]interface{}) []output.Column { return bootConfigSecurityGroupColumns() },
 	},
 	authRendererKey("huawei", "flavors"): authTableRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) {
@@ -135,6 +147,23 @@ func huaweiFlavorColumns() []output.Column {
 		{HeaderKey: "table.quota_pps", Field: "quota_pps"},
 		{HeaderKey: "table.max_nic_num", Field: "max_nic_num"},
 		{HeaderKey: "table.max_disk_num", Field: "max_disk_num"},
+	}
+}
+
+func bootConfigOSTypeColumns() []output.Column {
+	return []output.Column{
+		{HeaderKey: "table.id", Field: "id"},
+		{HeaderKey: "table.name", Field: "name"},
+		{HeaderKey: "table.os_type", Field: "os_type"},
+		{HeaderKey: "table.display_name", Field: "display_name"},
+	}
+}
+
+func bootConfigSecurityGroupColumns() []output.Column {
+	return []output.Column{
+		{HeaderKey: "table.id", Field: "id"},
+		{HeaderKey: "table.name", Field: "name"},
+		{HeaderKey: "table.network_id", Field: "network_id"},
 	}
 }
 
