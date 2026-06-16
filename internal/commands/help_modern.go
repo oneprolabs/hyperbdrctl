@@ -345,6 +345,113 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl host":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl host list":
+		return []flagHelpSpec{
+			{name: "page", defaultValue: "1"},
+			{name: "page-size", defaultValue: "10"},
+			{name: "status"},
+			{name: "boot-status"},
+			{name: "kw"},
+			{name: "cloud-type"},
+			{name: "ids"},
+			{name: "macs"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl host detail":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl host snapshots":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "status"},
+			{name: "sync-detail", defaultValue: "false"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl host sync":
+		return []flagHelpSpec{
+			{name: "id"},
+			{name: "ids"},
+			{name: "mode"},
+			{name: "transfer-speed"},
+			{name: "file"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl host register":
+		return []flagHelpSpec{
+			{name: "vm-id"},
+			{name: "vm-ids"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl host boot":
+		return []flagHelpSpec{
+			{name: "id"},
+			{name: "file"},
+			{name: "snapshot-id"},
+			{name: "boot-instance-purpose"},
+			{name: "cloud-type"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl host clean":
+		return []flagHelpSpec{
+			{name: "id"},
+			{name: "ids"},
+			{name: "file"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl host deregister":
+		return []flagHelpSpec{
+			{name: "id"},
+			{name: "ids"},
+			{name: "force", defaultValue: "false"},
+			{name: "file"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl host wait":
+		return []flagHelpSpec{
+			{name: "id"},
+			{name: "ids"},
+			{name: "operation", required: true, choices: []string{"sync", "boot", "clean", "deregister"}},
+			{name: "interval-seconds", defaultValue: "60"},
+			{name: "timeout-seconds", defaultValue: "3600"},
+			{name: "include-steps", defaultValue: "false"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl config":
 		return []flagHelpSpec{
 			{name: "help"},

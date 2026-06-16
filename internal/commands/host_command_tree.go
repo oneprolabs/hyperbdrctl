@@ -10,6 +10,9 @@ import (
 
 func newHostCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "host", "cmd.host.short", "cmd.host.long", "cmd.host.examples", "cmd.host.notes", "host")
+	addHelpLayout(cmd, helpLayoutGroup)
+	addUsageLine(cmd, ctx, "cmd.host.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.host.usage_notes")
 	cmd.AddCommand(
 		newRawLeafCommand(ctx, "list", "cmd.host.list.short", "cmd.host.list.long", "cmd.host.list.examples", "cmd.host.list.notes", func(cmd *cobra.Command) {
 			addFlagInt(cmd, ctx, "page")
@@ -59,12 +62,12 @@ func newHostCommand(ctx *context) *cobra.Command {
 		}, func(args []string) error {
 			return runHosts(ctx, append([]string{"boot"}, args...))
 		}),
-		newRawLeafCommand(ctx, "cleanup-validation-host", "cmd.host.cleanup.short", "cmd.host.cleanup.long", "cmd.host.cleanup.examples", "cmd.host.cleanup.notes", func(cmd *cobra.Command) {
+		newRawLeafCommand(ctx, "clean", "cmd.host.clean.short", "cmd.host.clean.long", "cmd.host.clean.examples", "cmd.host.clean.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "id")
 			addFlagString(cmd, ctx, "ids")
 			addFlagString(cmd, ctx, "file")
 		}, func(args []string) error {
-			return runHosts(ctx, append([]string{"cleanup-validation-host"}, args...))
+			return runHosts(ctx, append([]string{"clean"}, args...))
 		}),
 		newRawLeafCommand(ctx, "deregister", "cmd.host.deregister.short", "cmd.host.deregister.long", "cmd.host.deregister.examples", "cmd.host.deregister.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "id")
@@ -84,49 +87,12 @@ func newHostCommand(ctx *context) *cobra.Command {
 		}, func(args []string) error {
 			return runHosts(ctx, append([]string{"wait"}, args...))
 		}),
-		newHostBootConfigCommand(ctx),
 	)
-	return cmd
-}
-
-func newHostBootConfigCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "boot-config", "cmd.host.boot_config.short", "cmd.host.boot_config.long", "cmd.host.boot_config.examples", "cmd.host.boot_config.notes", "boot-config")
-	cmd.AddCommand(
-		newRawLeafCommand(ctx, "create", "cmd.boot_config.create.short", "cmd.boot_config.create.long", "cmd.boot_config.create.examples", "cmd.boot_config.create.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "id")
-			addFlagString(cmd, ctx, "file")
-		}, func(args []string) error {
-			return runBootConfig(ctx, append([]string{"create"}, args...))
-		}),
-		newRawLeafCommand(ctx, "get", "cmd.boot_config.get.short", "cmd.boot_config.get.long", "cmd.boot_config.get.examples", "cmd.boot_config.get.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "id")
-		}, func(args []string) error {
-			return runBootConfig(ctx, append([]string{"get"}, args...))
-		}),
-		newRawLeafCommand(ctx, "update", "cmd.boot_config.update.short", "cmd.boot_config.update.long", "cmd.boot_config.update.examples", "cmd.boot_config.update.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "id")
-			addFlagString(cmd, ctx, "file")
-		}, func(args []string) error {
-			return runBootConfig(ctx, append([]string{"update"}, args...))
-		}),
-		newRawLeafCommand(ctx, "apply", "cmd.boot_config.apply.short", "cmd.boot_config.apply.long", "cmd.boot_config.apply.examples", "cmd.boot_config.apply.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "id")
-			addFlagString(cmd, ctx, "file")
-		}, func(args []string) error {
-			return runBootConfigCLI(ctx, append([]string{"apply"}, args...))
-		}),
-	)
-	return cmd
-}
-
-func newBootConfigAliasCommand(ctx *context) *cobra.Command {
-	cmd := newHostBootConfigCommand(ctx)
-	cmd.Use = "boot-config"
-	cmd.Short = ctx.loc.T("cmd.boot_config.alias.short")
-	cmd.Long = ctx.loc.T("cmd.boot_config.alias.long")
-	cmd.Example = strings.TrimSpace(ctx.loc.T("cmd.boot_config.alias.examples"))
-	cmd.Deprecated = ctx.loc.T("cmd.boot_config.alias.deprecated")
-	cmd.Hidden = true
+	for _, child := range cmd.Commands() {
+		addHelpLayout(child, helpLayoutFourSection)
+		addUsageLine(child, ctx, "cmd.host."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_line")
+		addUsageNotes(child, ctx, "cmd.host."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_notes")
+	}
 	return cmd
 }
 

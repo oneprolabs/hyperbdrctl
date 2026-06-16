@@ -378,7 +378,7 @@ func TestHostsBootWithFile(t *testing.T) {
 	}
 }
 
-func TestHostsCleanupValidationHostWithFlags(t *testing.T) {
+func TestHostsCleanWithFlags(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -395,7 +395,7 @@ func TestHostsCleanupValidationHostWithFlags(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "host", "cleanup-validation-host", "--id", "host-1", "--ids", "host-2,host-3"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "host", "clean", "--id", "host-1", "--ids", "host-2,host-3"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -414,10 +414,10 @@ func TestHostsCleanupValidationHostWithFlags(t *testing.T) {
 	}
 }
 
-func TestHostsCleanupValidationHostWithFile(t *testing.T) {
+func TestHostsCleanWithFile(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "cleanup-validation-host.json")
+	bodyPath := filepath.Join(dir, "clean-hosts.json")
 	if err := os.WriteFile(bodyPath, []byte(`{"batch_delete_instances":[{"migration_id":"file-host"}]}`), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -433,7 +433,7 @@ func TestHostsCleanupValidationHostWithFile(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "host", "cleanup-validation-host", "--file", bodyPath), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "host", "clean", "--file", bodyPath), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -594,6 +594,64 @@ func TestHostsWaitBootUsesBootStatus(t *testing.T) {
 	}
 }
 
+func TestHostsWaitCleanUsesHostDetailStatus(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	statuses := []string{"clean_doing", "clean_done"}
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		status := statuses[calls]
+		calls++
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"id":             "host-1",
+				"status":         status,
+				"display_status": status,
+				"task_id":        "task-clean",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"host", "wait",
+		"--id", "host-1",
+		"--operation", "clean",
+		"--interval-seconds", "0",
+		"--timeout-seconds", "10",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls != 2 {
+		t.Fatalf("calls = %d", calls)
+	}
+	if !strings.Contains(out.String(), `"task_id": "task-clean"`) || !strings.Contains(out.String(), `"status": "clean_done"`) {
+		t.Fatalf("output = %s", out.String())
+	}
+}
+
+func TestHostsWaitRejectsLegacyCleanupOperation(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"host", "wait",
+		"--id", "host-1",
+		"--operation", "cleanup-validation-host",
+		"--interval-seconds", "0",
+		"--timeout-seconds", "10",
+	), &out, &errOut)
+	if err == nil || err.Error() != "operation must be one of sync, boot, clean, deregister" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestHostsWaitFailureCanIncludeTaskStepError(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -728,621 +786,6 @@ func TestHostsWaitBatchContinuesAfterFailure(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"result": "success"`) || !strings.Contains(out.String(), `"result": "failed"`) {
 		t.Fatalf("output = %s", out.String())
-	}
-}
-
-func TestHostsBootConfigCreateWithFile(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-create.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"storage_id":"storage-1","storage_name":"storage-name","pool_id":"pool-1","pool_name":"pool-name"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var gotPath string
-	var gotBody map[string]interface{}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-			t.Fatal(err)
-		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{}})
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "host", "boot-config", "create", "--id", "host-1", "--file", bodyPath), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if gotPath != "/api/v2/batchBootConfigs" {
-		t.Fatalf("path = %q", gotPath)
-	}
-	items := gotBody["batch_create"].([]interface{})
-	item := items[0].(map[string]interface{})
-	if item["migration_id"] != "host-1" {
-		t.Fatalf("body = %+v", gotBody)
-	}
-	meta := item["metadata"].(map[string]interface{})
-	if meta["storage_id"] != "storage-1" || meta["pool_id"] != "pool-1" {
-		t.Fatalf("body = %+v", gotBody)
-	}
-}
-
-func TestHostsBootConfigUpdateWithFile(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-update.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"storage_id":"storage-1","storage_name":"storage-name","pool_id":"pool-1","pool_name":"pool-name"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var gotPaths []string
-	var gotBody map[string]interface{}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPaths = append(gotPaths, r.URL.Path)
-		switch r.URL.Path {
-		case "/api/v2/getHostDetail":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{
-					"boot_config_id": "cfg-1",
-					"boot_config":    map[string]interface{}{},
-				},
-			})
-		case "/api/v2/batchUpdateBootConfigs":
-			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-				t.Fatal(err)
-			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{}})
-		default:
-			t.Fatalf("unexpected path %q", r.URL.Path)
-		}
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "host", "boot-config", "update", "--id", "host-1", "--file", bodyPath), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(gotPaths) != 2 || gotPaths[0] != "/api/v2/getHostDetail" || gotPaths[1] != "/api/v2/batchUpdateBootConfigs" {
-		t.Fatalf("paths = %+v", gotPaths)
-	}
-	items := gotBody["batch_update"].([]interface{})
-	item := items[0].(map[string]interface{})
-	if item["id"] != "cfg-1" || item["migration_id"] != "host-1" {
-		t.Fatalf("body = %+v", gotBody)
-	}
-	meta := item["metadata"].(map[string]interface{})
-	if meta["storage_id"] != "storage-1" || meta["pool_id"] != "pool-1" {
-		t.Fatalf("body = %+v", gotBody)
-	}
-}
-
-func TestHostsBootConfigApplyCreatesWhenBootConfigMissing(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-apply-create.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"storage_id":"storage-1","pool_id":"pool-1"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var gotPaths []string
-	var gotBody map[string]interface{}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPaths = append(gotPaths, r.URL.Path)
-		switch r.URL.Path {
-		case "/api/v2/getHostDetail":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{
-					"id":   "host-1",
-					"name": "host-name",
-				},
-			})
-		case "/api/v2/batchBootConfigs":
-			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-				t.Fatal(err)
-			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"status": "ok"}})
-		default:
-			t.Fatalf("unexpected path %q", r.URL.Path)
-		}
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "boot-config-cli", "apply", "--id", "host-1", "--file", bodyPath), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(gotPaths) != 2 || gotPaths[0] != "/api/v2/getHostDetail" || gotPaths[1] != "/api/v2/batchBootConfigs" {
-		t.Fatalf("paths = %+v", gotPaths)
-	}
-	items := gotBody["batch_create"].([]interface{})
-	item := items[0].(map[string]interface{})
-	if item["migration_id"] != "host-1" {
-		t.Fatalf("body = %+v", gotBody)
-	}
-	if !strings.Contains(out.String(), "create") {
-		t.Fatalf("output = %q", out.String())
-	}
-}
-
-func TestHostsBootConfigApplyUpdatesWhenBootConfigExists(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-apply-update.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"storage_id":"storage-1","pool_id":"pool-1"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var gotPaths []string
-	var gotBody map[string]interface{}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPaths = append(gotPaths, r.URL.Path)
-		switch r.URL.Path {
-		case "/api/v2/getHostDetail":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{
-					"boot_config_id": "cfg-1",
-				},
-			})
-		case "/api/v2/batchUpdateBootConfigs":
-			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-				t.Fatal(err)
-			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"status": "ok"}})
-		default:
-			t.Fatalf("unexpected path %q", r.URL.Path)
-		}
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "boot-config-cli", "apply", "--id", "host-1", "--file", bodyPath), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(gotPaths) != 2 || gotPaths[0] != "/api/v2/getHostDetail" || gotPaths[1] != "/api/v2/batchUpdateBootConfigs" {
-		t.Fatalf("paths = %+v", gotPaths)
-	}
-	items := gotBody["batch_update"].([]interface{})
-	item := items[0].(map[string]interface{})
-	if item["id"] != "cfg-1" || item["migration_id"] != "host-1" {
-		t.Fatalf("body = %+v", gotBody)
-	}
-	if !strings.Contains(out.String(), "update") {
-		t.Fatalf("output = %q", out.String())
-	}
-}
-
-func TestHostsBootConfigApplyFallsBackToNestedBootConfigID(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-apply-fallback.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"storage_id":"storage-1"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var gotBody map[string]interface{}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/api/v2/getHostDetail":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{
-					"boot_config": map[string]interface{}{"id": "cfg-1"},
-				},
-			})
-		case "/api/v2/batchUpdateBootConfigs":
-			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-				t.Fatal(err)
-			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"status": "ok"}})
-		default:
-			t.Fatalf("unexpected path %q", r.URL.Path)
-		}
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	if err := Execute(withHost(t, srv.URL, "boot-config-cli", "apply", "--id", "host-1", "--file", bodyPath), &out, &errOut); err != nil {
-		t.Fatal(err)
-	}
-	items := gotBody["batch_update"].([]interface{})
-	item := items[0].(map[string]interface{})
-	if item["id"] != "cfg-1" {
-		t.Fatalf("body = %+v", gotBody)
-	}
-}
-
-func TestHostsBootConfigGetWithID(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var gotPaths []string
-	var gotBody map[string]interface{}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPaths = append(gotPaths, r.URL.Path)
-		switch r.URL.Path {
-		case "/api/v2/getHostDetail":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{
-					"boot_config_id": "cfg-1",
-					"boot_config":    map[string]interface{}{},
-				},
-			})
-		case "/api/v2/batchGetBootConfigs":
-			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-				t.Fatal(err)
-			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{
-					"boot_configs": []map[string]interface{}{
-						{
-							"id":           "cfg-1",
-							"migration_id": "host-1",
-							"metadata": map[string]interface{}{
-								"storage_name":       "storage-name",
-								"pool_name":          "pool-name",
-								"network_id":         "net-1",
-								"repair_host_mapper": map[string]interface{}{"enable_repair_fs": "1"},
-								"nics":               []map[string]interface{}{{"network_id": "net-1"}},
-							},
-						},
-					},
-				},
-			})
-		default:
-			t.Fatalf("unexpected path %q", r.URL.Path)
-		}
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "host", "boot-config", "get", "--id", "host-1"), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(gotPaths) != 2 || gotPaths[0] != "/api/v2/getHostDetail" || gotPaths[1] != "/api/v2/batchGetBootConfigs" {
-		t.Fatalf("paths = %+v", gotPaths)
-	}
-	items := gotBody["batch_get"].([]interface{})
-	item := items[0].(map[string]interface{})
-	if item["id"] != "cfg-1" {
-		t.Fatalf("body = %+v", gotBody)
-	}
-	if !strings.Contains(out.String(), "host_id") || !strings.Contains(out.String(), "host-1") {
-		t.Fatalf("output = %q", out.String())
-	}
-	if !strings.Contains(out.String(), "boot_config_id") || !strings.Contains(out.String(), "cfg-1") {
-		t.Fatalf("output = %q", out.String())
-	}
-	if !strings.Contains(out.String(), "migration_id") || !strings.Contains(out.String(), "metadata.storage_name") {
-		t.Fatalf("output = %q", out.String())
-	}
-	if !strings.Contains(out.String(), "storage-name") || !strings.Contains(out.String(), "pool-name") {
-		t.Fatalf("output = %q", out.String())
-	}
-	if !strings.Contains(out.String(), `{"enable_repair_fs":"1"}`) {
-		t.Fatalf("output = %q", out.String())
-	}
-	if !strings.Contains(out.String(), `[{"network_id":"net-1"}]`) {
-		t.Fatalf("output = %q", out.String())
-	}
-	hostIdx := strings.Index(out.String(), "host_id")
-	bootIdx := strings.Index(out.String(), "boot_config_id")
-	metaIdx := strings.Index(out.String(), "metadata.network_id")
-	if hostIdx < 0 || bootIdx < 0 || metaIdx < 0 || !(hostIdx < bootIdx && bootIdx < metaIdx) {
-		t.Fatalf("output order = %q", out.String())
-	}
-}
-
-func TestHostsBootConfigGetFailsWithoutBootConfigID(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code": "00000000",
-			"data": map[string]interface{}{},
-		})
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "host", "boot-config", "get", "--id", "host-1"), &out, &errOut)
-	if err == nil || err.Error() != "host host-1 has no existing boot config" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigGetJSONOutputPreservesRawFields(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/api/v2/getHostDetail":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{
-					"boot_config_id": "cfg-1",
-					"boot_config":    map[string]interface{}{},
-				},
-			})
-		case "/api/v2/batchGetBootConfigs":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{
-					"boot_configs": []map[string]interface{}{
-						{
-							"id":           "cfg-1",
-							"migration_id": "host-1",
-							"storage_id":   "storage-1",
-						},
-					},
-				},
-				"trace_id": "trace-1",
-			})
-		default:
-			t.Fatalf("unexpected path %q", r.URL.Path)
-		}
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "host", "boot-config", "get", "--id", "host-1"), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(out.String(), `"boot_configs"`) || !strings.Contains(out.String(), `"migration_id"`) {
-		t.Fatalf("output = %q", out.String())
-	}
-}
-
-func TestHostsBootConfigCreateRequiresFile(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "create", "--id", "host-1"), &out, &errOut)
-	if err == nil || err.Error() != "file is required" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigUpdateRequiresFile(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "update", "--id", "host-1"), &out, &errOut)
-	if err == nil || err.Error() != "file is required" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigGetRequiresID(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "get"), &out, &errOut)
-	if err == nil || err.Error() != "id is required" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigGetRejectsIDsFlag(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "get", "--id", "host-1", "--ids", "host-2"), &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigGetRejectsFileFlag(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "get", "--id", "host-1", "--file", "x.json"), &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostBootConfigCommandAvailable(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code": "00000000",
-			"data": map[string]interface{}{
-				"boot_config_id": "cfg-1",
-			},
-		})
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "host", "boot-config", "get", "--id", "host-1", "--output", "json"), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if gotPath != "/api/v2/batchGetBootConfigs" {
-		t.Fatalf("path = %q", gotPath)
-	}
-}
-
-func TestBootConfigWizardSubcommandRemoved(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "wizard", "storages"), &out, &errOut)
-	if err == nil || err.Error() != `unknown boot-config command "wizard"` {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigCreateRequiresID(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-create.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"storage_id":"storage-1"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "create", "--file", bodyPath), &out, &errOut)
-	if err == nil || err.Error() != "id is required" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigUpdateRequiresID(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-update.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"storage_id":"storage-1"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "update", "--file", bodyPath), &out, &errOut)
-	if err == nil || err.Error() != "id is required" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigApplyRequiresID(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-apply.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"storage_id":"storage-1"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "boot-config-cli", "apply", "--file", bodyPath), &out, &errOut)
-	if err == nil || err.Error() != "id is required" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigApplyAvailableFromBootConfigGroup(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-apply.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"storage_id":"storage-1"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var callCount int
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		callCount++
-		switch r.URL.Path {
-		case "/api/v2/getStorageDetailInfo":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{"storage_type": "HyperGate"},
-			})
-		case "/api/v2/getHostDetail":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{},
-			})
-		case "/api/v2/batchBootConfigs":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"code": "00000000",
-				"data": map[string]interface{}{"created": true},
-			})
-		default:
-			t.Fatalf("unexpected path = %q", r.URL.Path)
-		}
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "boot-config", "apply", "--id", "host-1", "--file", bodyPath), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if callCount != 3 {
-		t.Fatalf("callCount = %d", callCount)
-	}
-}
-
-func TestHostsBootConfigMetadataFileRejectsArray(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-metadata-array.json")
-	if err := os.WriteFile(bodyPath, []byte(`[{"storage_id":"storage-1"}]`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "create", "--id", "host-1", "--file", bodyPath), &out, &errOut)
-	if err == nil || err.Error() != "file must contain single metadata object" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigMetadataFileRejectsNonObject(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-metadata-string.json")
-	if err := os.WriteFile(bodyPath, []byte(`"storage-1"`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "boot-config-cli", "apply", "--id", "host-1", "--file", bodyPath), &out, &errOut)
-	if err == nil || err.Error() != "file must contain metadata object" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigMetadataFileRejectsBatchCreateWrapper(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-batch-create.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"batch_create":[{"migration_id":"host-1"}]}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "create", "--id", "host-1", "--file", bodyPath), &out, &errOut)
-	if err == nil || err.Error() != "file must contain metadata object, not batch_create wrapper" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHostsBootConfigMetadataFileRejectsBatchUpdateWrapper(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "boot-config-batch-update.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"batch_update":[{"id":"cfg-1","migration_id":"host-1"}]}`), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "host", "boot-config", "update", "--id", "host-1", "--file", bodyPath), &out, &errOut)
-	if err == nil || err.Error() != "file must contain metadata object, not batch_update wrapper" {
-		t.Fatalf("err = %v", err)
 	}
 }
 
@@ -1624,7 +1067,9 @@ func TestRemovedCommandsAreNotAccepted(t *testing.T) {
 	tests := [][]string{
 		{"hosts", "list"},
 		{"hosts", "sync"},
-		{"host", "clean"},
+		{"host", "cleanup-validation-host"},
+		{"host", "boot-config", "get"},
+		{"host", "boot-config", "apply"},
 		{"host", "delete-boot"},
 		{"login"},
 		{"upgrade", "hosts"},

@@ -178,7 +178,7 @@ func (s Service) Wait(spec WaitSpec) (WaitExecutionResult, error) {
 		return WaitExecutionResult{}, fmt.Errorf("id or ids is required")
 	}
 	if !validWaitOperation(spec.Operation) {
-		return WaitExecutionResult{}, fmt.Errorf("operation must be one of sync, boot, cleanup-validation-host, deregister")
+		return WaitExecutionResult{}, fmt.Errorf("operation must be one of sync, boot, clean, deregister")
 	}
 	if spec.Interval < 0 {
 		return WaitExecutionResult{}, fmt.Errorf("interval-seconds must be >= 0")
@@ -202,7 +202,7 @@ func (s Service) Wait(spec WaitSpec) (WaitExecutionResult, error) {
 
 func validWaitOperation(operation string) bool {
 	switch operation {
-	case "sync", "boot", "cleanup-validation-host", "deregister":
+	case "sync", "boot", "clean", "deregister":
 		return true
 	default:
 		return false
@@ -290,7 +290,7 @@ func classifyWaitState(operation, status string, notFound bool) string {
 		if status == "boot_doing" || status == "" || status == "not_boot" {
 			return "running"
 		}
-	case "cleanup-validation-host":
+	case "clean":
 		if status == "clean_done" {
 			return "success"
 		}

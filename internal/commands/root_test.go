@@ -120,20 +120,68 @@ func TestTopLevelBootConfigCLIIsRouted(t *testing.T) {
 	}
 }
 
-func TestHostBootConfigHelpShowsCanonicalSubcommands(t *testing.T) {
+func TestHostHelpShowsModernGuidance(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"help", "host", "boot-config"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"help", "host"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 	got := out.String()
-	for _, want := range []string{"apply", "create", "update", "Canonical boot configuration command group"} {
+	for _, want := range []string{"Usage:", "\nFlags:\n", "\nCommands:\n", "Usage Notes:", "clean", "wait", "hyperbdrctl boot-config get --id <host_id>"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q: %q", want, got)
 		}
 	}
+	for _, unwanted := range []string{"\n  boot-config", "\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n"} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, got)
+		}
+	}
+	assertNoHelpFooter(t, got)
+}
+
+func TestHostCleanHelpUsesModernLayout(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"help", "host", "clean"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	for _, want := range []string{"Usage:", "\nFlags:\n", "--id", "Usage Notes:", "host wait --id <host_id> --operation clean"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("help missing %q: %q", want, got)
+		}
+	}
+	for _, unwanted := range []string{"\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n"} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, got)
+		}
+	}
+	assertNoHelpFooter(t, got)
+}
+
+func TestHostWaitHelpShowsCleanOperationChoice(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"help", "host", "wait"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	for _, want := range []string{"--operation", "allowed values sync / boot / clean /", "default 60", "default 3600"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("help missing %q: %q", want, got)
+		}
+	}
+	if strings.Contains(got, "cleanup-validation-host") {
+		t.Fatalf("help should not mention legacy operation: %q", got)
+	}
+	assertNoHelpFooter(t, got)
 }
 
 func TestDeprecatedBootConfigCLIHelpShowsDeprecation(t *testing.T) {
@@ -145,7 +193,7 @@ func TestDeprecatedBootConfigCLIHelpShowsDeprecation(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := out.String()
-	if !strings.Contains(got, "Deprecated") || !strings.Contains(got, "host boot-config apply") {
+	if !strings.Contains(got, "Deprecated") || !strings.Contains(got, "boot-config apply") {
 		t.Fatalf("help = %q", got)
 	}
 }

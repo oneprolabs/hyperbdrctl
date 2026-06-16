@@ -94,8 +94,8 @@ func runHosts(ctx *context, args []string) error {
 		return runHostsRegister(ctx, args[1:])
 	case "boot":
 		return runHostsBoot(ctx, args[1:])
-	case "cleanup-validation-host":
-		return runHostsCleanupValidationHost(ctx, args[1:])
+	case "clean":
+		return runHostsClean(ctx, args[1:])
 	case "deregister":
 		return runHostsDeregister(ctx, args[1:])
 	case "wait":
@@ -204,8 +204,8 @@ func runHostsBoot(ctx *context, args []string) error {
 	return writeResponse(ctx, resp, "", nil)
 }
 
-func runHostsCleanupValidationHost(ctx *context, args []string) error {
-	fs := newFlagSet("host cleanup-validation-host")
+func runHostsClean(ctx *context, args []string) error {
+	fs := newFlagSet("host clean")
 	id := fs.String("id", "", "")
 	ids := fs.String("ids", "", "")
 	file := fs.String("file", "", "")

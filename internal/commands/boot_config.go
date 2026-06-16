@@ -11,25 +11,6 @@ func runBootConfig(ctx *context, args []string) error {
 	}
 	service := appbootconfig.NewService(commandAPIAdapter{ctx: ctx})
 	switch args[0] {
-	case "create":
-		fs := newFlagSet("boot-config create")
-		id := fs.String("id", "", "")
-		file := fs.String("file", "", "")
-		if err := fs.Parse(args[1:]); err != nil {
-			return err
-		}
-		if *id == "" {
-			return missing(ctx, "error.missing_id")
-		}
-		metadata, err := appbootconfig.MetadataFile(*file)
-		if err != nil {
-			return err
-		}
-		resp, err := service.Create(*id, metadata)
-		if err != nil {
-			return err
-		}
-		return writeResponse(ctx, resp, "", nil)
 	case "get":
 		fs := newFlagSet("boot-config get")
 		id := fs.String("id", "", "")
@@ -56,25 +37,6 @@ func runBootConfig(ctx *context, args []string) error {
 			view = append(view, output.KeyValueRow{Key: field.Key, Value: field.Value})
 		}
 		return output.OrderedKeyValue(ctx.out, ctx.loc, view)
-	case "update":
-		fs := newFlagSet("boot-config update")
-		id := fs.String("id", "", "")
-		file := fs.String("file", "", "")
-		if err := fs.Parse(args[1:]); err != nil {
-			return err
-		}
-		if *id == "" {
-			return missing(ctx, "error.missing_id")
-		}
-		metadata, err := appbootconfig.MetadataFile(*file)
-		if err != nil {
-			return err
-		}
-		resp, err := service.Update(*id, metadata)
-		if err != nil {
-			return err
-		}
-		return writeResponse(ctx, resp, "", nil)
 	default:
 		return errUnknown("boot-config", args[0])
 	}
