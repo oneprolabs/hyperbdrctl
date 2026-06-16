@@ -82,8 +82,10 @@ var authResourceRenderers = map[string]authResourceRenderer{
 		columns:   func(rows []map[string]interface{}) []output.Column { return cloudAccountImageColumns(rows) },
 	},
 	authRendererKey("generic", "flavors"): authTableRenderer{
-		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
-		columns:   func(rows []map[string]interface{}) []output.Column { return gatewayFlavorColumns() },
+		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) {
+			return filterFlavorRows(section.Rows, section.Meta)
+		},
+		columns: func(rows []map[string]interface{}) []output.Column { return gatewayFlavorColumns() },
 	},
 	authRendererKey("generic", "os_types"): authTableRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) { return section.Rows, nil },
@@ -119,7 +121,7 @@ var authResourceRenderers = map[string]authResourceRenderer{
 	},
 	authRendererKey("huawei", "flavors"): authTableRenderer{
 		normalize: func(section cloudinfo.ResourceSection) ([]map[string]interface{}, error) {
-			return filterHuaweiFlavorRows(cloudinfo.NormalizeHuaweiFlavorRows(section.Rows), section.Meta)
+			return filterFlavorRows(cloudinfo.NormalizeHuaweiFlavorRows(section.Rows), section.Meta)
 		},
 		columns: func(rows []map[string]interface{}) []output.Column {
 			return huaweiFlavorColumns()
@@ -167,7 +169,7 @@ func bootConfigSecurityGroupColumns() []output.Column {
 	}
 }
 
-func filterHuaweiFlavorRows(rows []map[string]interface{}, meta map[string]interface{}) ([]map[string]interface{}, error) {
+func filterFlavorRows(rows []map[string]interface{}, meta map[string]interface{}) ([]map[string]interface{}, error) {
 	wantVCPUs, hasVCPUs, err := optionalIntFilter(meta["flavor_vcpus"], "flavor-vcpus")
 	if err != nil {
 		return nil, err
@@ -183,13 +185,13 @@ func filterHuaweiFlavorRows(rows []map[string]interface{}, meta map[string]inter
 	filtered := make([]map[string]interface{}, 0, len(rows))
 	for _, row := range rows {
 		if hasVCPUs {
-			got, ok := scalarInt(row["vcpus"])
+			got, ok := scalarInt(firstNonNil(row["vcpus"], row["flavor_vcpus"]))
 			if !ok || got != wantVCPUs {
 				continue
 			}
 		}
 		if hasRAM {
-			got, ok := scalarInt(row["ram_gb"])
+			got, ok := scalarInt(firstNonNil(row["ram_gb"], row["ram_GB"], row["ram"], row["flavor_ram"]))
 			if !ok || got != wantRAM {
 				continue
 			}
@@ -197,6 +199,15 @@ func filterHuaweiFlavorRows(rows []map[string]interface{}, meta map[string]inter
 		filtered = append(filtered, row)
 	}
 	return filtered, nil
+}
+
+func firstNonNil(values ...interface{}) interface{} {
+	for _, value := range values {
+		if value != nil {
+			return value
+		}
+	}
+	return nil
 }
 
 func optionalIntFilter(v interface{}, flagName string) (int, bool, error) {

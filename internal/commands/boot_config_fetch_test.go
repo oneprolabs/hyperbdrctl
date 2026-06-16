@@ -451,6 +451,121 @@ func TestBootConfigFetchOSSHuaweiFlavorFiltersRenderTable(t *testing.T) {
 	}
 }
 
+func TestBootConfigFetchOSSAliyunFlavorFiltersRenderTable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"flavors": []map[string]interface{}{
+						{
+							"id":          "ecs.u1-c1m2.large",
+							"name":        "ecs.u1-c1m2.large(2C4G)",
+							"vcpus":       2,
+							"ram_GB":      4,
+							"max_nic_num": 2,
+						},
+						{
+							"id":          "ecs.g6.xlarge",
+							"name":        "ecs.g6.xlarge(4C16G)",
+							"vcpus":       4,
+							"ram_GB":      16,
+							"max_nic_num": 4,
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"boot-config", "fetch-oss-resources", "aliyun",
+		"--cloud-account-id", "account-1",
+		"--zone-id", "cn-beijing-h",
+		"--fetch-res", "flavors",
+		"--flavor-vcpus", "2",
+		"--flavor-ram", "4",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	if !strings.Contains(text, "ecs.u1-c1m2.large") {
+		t.Fatalf("output = %q, missing filtered row", text)
+	}
+	if strings.Contains(text, "ecs.g6.xlarge") {
+		t.Fatalf("output = %q, should filter non-matching flavor", text)
+	}
+	for _, want := range []string{"== Flavors ==", "Flavor ID", "RAM (GiB)"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+}
+
+func TestBootConfigFetchBlockResourcesGenericFlavorFiltersRenderTable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_info": map[string]interface{}{
+					"flavors": []map[string]interface{}{
+						{
+							"id":          "m1.medium",
+							"name":        "m1.medium",
+							"vcpus":       2,
+							"ram_GB":      4,
+							"max_nic_num": 2,
+						},
+						{
+							"id":          "m1.large",
+							"name":        "m1.large",
+							"vcpus":       4,
+							"ram_GB":      8,
+							"max_nic_num": 4,
+						},
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"boot-config", "fetch-block-resources", "openstack",
+		"--cloud-account-id", "account-1",
+		"--fetch-res", "flavors",
+		"--flavor-vcpus", "2",
+		"--flavor-ram", "4",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	if !strings.Contains(text, "m1.medium") {
+		t.Fatalf("output = %q, missing filtered row", text)
+	}
+	if strings.Contains(text, "m1.large") {
+		t.Fatalf("output = %q, should filter non-matching flavor", text)
+	}
+	for _, want := range []string{"== Flavors ==", "Flavor ID", "RAM (GiB)"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+}
+
 func TestBootConfigFetchOSSAliyunSecurityGroupsRenderTable(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
