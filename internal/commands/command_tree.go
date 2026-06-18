@@ -378,6 +378,7 @@ func newTargetCommand(ctx *context) *cobra.Command {
 		supportsCmd,
 		newTargetAccountCommand(ctx),
 		newTargetCloudSyncGatewayCommand(ctx),
+		newTargetResourceCommand(ctx),
 		newTargetOSSCommand(ctx),
 	)
 	return cmd

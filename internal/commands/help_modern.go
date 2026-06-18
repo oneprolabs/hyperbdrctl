@@ -100,6 +100,16 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		return bootConfigFetchProviderFlagSpecs()
 	case strings.HasPrefix(path, "hyperbdrctl boot-config fetch-oss-resources "):
 		return bootConfigFetchProviderFlagSpecs()
+	case strings.HasPrefix(path, "hyperbdrctl target resource block "):
+		if path == "hyperbdrctl target resource block openstack" {
+			return targetResourceOpenStackFlagSpecs()
+		}
+		return targetResourceDirectAuthFlagSpecs()
+	case strings.HasPrefix(path, "hyperbdrctl target resource oss "):
+		if path == "hyperbdrctl target resource oss openstack" {
+			return targetResourceOpenStackFlagSpecs()
+		}
+		return targetResourceDirectAuthFlagSpecs()
 	case strings.HasPrefix(path, "hyperbdrctl target account fetch-block-resources "):
 		if path == "hyperbdrctl target account fetch-block-resources openstack" {
 			return []flagHelpSpec{
@@ -588,6 +598,39 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl target resource":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl target resource block":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl target resource oss":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl target resource fetch":
+		return []flagHelpSpec{
+			{name: "cloud-account-id", required: true},
+			{name: "fetch-res"},
+			{name: "region-id"},
+			{name: "zone-id"},
+			{name: "flavor-id"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl target account list":
 		return []flagHelpSpec{
 			{name: "page", defaultValue: "1"},
@@ -896,6 +939,41 @@ func bootConfigFetchProviderFlagSpecs() []flagHelpSpec {
 		{name: "default-pool-id"},
 		{name: "dest-boot-mode"},
 		{name: "network-id"},
+		{name: "debug"},
+		{name: "lang"},
+		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+		{name: "help"},
+	}
+}
+
+func targetResourceDirectAuthFlagSpecs() []flagHelpSpec {
+	return []flagHelpSpec{
+		{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
+		{name: "fetch-res"},
+		{name: "region-id"},
+		{name: "zone-id"},
+		{name: "boot-mode"},
+		{name: "debug"},
+		{name: "lang"},
+		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+		{name: "help"},
+	}
+}
+
+func targetResourceOpenStackFlagSpecs() []flagHelpSpec {
+	return []flagHelpSpec{
+		{name: "auth-url", required: true},
+		{name: "username", required: true},
+		{name: "password", required: true},
+		{name: "user-domain-id", required: true},
+		{name: "fetch-res"},
+		{name: "region-id"},
+		{name: "zone-id"},
+		{name: "project-id"},
+		{name: "project-domain-id"},
+		{name: "project-name"},
+		{name: "compute-zone-id"},
+		{name: "block-store-zone-id"},
 		{name: "debug"},
 		{name: "lang"},
 		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
