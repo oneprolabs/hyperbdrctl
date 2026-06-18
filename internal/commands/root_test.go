@@ -44,35 +44,32 @@ func TestUsageIsLocalized(t *testing.T) {
 	if err := Execute([]string{"--lang", "zh_cn", "help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
+	text := out.String()
 	if !strings.Contains(out.String(), "用法") {
 		t.Fatalf("usage = %q", out.String())
 	}
 	if !strings.Contains(out.String(), "license") {
 		t.Fatalf("usage missing license = %q", out.String())
 	}
-	if !strings.Contains(out.String(), "api") {
-		t.Fatalf("usage missing api = %q", out.String())
-	}
-	if !strings.Contains(out.String(), "batch-boot-config") {
-		t.Fatalf("usage missing batch-boot-config = %q", out.String())
-	}
-	if !strings.Contains(out.String(), "boot-config-wizard") {
-		t.Fatalf("usage missing boot-config-wizard = %q", out.String())
-	}
 	if !strings.Contains(out.String(), "source") {
 		t.Fatalf("usage missing source = %q", out.String())
 	}
-	if strings.Contains(out.String(), "boot-config              Deprecated top-level boot configuration command group") {
-		t.Fatalf("usage should hide deprecated boot-config alias = %q", out.String())
+	for _, hidden := range []string{"\n  api", "\n  batch-boot-config", "\n  boot-config-wizard", "\n  tasks", "\n  upgrade"} {
+		if strings.Contains(text, hidden) {
+			t.Fatalf("usage should hide %q = %q", hidden, text)
+		}
 	}
-	if strings.Contains(out.String(), "boot-config-cli          Deprecated compatibility apply command") {
-		t.Fatalf("usage should hide deprecated boot-config-cli alias = %q", out.String())
+	if strings.Contains(text, "boot-config              Deprecated top-level boot configuration command group") {
+		t.Fatalf("usage should hide deprecated boot-config alias = %q", text)
 	}
-	if strings.Contains(out.String(), "sources") {
-		t.Fatalf("usage should hide deprecated sources alias = %q", out.String())
+	if strings.Contains(text, "boot-config-cli          Deprecated compatibility apply command") {
+		t.Fatalf("usage should hide deprecated boot-config-cli alias = %q", text)
 	}
-	if strings.Contains(out.String(), "licenses") {
-		t.Fatalf("usage should hide deprecated licenses alias = %q", out.String())
+	if strings.Contains(text, "sources") {
+		t.Fatalf("usage should hide deprecated sources alias = %q", text)
+	}
+	if strings.Contains(text, "licenses") {
+		t.Fatalf("usage should hide deprecated licenses alias = %q", text)
 	}
 }
 
@@ -117,6 +114,34 @@ func TestTopLevelBootConfigCLIIsRouted(t *testing.T) {
 	err := Execute(withHost(t, "https://example.invalid", "boot-config-cli"), &out, &errOut)
 	if err == nil || err.Error() != "boot-config-cli requires subcommand" {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestHiddenTopLevelCommandHelpRemainsAvailable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		args []string
+		want []string
+	}{
+		{args: []string{"help", "api"}, want: []string{"Usage:", "request"}},
+		{args: []string{"help", "boot-config-wizard"}, want: []string{"Usage:", "storages", "target-auth-info"}},
+		{args: []string{"help", "tasks"}, want: []string{"Usage:", "list", "steps"}},
+		{args: []string{"help", "upgrade"}, want: []string{"Usage:", "host"}},
+	}
+
+	for _, tc := range cases {
+		var out, errOut bytes.Buffer
+		if err := Execute(tc.args, &out, &errOut); err != nil {
+			t.Fatalf("args=%v err=%v", tc.args, err)
+		}
+		text := out.String()
+		for _, want := range tc.want {
+			if !strings.Contains(text, want) {
+				t.Fatalf("args=%v help missing %q: %q", tc.args, want, text)
+			}
+		}
 	}
 }
 
@@ -422,6 +447,11 @@ func TestRootHelpShowsModernGuidance(t *testing.T) {
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, hidden := range []string{"\n  api", "\n  batch-boot-config", "\n  boot-config-wizard", "\n  tasks", "\n  upgrade", "hyperbdrctl tasks list"} {
+		if strings.Contains(text, hidden) {
+			t.Fatalf("help should not include %q: %q", hidden, text)
 		}
 	}
 	for _, unwanted := range []string{"Examples:", "\nFlags:\n", "help for hyperbdrctl"} {

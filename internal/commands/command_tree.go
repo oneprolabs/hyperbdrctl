@@ -129,6 +129,7 @@ func addNotes(cmd *cobra.Command, ctx *context, key string) {
 
 func newAPICommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "api", "cmd.api.short", "cmd.api.long", "cmd.api.examples", "cmd.api.notes", "api")
+	cmd.Hidden = true
 	cmd.AddCommand(newRawLeafCommand(ctx, "request", "cmd.api.request.short", "cmd.api.request.long", "cmd.api.request.examples", "cmd.api.request.notes", func(cmd *cobra.Command) {
 		addFlagString(cmd, ctx, "method")
 		addFlagString(cmd, ctx, "path")
@@ -187,6 +188,7 @@ func newConfigCommand(ctx *context) *cobra.Command {
 
 func newTasksCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "tasks", "cmd.tasks.short", "cmd.tasks.long", "cmd.tasks.examples", "cmd.tasks.notes", "tasks")
+	cmd.Hidden = true
 	cmd.AddCommand(
 		newRawLeafCommand(ctx, "list", "cmd.tasks.list.short", "cmd.tasks.list.long", "cmd.tasks.list.examples", "cmd.tasks.list.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "source-id")
@@ -387,6 +389,7 @@ func newTargetCommand(ctx *context) *cobra.Command {
 
 func newUpgradeCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "upgrade", "cmd.upgrade.short", "cmd.upgrade.long", "cmd.upgrade.examples", "cmd.upgrade.notes", "upgrade")
+	cmd.Hidden = true
 	cmd.AddCommand(newRawLeafCommand(ctx, "host", "cmd.upgrade.host.short", "cmd.upgrade.host.long", "cmd.upgrade.host.examples", "cmd.upgrade.host.notes", func(cmd *cobra.Command) {
 		addFlagInt(cmd, ctx, "page")
 		addFlagInt(cmd, ctx, "page-size")

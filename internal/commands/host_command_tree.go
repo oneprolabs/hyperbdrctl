@@ -111,6 +111,7 @@ func newBootConfigCLIAliasCommand(ctx *context) *cobra.Command {
 
 func newBatchBootConfigCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "batch-boot-config", "cmd.batch_boot_config.short", "cmd.batch_boot_config.long", "cmd.batch_boot_config.examples", "cmd.batch_boot_config.notes", "batch-boot-config")
+	cmd.Hidden = true
 	cmd.AddCommand(
 		newRawLeafCommand(ctx, "create", "cmd.batch_boot_config.create.short", "cmd.batch_boot_config.create.long", "cmd.batch_boot_config.create.examples", "cmd.batch_boot_config.create.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "file")
@@ -133,6 +134,7 @@ func newBatchBootConfigCommand(ctx *context) *cobra.Command {
 
 func newBootConfigWizardCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "boot-config-wizard", "cmd.boot_config_wizard.short", "cmd.boot_config_wizard.long", "cmd.boot_config_wizard.examples", "cmd.boot_config_wizard.notes", "boot-config-wizard")
+	cmd.Hidden = true
 	cmd.AddCommand(
 		newRawLeafCommand(ctx, "storages", "cmd.boot_config_wizard.storages.short", "cmd.boot_config_wizard.storages.long", "cmd.boot_config_wizard.storages.examples", "cmd.boot_config_wizard.storages.notes", func(cmd *cobra.Command) {
 			addFlagInt(cmd, ctx, "page")
