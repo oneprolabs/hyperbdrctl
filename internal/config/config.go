@@ -36,6 +36,7 @@ type Flags struct {
 	Insecure    bool
 	InsecureSet bool
 	Output      string
+	Vertical    bool
 	Debug       bool
 	DebugSet    bool
 }

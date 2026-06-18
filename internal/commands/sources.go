@@ -192,7 +192,7 @@ func writeSourceListResponse(ctx *context, resp client.APIResponse) error {
 	if ctx.cfg.Output == "json" {
 		return writeResponse(ctx, resp, "", nil)
 	}
-	return output.Table(ctx.out, ctx.loc, sourceListRows(resp), sourceColumns())
+	return writeRows(ctx, sourceListRows(resp), sourceColumns())
 }
 
 func sourceListRows(resp client.APIResponse) []map[string]interface{} {

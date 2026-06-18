@@ -56,6 +56,30 @@ func Table(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, cols 
 	return nil
 }
 
+func Vertical(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, cols []Column) error {
+	for idx, row := range rows {
+		if _, err := fmt.Fprintf(w, "*************************** %d. row ***************************\n", idx+1); err != nil {
+			return err
+		}
+		pairs := make([]KeyValueRow, 0, len(cols))
+		for _, col := range cols {
+			pairs = append(pairs, KeyValueRow{
+				Key:   loc.T(col.HeaderKey),
+				Value: row[col.Field],
+			})
+		}
+		if err := OrderedKeyValue(w, loc, pairs); err != nil {
+			return err
+		}
+		if idx < len(rows)-1 {
+			if _, err := io.WriteString(w, "\n"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func KeyValue(w io.Writer, loc i18n.Localizer, m map[string]interface{}) error {
 	keys := make([]string, 0, len(m))
 	for k := range m {

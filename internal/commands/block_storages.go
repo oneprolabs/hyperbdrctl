@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	appblockstorage "hyperbdr-client/internal/app/blockstorage"
-	"hyperbdr-client/internal/output"
 )
 
 func runBlockStorages(ctx *context, args []string) error {
@@ -36,7 +35,7 @@ func runBlockStorages(ctx *context, args []string) error {
 		if ctx.cfg.Output == "json" {
 			return writeResponse(ctx, resp, "", nil)
 		}
-		return output.Table(ctx.out, ctx.loc, normalizeGatewayStorageRows(resp.Data), gatewayStorageColumns())
+		return writeRows(ctx, normalizeGatewayStorageRows(resp.Data), gatewayStorageColumns())
 	case "detail":
 		fs := newFlagSet("target cloud-sync-gateway detail")
 		id := fs.String("id", "", "")

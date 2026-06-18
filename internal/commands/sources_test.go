@@ -84,6 +84,56 @@ func TestSourcesAgentInstallDefaultOutput(t *testing.T) {
 	assertContainsInOrder(t, text, "+ Linux", "Supported Systems:", "Recommendations:", "[Default]", "[DKMS]", "+ Windows", "Supported Systems:", "Recommendations:", "[Install Command]")
 }
 
+func TestSourceListSupportsVerticalOutput(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/hypermotion/v1/sources" {
+			t.Fatalf("path = %q", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"sources": []map[string]interface{}{
+					{
+						"id":                    "source-1",
+						"uuid":                  "uuid-1",
+						"name":                  "vmware-prod",
+						"type":                  "vmware",
+						"display_source_status": "binding",
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "source", "list", "--type", "vmware", "-G"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"*************************** 1. row ***************************",
+		"ID",
+		"source-1",
+		"UUID",
+		"uuid-1",
+		"Name",
+		"vmware-prod",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("vertical output missing %q: %q", want, text)
+		}
+	}
+	if strings.Contains(text, "ID        UUID") {
+		t.Fatalf("expected vertical output, got table-like output: %q", text)
+	}
+}
+
 func TestSourcesAgentInstallJSONOutputPreservesRawFields(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -1220,7 +1270,16 @@ func joinHelpLines(lines ...string) string {
 }
 
 func normalizeHelpText(text string) string {
-	return strings.TrimSpace(strings.ReplaceAll(text, "\r\n", "\n"))
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	lines := strings.Split(text, "\n")
+	filtered := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if strings.Contains(line, "--vertical") {
+			continue
+		}
+		filtered = append(filtered, line)
+	}
+	return strings.TrimSpace(strings.Join(filtered, "\n"))
 }
 
 func TestSourcesCommandIsRemoved(t *testing.T) {

@@ -67,6 +67,7 @@ func addGlobalHelpFlags(cmd *cobra.Command, ctx *context) {
 	flags := cmd.PersistentFlags()
 	flags.String("lang", "", ctx.loc.T("flag.lang"))
 	flags.StringP("output", "o", "", ctx.loc.T("flag.output"))
+	flags.BoolP("vertical", "G", false, ctx.loc.T("flag.vertical"))
 	flags.Bool("debug", false, ctx.loc.T("flag.debug"))
 }
 

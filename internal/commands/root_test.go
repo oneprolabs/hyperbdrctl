@@ -27,14 +27,14 @@ func assertNoHelpFooter(t *testing.T, text string) {
 }
 
 func TestExtractGlobalFlagsAnywhere(t *testing.T) {
-	args, flags, err := extractGlobalFlags([]string{"config", "set", "--host", "https://x", "--password=secret", "--insecure", "--lang", "zh_cn"})
+	args, flags, err := extractGlobalFlags([]string{"config", "set", "--host", "https://x", "--password=secret", "--insecure", "--lang", "zh_cn", "-G"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Join(args, " ") != "config set --host https://x --password=secret --insecure" {
 		t.Fatalf("args = %v", args)
 	}
-	if flags.Host != "" || flags.Password != "" || flags.Lang != "zh_cn" || flags.Insecure || flags.InsecureSet {
+	if flags.Host != "" || flags.Password != "" || flags.Lang != "zh_cn" || flags.Insecure || flags.InsecureSet || !flags.Vertical {
 		t.Fatalf("flags = %+v", flags)
 	}
 }
@@ -417,6 +417,7 @@ func TestRootHelpShowsModernGuidance(t *testing.T) {
 		"Generate shell completion scripts",
 		"hyperbdrctl config set \\",
 		"HYPERBDR_HOST",
+		"--vertical",
 		"command-line flags > environment variables > config file > defaults",
 	} {
 		if !strings.Contains(text, want) {

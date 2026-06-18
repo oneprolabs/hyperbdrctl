@@ -206,7 +206,7 @@ func writeObjectStorageListResponse(ctx *context, resp client.APIResponse) error
 	if ctx.cfg.Output == "json" {
 		return writeResponse(ctx, resp, "storages", nil)
 	}
-	return output.Table(ctx.out, ctx.loc, normalizeObjectStorageListRows(resp.Data), objectStorageColumns())
+	return writeRows(ctx, normalizeObjectStorageListRows(resp.Data), objectStorageColumns())
 }
 
 func normalizeObjectStorageListRows(data interface{}) []map[string]interface{} {

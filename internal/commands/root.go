@@ -75,6 +75,11 @@ func extractGlobalFlags(args []string) ([]string, config.Flags, error) {
 			}
 			flags.Output = v
 			i = next
+		case "--vertical", "-G":
+			flags.Vertical = true
+			if hasValue {
+				flags.Vertical = value == "true" || value == "1"
+			}
 		case "--debug":
 			flags.Debug = true
 			flags.DebugSet = true
@@ -89,7 +94,7 @@ func extractGlobalFlags(args []string) ([]string, config.Flags, error) {
 }
 
 func splitFlag(arg string) (key, value string, hasValue bool) {
-	if strings.HasPrefix(arg, "--") || arg == "-o" {
+	if strings.HasPrefix(arg, "--") || arg == "-o" || arg == "-G" {
 		if idx := strings.Index(arg, "="); idx >= 0 {
 			return arg[:idx], arg[idx+1:], true
 		}
@@ -376,7 +381,7 @@ func writeResponse(ctx *context, resp client.APIResponse, listKey string, column
 	}
 	if listKey != "" {
 		rows := listFromData(resp.Data, listKey)
-		return output.Table(ctx.out, ctx.loc, rows, columns)
+		return writeRows(ctx, rows, columns)
 	}
 	if m := mapFromData(resp.Data); m != nil {
 		return writeHumanValue(ctx, m)
@@ -392,6 +397,13 @@ func writeValue(ctx *context, value interface{}) error {
 		return output.JSON(ctx.out, value)
 	}
 	return writeHumanValue(ctx, value)
+}
+
+func writeRows(ctx *context, rows []map[string]interface{}, columns []output.Column) error {
+	if ctx.flags.Vertical {
+		return output.Vertical(ctx.out, ctx.loc, rows, columns)
+	}
+	return output.Table(ctx.out, ctx.loc, rows, columns)
 }
 
 func writeHumanValue(ctx *context, value interface{}) error {

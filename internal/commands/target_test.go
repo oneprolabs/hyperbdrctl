@@ -3,6 +3,8 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -189,7 +191,7 @@ func TestTargetAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 	}{
 		{
 			args: []string{"target", "account", "list", "--help"},
-			want: []string{"Usage Notes:", "--storage-type", "hyperbdrctl target account list", "hyperbdrctl target account detail --id <account_id>"},
+			want: []string{"Usage Notes:", "--storage-type", "--vertical", "hyperbdrctl target account list", "hyperbdrctl target account detail --id <account_id>"},
 		},
 		{
 			args: []string{"target", "account", "detail", "--help"},
@@ -233,6 +235,86 @@ func TestTargetAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 			}
 		}
 		assertNoHelpFooter(t, text)
+	}
+}
+
+func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v2/getCloudAccounts" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_accounts": []map[string]interface{}{
+					{
+						"id":           "account-1",
+						"uuid":         "uuid-1",
+						"name":         "demo-object",
+						"cloud_type":   "openstack",
+						"storage_type": "objectstorage",
+						"status":       "available",
+						"created_at":   "2026-06-18 10:00:00",
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "target", "account", "list", "--storage-type", "objectstorage", "-G"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"*************************** 1. row ***************************",
+		"ID",
+		"account-1",
+		"Cloud Type",
+		"openstack",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("vertical output missing %q: %q", want, text)
+		}
+	}
+	if strings.Contains(text, "ID          UUID") {
+		t.Fatalf("expected vertical output, got table-like output: %q", text)
+	}
+}
+
+func TestTargetAccountListVerticalDoesNotOverrideJSON(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_accounts": []map[string]interface{}{
+					{"id": "account-1"},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--output", "json", "target", "account", "list", "-G"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := out.String()
+	if !strings.Contains(text, "\"cloud_accounts\"") {
+		t.Fatalf("expected json output: %q", text)
+	}
+	if strings.Contains(text, "1. row") {
+		t.Fatalf("vertical output should not override json: %q", text)
 	}
 }
 
