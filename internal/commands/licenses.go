@@ -1,7 +1,9 @@
 package commands
 
 import (
+	"fmt"
 	applicense "hyperbdr-client/internal/app/license"
+	"hyperbdr-client/internal/client"
 	"hyperbdr-client/internal/output"
 )
 
@@ -38,7 +40,7 @@ func runLicenses(ctx *context, args []string) error {
 		if err != nil {
 			return err
 		}
-		return writeResponse(ctx, resp, "", nil)
+		return writeLicenseRegCodeResponse(ctx, resp)
 	case "activate":
 		fs := newFlagSet("license activate")
 		kkty := fs.String("kkty", "", "")
@@ -82,4 +84,31 @@ func licenseColumns() []output.Column {
 		{HeaderKey: "table.start_at", Field: "start_at"},
 		{HeaderKey: "table.expire_at", Field: "expire_at"},
 	}
+}
+
+func writeLicenseRegCodeResponse(ctx *context, resp client.APIResponse) error {
+	if ctx.cfg.Output == "json" {
+		return writeResponse(ctx, resp, "", nil)
+	}
+
+	code := licenseRegCodeValue(resp)
+	if err := writeSectionTitle(ctx, ctx.loc.T("table.kkty")); err != nil {
+		return err
+	}
+	_, err := fmt.Fprintln(ctx.out, code)
+	return err
+}
+
+func licenseRegCodeValue(resp client.APIResponse) string {
+	if data := mapFromData(resp.Data); data != nil {
+		if code := mapString(data, "kkty"); code != "" {
+			return code
+		}
+	}
+	if resp.Raw != nil {
+		if data := nestedMap(resp.Raw, "data"); data != nil {
+			return mapString(data, "kkty")
+		}
+	}
+	return ""
 }

@@ -79,8 +79,11 @@ func TestLicensesRegCode(t *testing.T) {
 	if gotPath != "/api/v2/getLicenseRegCode" {
 		t.Fatalf("path = %q", gotPath)
 	}
-	if !strings.Contains(out.String(), "reg-code-value") {
-		t.Fatalf("output = %q", out.String())
+	text := out.String()
+	for _, want := range []string{"== Registration Code ==", "-------------------------", "reg-code-value"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
 	}
 }
 
