@@ -74,6 +74,7 @@ var en = map[string]string{
 	"table.command":                             "Command",
 	"table.provider":                            "Provider",
 	"table.cloud_account_name":                  "Cloud Account",
+	"table.display_username":                    "Display Username",
 	"table.public_ip":                           "Public IP",
 	"label.agent_install.overview":              "Agent Install",
 	"label.agent_install.title":                 "Title",

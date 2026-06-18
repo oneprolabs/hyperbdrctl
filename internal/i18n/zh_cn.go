@@ -74,6 +74,7 @@ var zhCN = map[string]string{
 	"table.command":                             "命令",
 	"table.provider":                            "Provider",
 	"table.cloud_account_name":                  "云账号名称",
+	"table.display_username":                    "显示用户名",
 	"table.public_ip":                           "公网 IP",
 	"label.agent_install.overview":              "Agent 安装信息",
 	"label.agent_install.title":                 "标题",

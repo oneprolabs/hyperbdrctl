@@ -71,8 +71,8 @@ func runTargetAccounts(ctx *context, args []string) error {
 func cloudAccountColumns() []output.Column {
 	return []output.Column{
 		{HeaderKey: "table.id", Field: "id"},
-		{HeaderKey: "table.uuid", Field: "uuid"},
 		{HeaderKey: "table.name", Field: "name"},
+		{HeaderKey: "table.display_username", Field: "display_username"},
 		{HeaderKey: "table.cloud_type", Field: "cloud_type"},
 		{HeaderKey: "table.storage_type", Field: "storage_type"},
 		{HeaderKey: "table.status", Field: "status"},

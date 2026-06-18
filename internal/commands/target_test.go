@@ -251,13 +251,14 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 			"data": map[string]interface{}{
 				"cloud_accounts": []map[string]interface{}{
 					{
-						"id":           "account-1",
-						"uuid":         "uuid-1",
-						"name":         "demo-object",
-						"cloud_type":   "openstack",
-						"storage_type": "objectstorage",
-						"status":       "available",
-						"created_at":   "2026-06-18 10:00:00",
+						"id":               "account-1",
+						"uuid":             "uuid-1",
+						"name":             "demo-object",
+						"display_username": "demo-user",
+						"cloud_type":       "openstack",
+						"storage_type":     "objectstorage",
+						"status":           "available",
+						"created_at":       "2026-06-18 10:00:00",
 					},
 				},
 			},
@@ -276,6 +277,8 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 		"*************************** 1. row ***************************",
 		"ID",
 		"account-1",
+		"Display Username",
+		"demo-user",
 		"Cloud Type",
 		"openstack",
 	} {
@@ -283,8 +286,8 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 			t.Fatalf("vertical output missing %q: %q", want, text)
 		}
 	}
-	if strings.Contains(text, "ID          UUID") {
-		t.Fatalf("expected vertical output, got table-like output: %q", text)
+	if strings.Contains(text, "UUID") {
+		t.Fatalf("vertical output should not include UUID: %q", text)
 	}
 }
 
