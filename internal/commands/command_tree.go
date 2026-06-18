@@ -317,6 +317,12 @@ func newTargetOSSCommand(ctx *context) *cobra.Command {
 		}, func(args []string) error {
 			return runTargetOSS(ctx, append([]string{"create"}, args...))
 		}),
+		newRawLeafCommand(ctx, "delete", "cmd.target.oss.delete.short", "cmd.target.oss.delete.long", "cmd.target.oss.delete.examples", "cmd.target.oss.delete.notes", func(cmd *cobra.Command) {
+			addFlagString(cmd, ctx, "id")
+			addFlagBool(cmd, ctx, "force")
+		}, func(args []string) error {
+			return runTargetOSS(ctx, append([]string{"delete"}, args...))
+		}),
 	)
 	for _, child := range cmd.Commands() {
 		addHelpLayout(child, helpLayoutFourSection)

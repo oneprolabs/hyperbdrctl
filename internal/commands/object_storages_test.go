@@ -211,6 +211,87 @@ func TestObjectStoragesCreateRejectsRemovedCloudTypeFlag(t *testing.T) {
 	}
 }
 
+func TestObjectStoragesDeleteRequiresForceWhenAssociatedHostsExist(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var associatedCalls, deleteCalls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v2/getStorageAssociatedResources":
+			associatedCalls++
+			if got := r.URL.Query().Get("storage_id"); got != "storage-1" {
+				t.Fatalf("storage_id = %q", got)
+			}
+			if got := r.URL.Query().Get("with_statistics"); got != "false" {
+				t.Fatalf("with_statistics = %q", got)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"resources": []map[string]interface{}{
+						{
+							"host_id":   "host-1",
+							"host_name": "DESKTOP-QD7LPO1-856c",
+						},
+					},
+				},
+			})
+		case "/api/v2/deleteStorage":
+			deleteCalls++
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"deleted": true}})
+		default:
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "target", "oss", "delete", "--id", "storage-1"), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "--force") || !strings.Contains(err.Error(), "DESKTOP-QD7LPO1-856c") {
+		t.Fatalf("err = %v", err)
+	}
+	if associatedCalls != 1 {
+		t.Fatalf("associatedCalls = %d", associatedCalls)
+	}
+	if deleteCalls != 0 {
+		t.Fatalf("deleteCalls = %d", deleteCalls)
+	}
+}
+
+func TestObjectStoragesDeleteForcePostsDeleteRequest(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var calls []string
+	var gotDeleteBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls = append(calls, r.URL.Path)
+		switch r.URL.Path {
+		case "/api/v2/deleteStorage":
+			if err := json.NewDecoder(r.Body).Decode(&gotDeleteBody); err != nil {
+				t.Fatal(err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"deleted": true}})
+		default:
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "target", "oss", "delete", "--id", "storage-1", "--force"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) != 1 || calls[0] != "/api/v2/deleteStorage" {
+		t.Fatalf("calls = %+v", calls)
+	}
+	if gotDeleteBody["storage_id"] != "storage-1" || gotDeleteBody["force"] != true {
+		t.Fatalf("body = %+v", gotDeleteBody)
+	}
+}
+
 func TestObjectStoragesListDefaultsToObjectStorage(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

@@ -1,6 +1,10 @@
 package commands
 
 import (
+	"fmt"
+	"sort"
+	"strings"
+
 	appobjectstorage "hyperbdr-client/internal/app/objectstorage"
 	"hyperbdr-client/internal/client"
 	"hyperbdr-client/internal/output"
@@ -55,6 +59,8 @@ func runObjectStorages(ctx *context, args []string) error {
 		return runObjectStorageBuckets(ctx, args[1:])
 	case "create":
 		return runObjectStorageCreate(ctx, args[1:])
+	case "delete":
+		return runObjectStorageDelete(ctx, args[1:])
 	default:
 		return errUnknown("target oss", args[0])
 	}
@@ -168,8 +174,74 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 	return writeResponse(ctx, resp, "", nil)
 }
 
+func runObjectStorageDelete(ctx *context, args []string) error {
+	fs := newFlagSet("target oss delete")
+	id := fs.String("id", "", "")
+	force := fs.Bool("force", false, "")
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *id == "" {
+		return missing(ctx, "error.missing_id")
+	}
+
+	service := appobjectstorage.NewService(commandPosterAdapter{ctx: ctx})
+	if !*force {
+		associatedResp, err := service.AssociatedResources(appobjectstorage.AssociatedResourcesSpec{ID: *id})
+		if err != nil {
+			return err
+		}
+		if msg := objectStorageDeleteForceMessage(ctx, *id, associatedResp.Data); msg != "" {
+			return fmt.Errorf("%s", msg)
+		}
+	}
+
+	resp, err := service.Delete(appobjectstorage.DeleteSpec{
+		ID:    *id,
+		Force: *force,
+	})
+	if err != nil {
+		return err
+	}
+	return writeResponse(ctx, resp, "", nil)
+}
+
 func runTargetOSS(ctx *context, args []string) error {
 	return runObjectStorages(ctx, args)
+}
+
+func objectStorageDeleteForceMessage(ctx *context, storageID string, data interface{}) string {
+	rows := listFromData(data, "resources")
+	if len(rows) == 0 {
+		return ""
+	}
+	hosts := associatedObjectStorageHostNames(rows)
+	if len(hosts) == 0 {
+		return fmt.Sprintf(ctx.loc.T("error.object_storage_delete_has_associated_resources"), storageID)
+	}
+	return fmt.Sprintf(ctx.loc.T("error.object_storage_delete_has_associated_hosts"), storageID, strings.Join(hosts, ", "))
+}
+
+func associatedObjectStorageHostNames(rows []map[string]interface{}) []string {
+	seen := map[string]struct{}{}
+	names := make([]string, 0, len(rows))
+	for _, row := range rows {
+		name := firstNonEmptyString(
+			mapString(row, "host_name"),
+			mapString(row, "host_id"),
+		)
+		if name == "" {
+			continue
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 func objectStorageColumns() []output.Column {

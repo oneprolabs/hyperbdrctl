@@ -787,6 +787,15 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl target oss delete":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "force", defaultValue: "false"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl target cloud-sync-gateway":
 		return []flagHelpSpec{
 			{name: "debug"},

@@ -632,6 +632,7 @@ func TestTargetOSSHelpUsesGroupLayout(t *testing.T) {
 		"wait",
 		"buckets",
 		"create",
+		"delete",
 		"Usage Notes:",
 	} {
 		if !strings.Contains(text, want) {
@@ -673,6 +674,10 @@ func TestTargetOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 		{
 			args: []string{"target", "oss", "create", "--help"},
 			want: []string{"Usage Notes:", "--display-name", "<cloud-type>-<region-id>", "existing / new"},
+		},
+		{
+			args: []string{"target", "oss", "delete", "--help"},
+			want: []string{"Usage Notes:", "--force", "hyperbdrctl target oss delete --id <storage_id>"},
 		},
 	}
 

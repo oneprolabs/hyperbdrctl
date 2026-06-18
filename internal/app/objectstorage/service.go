@@ -43,6 +43,10 @@ type DetailSpec struct {
 	Query url.Values
 }
 
+type AssociatedResourcesSpec struct {
+	ID string
+}
+
 type CreateSpec struct {
 	RawBody          interface{}
 	DisplayName      string
@@ -67,6 +71,11 @@ type PreparedCreateRequest struct {
 	Body interface{}
 }
 
+type DeleteSpec struct {
+	ID    string
+	Force bool
+}
+
 func (s Service) List(spec ListSpec) (client.APIResponse, error) {
 	q := cloneValues(spec.Query)
 	q.Set("type", spec.StorageType)
@@ -82,6 +91,16 @@ func (s Service) Detail(spec DetailSpec) (client.APIResponse, error) {
 	q := cloneValues(spec.Query)
 	q.Set("storage_id", spec.ID)
 	return s.api.Get("/api/v2/getStorageDetailInfo", q)
+}
+
+func (s Service) AssociatedResources(spec AssociatedResourcesSpec) (client.APIResponse, error) {
+	if spec.ID == "" {
+		return client.APIResponse{}, fmt.Errorf("id is required")
+	}
+	q := url.Values{}
+	q.Set("storage_id", spec.ID)
+	q.Set("with_statistics", "false")
+	return s.api.Get("/api/v2/getStorageAssociatedResources", q)
 }
 
 func (s Service) Buckets(spec BucketsSpec) (client.APIResponse, error) {
@@ -116,6 +135,16 @@ func (s Service) Create(spec CreateSpec) (client.APIResponse, error) {
 		return client.APIResponse{}, err
 	}
 	return s.api.Post(prepared.Path, prepared.Body)
+}
+
+func (s Service) Delete(spec DeleteSpec) (client.APIResponse, error) {
+	if spec.ID == "" {
+		return client.APIResponse{}, fmt.Errorf("id is required")
+	}
+	return s.api.Post("/api/v2/deleteStorage", map[string]interface{}{
+		"storage_id": spec.ID,
+		"force":      spec.Force,
+	})
 }
 
 func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {

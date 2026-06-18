@@ -72,6 +72,22 @@ func TestServiceListBuildsQuery(t *testing.T) {
 	}
 }
 
+func TestServiceAssociatedResourcesBuildsQuery(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.AssociatedResources(AssociatedResourcesSpec{ID: "storage-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.getPath != "/api/v2/getStorageAssociatedResources" {
+		t.Fatalf("path = %q", api.getPath)
+	}
+	if api.getQuery.Get("storage_id") != "storage-1" || api.getQuery.Get("with_statistics") != "false" {
+		t.Fatalf("query = %+v", api.getQuery)
+	}
+}
+
 func TestServicePrepareCreateAutoGeneratesDisplayName(t *testing.T) {
 	service := NewService(&fakeAPI{})
 
@@ -115,6 +131,26 @@ func TestServicePrepareCreateInfersHuaweiCloudTypeFromAuthURL(t *testing.T) {
 	}
 	metadata := body["metadata"].(map[string]interface{})
 	if metadata["cloud_type_select"] != "huawei,cn-north-1" {
+		t.Fatalf("body = %+v", body)
+	}
+}
+
+func TestServiceDeleteBuildsRequest(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Delete(DeleteSpec{
+		ID:    "storage-1",
+		Force: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.postPath != "/api/v2/deleteStorage" {
+		t.Fatalf("path = %q", api.postPath)
+	}
+	body := api.postBody.(map[string]interface{})
+	if body["storage_id"] != "storage-1" || body["force"] != true {
 		t.Fatalf("body = %+v", body)
 	}
 }
