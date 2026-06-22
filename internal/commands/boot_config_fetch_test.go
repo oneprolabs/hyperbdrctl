@@ -18,9 +18,14 @@ func TestBootConfigHelpShowsFetchCommands(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := out.String()
-	for _, want := range []string{"fetch-block-resources", "fetch-oss-resources", "Usage Notes:", "hyperbdrctl boot-config apply --help"} {
+	for _, want := range []string{"Commands:", "get", "apply", "Usage Notes:", "hyperbdrctl boot-config apply --help"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"fetch-block-resources", "fetch-oss-resources"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("help should hide %q: %q", unwanted, text)
 		}
 	}
 	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
@@ -29,6 +34,38 @@ func TestBootConfigHelpShowsFetchCommands(t *testing.T) {
 		}
 	}
 	assertNoHelpFooter(t, text)
+}
+
+func TestBootConfigHiddenFetchCommandsHelpRemainsAvailable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		args []string
+		want []string
+	}{
+		{
+			args: []string{"help", "boot-config", "fetch-block-resources"},
+			want: []string{"Usage:", "aliyun", "openstack", "Usage Notes:"},
+		},
+		{
+			args: []string{"help", "boot-config", "fetch-oss-resources"},
+			want: []string{"Usage:", "aliyun", "openstack", "Usage Notes:"},
+		},
+	}
+
+	for _, tc := range cases {
+		var out, errOut bytes.Buffer
+		if err := Execute(tc.args, &out, &errOut); err != nil {
+			t.Fatalf("args=%v err=%v", tc.args, err)
+		}
+		text := out.String()
+		for _, want := range tc.want {
+			if !strings.Contains(text, want) {
+				t.Fatalf("args=%v help missing %q: %q", tc.args, want, text)
+			}
+		}
+	}
 }
 
 func TestBootConfigFetchResourcesHelpUsesGroupLayout(t *testing.T) {

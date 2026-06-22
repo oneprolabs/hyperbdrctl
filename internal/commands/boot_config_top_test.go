@@ -41,6 +41,7 @@ func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 		"--preview-request",
 		"Usage Notes:",
 		"hyperbdrctl boot-config apply \\",
+		"hyperbdrctl target resource fetch --cloud-account-id <account_id> --fetch-res regions,zones",
 		"--region-id cn-shanghai",
 		"--file < dynamic flags < --set < --set-json",
 	} {
@@ -51,6 +52,11 @@ func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nCommands:\n", "\nGlobal Flags:\n", "\nRelated Commands:\n", "\nAutomatic behavior:\n", "\nMinimum Flags:\n"} {
 		if strings.Contains(got, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, got)
+		}
+	}
+	for _, unwanted := range []string{"fetch-block-resources", "fetch-oss-resources"} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("help should not include retired fetch command %q: %q", unwanted, got)
 		}
 	}
 	assertNoHelpFooter(t, got)
@@ -65,9 +71,14 @@ func TestTopLevelBootConfigHelpShowsGetSubcommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := out.String()
-	for _, want := range []string{"Commands:", "get", "apply", "fetch-block-resources", "fetch-oss-resources", "Usage Notes:", "hyperbdrctl boot-config get --id <host_id>", "hyperbdrctl boot-config apply --help"} {
+	for _, want := range []string{"Commands:", "get", "apply", "Usage Notes:", "hyperbdrctl boot-config get --id <host_id>", "hyperbdrctl boot-config apply --help"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q: %q", want, got)
+		}
+	}
+	for _, unwanted := range []string{"fetch-block-resources", "fetch-oss-resources"} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("help should hide %q: %q", unwanted, got)
 		}
 	}
 	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
