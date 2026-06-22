@@ -513,6 +513,15 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl source delete":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "force"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl source vms":
 		return []flagHelpSpec{
 			{name: "connection-type", required: true},

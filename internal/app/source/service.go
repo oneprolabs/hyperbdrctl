@@ -9,6 +9,7 @@ import (
 
 type API interface {
 	Get(path string, q url.Values) (client.APIResponse, error)
+	Delete(path string, body interface{}) (client.APIResponse, error)
 }
 
 type Service struct {
@@ -59,6 +60,11 @@ type SynchNodesSpec struct {
 	Type   string
 	Status string
 	Query  url.Values
+}
+
+type DeleteSpec struct {
+	ID    string
+	Force bool
 }
 
 func (s Service) List(spec ListSpec) (client.APIResponse, error) {
@@ -135,6 +141,17 @@ func (s Service) SynchNodes(spec SynchNodesSpec) (client.APIResponse, error) {
 		q.Set("status", spec.Status)
 	}
 	return s.api.Get("/hypermotion/v1/synch_nodes", q)
+}
+
+func (s Service) Delete(spec DeleteSpec) (client.APIResponse, error) {
+	if spec.ID == "" {
+		return client.APIResponse{}, fmt.Errorf("id is required")
+	}
+	path := "/hypermotion/v1/sources/" + url.PathEscape(spec.ID)
+	if spec.Force {
+		path += "?force=true"
+	}
+	return s.api.Delete(path, nil)
 }
 
 func cloneValues(v url.Values) url.Values {

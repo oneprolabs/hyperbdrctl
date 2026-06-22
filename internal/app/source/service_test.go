@@ -8,13 +8,21 @@ import (
 )
 
 type fakeAPI struct {
-	getPath  string
-	getQuery url.Values
+	getPath    string
+	getQuery   url.Values
+	deletePath string
+	deleteBody interface{}
 }
 
 func (f *fakeAPI) Get(path string, q url.Values) (client.APIResponse, error) {
 	f.getPath = path
 	f.getQuery = q
+	return client.APIResponse{Data: map[string]interface{}{"ok": true}}, nil
+}
+
+func (f *fakeAPI) Delete(path string, body interface{}) (client.APIResponse, error) {
+	f.deletePath = path
+	f.deleteBody = body
 	return client.APIResponse{Data: map[string]interface{}{"ok": true}}, nil
 }
 
@@ -133,5 +141,44 @@ func TestServiceSynchNodesBuildsQuery(t *testing.T) {
 	}
 	if api.getQuery.Get("type") != "proxy" || api.getQuery.Get("status") != "online" || api.getQuery.Get("custom_step") != "3" {
 		t.Fatalf("query = %+v", api.getQuery)
+	}
+}
+
+func TestServiceDeleteBuildsPathWithoutForceByDefault(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Delete(DeleteSpec{ID: "source-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.deletePath != "/hypermotion/v1/sources/source-1" {
+		t.Fatalf("path = %q", api.deletePath)
+	}
+	if api.deleteBody != nil {
+		t.Fatalf("body = %#v", api.deleteBody)
+	}
+}
+
+func TestServiceDeleteBuildsPathWithForce(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Delete(DeleteSpec{ID: "source-1", Force: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.deletePath != "/hypermotion/v1/sources/source-1?force=true" {
+		t.Fatalf("path = %q", api.deletePath)
+	}
+}
+
+func TestServiceDeleteRequiresID(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Delete(DeleteSpec{})
+	if err == nil || err.Error() != "id is required" {
+		t.Fatalf("err = %v", err)
 	}
 }

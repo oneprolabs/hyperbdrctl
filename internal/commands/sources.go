@@ -72,6 +72,24 @@ func runSources(ctx *context, args []string) error {
 			return err
 		}
 		return writeResponse(ctx, resp, "", nil)
+	case "delete":
+		fs := newFlagSet("source delete")
+		id := fs.String("id", "", "")
+		force := fs.Bool("force", false, "")
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+		if *id == "" {
+			return missing(ctx, "error.missing_id")
+		}
+		resp, err := service.Delete(appsource.DeleteSpec{
+			ID:    *id,
+			Force: *force,
+		})
+		if err != nil {
+			return err
+		}
+		return writeResponse(ctx, resp, "", nil)
 	case "vms":
 		fs := newFlagSet("source vms")
 		connectionType := fs.String("connection-type", "", "")

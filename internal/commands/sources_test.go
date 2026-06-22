@@ -624,6 +624,7 @@ func TestSourceHelpUsesGroupLayout(t *testing.T) {
 		"Usage:",
 		"\nFlags:\n",
 		"\nCommands:\n",
+		"delete",
 		"list",
 		"detail",
 		"vms",
@@ -662,6 +663,10 @@ func TestSourceLeafHelpUsesFourSectionLayout(t *testing.T) {
 			args: []string{"source", "create", "--help"},
 			want: []string{"Usage Notes:", "--type", "--synch-node-id", "--synch-node-ids", "--preview-request", "hyperbdrctl source sync-nodes"},
 		},
+		{
+			args: []string{"source", "delete", "--help"},
+			want: []string{"Usage Notes:", "--id", "--force", "hyperbdrctl source detail --id <source_id>"},
+		},
 	}
 
 	for _, tt := range cases {
@@ -685,6 +690,73 @@ func TestSourceLeafHelpUsesFourSectionLayout(t *testing.T) {
 			}
 		}
 		assertNoHelpFooter(t, text)
+	}
+}
+
+func TestSourceDeleteUsesDeleteEndpoint(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotMethod string
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.RequestURI()
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"deleted": true, "id": "source-1"},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--output", "json", "source", "delete", "--id", "source-1"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotMethod != http.MethodDelete {
+		t.Fatalf("method = %q", gotMethod)
+	}
+	if gotPath != "/hypermotion/v1/sources/source-1" {
+		t.Fatalf("path = %q", gotPath)
+	}
+	if strings.Contains(gotPath, "force=") {
+		t.Fatalf("path should not include force by default: %q", gotPath)
+	}
+	if !strings.Contains(out.String(), `"deleted": true`) && !strings.Contains(out.String(), `"deleted":true`) {
+		t.Fatalf("output = %q", out.String())
+	}
+}
+
+func TestSourceDeleteUsesForceQueryWhenRequested(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.RequestURI()
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000"})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "source", "delete", "--id", "source-1", "--force"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/hypermotion/v1/sources/source-1?force=true" {
+		t.Fatalf("path = %q", gotPath)
+	}
+}
+
+func TestSourceDeleteRequiresID(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid", "source", "delete"), &out, &errOut)
+	if err == nil || err.Error() != "id is required" {
+		t.Fatalf("err = %v", err)
 	}
 }
 
@@ -713,13 +785,14 @@ func TestSourceEnHelpMatchesExpected(t *testing.T) {
 				"  agent-install            Show Agent source proxy install commands",
 				"  agentless-install        Show Agentless sync proxy install commands",
 				"  create                   Create production platform",
+				"  delete                   Delete production platform",
 				"  detail                   Show production platform detail",
 				"  list                     List production platforms",
 				"  sync-nodes               List sync proxy nodes",
 				"  vms                      List Agentless VMs",
 				"",
 				"Usage Notes:",
-				"  Use this command group for production platform queries, production host preparation, and production platform creation.",
+				"  Use this command group for production platform queries, production host preparation, production platform creation, and deletion.",
 				"",
 				"  To inspect existing production platforms first, run:",
 				"    hyperbdrctl source list --type vmware",
@@ -734,8 +807,9 @@ func TestSourceEnHelpMatchesExpected(t *testing.T) {
 				"  To check available sync nodes before Agentless create, run:",
 				"    hyperbdrctl source sync-nodes",
 				"",
-				"  To inspect the write flow and required provider inputs, continue with:",
+				"  To inspect the mutating flows and required inputs, continue with:",
 				"    hyperbdrctl source create --help",
+				"    hyperbdrctl source delete --help",
 			),
 		},
 		{
@@ -801,6 +875,35 @@ func TestSourceEnHelpMatchesExpected(t *testing.T) {
 				"",
 				"  To script against the raw response fields, add:",
 				"    --output json",
+			),
+		},
+		{
+			args: []string{"--lang", "en", "source", "delete", "--help"},
+			want: joinHelpLines(
+				"Delete production platform",
+				"",
+				"Usage: hyperbdrctl source delete --id <source_id> [flags]",
+				"",
+				"Flags:",
+				"      --id string       Resource ID (required)",
+				"      --force           Force operation",
+				"      --debug           Output request debug logs",
+				"      --lang string     Display language, choices en / zh_cn, default en",
+				"  -o, --output string   Output format, choices table / json, default table",
+				"  -h, --help            Show help information",
+				"",
+				"Usage Notes:",
+				"  Use this command to delete one production platform connection.",
+				"",
+				"  The minimum delete command is:",
+				"    hyperbdrctl source delete --id <source_id>",
+				"",
+				"  Add this only when the backend requires a forced delete:",
+				"    --force",
+				"",
+				"  To confirm the target production platform ID first, run:",
+				"    hyperbdrctl source list --type vmware",
+				"    hyperbdrctl source detail --id <source_id>",
 			),
 		},
 		{
@@ -1002,13 +1105,14 @@ func TestSourceZhHelpMatchesArchive(t *testing.T) {
 				"  agent-install            查看 Agent 源端代理安装命令",
 				"  agentless-install        查看 Agentless 同步代理安装命令",
 				"  create                   创建生产平台",
+				"  delete                   删除生产平台",
 				"  detail                   查看生产平台详情",
 				"  list                     列出生产平台",
 				"  sync-nodes               列出同步代理节点",
 				"  vms                      列出 Agentless 虚拟机",
 				"",
 				"使用说明:",
-				"  该命令组用于生产平台查询、生产主机准备和生产平台创建。",
+				"  该命令组用于生产平台查询、生产主机准备、生产平台创建和删除。",
 				"",
 				"  如需先查看当前已有的生产平台，可以执行：",
 				"    hyperbdrctl source list --type vmware",
@@ -1025,6 +1129,7 @@ func TestSourceZhHelpMatchesArchive(t *testing.T) {
 				"",
 				"  如需继续查看写入流程和所需参数，可以执行：",
 				"    hyperbdrctl source create --help",
+				"    hyperbdrctl source delete --help",
 			),
 		},
 		{
@@ -1090,6 +1195,35 @@ func TestSourceZhHelpMatchesArchive(t *testing.T) {
 				"",
 				"  如需脚本化读取原始返回字段，可附加：",
 				"    --output json",
+			),
+		},
+		{
+			args: []string{"--lang", "zh_cn", "source", "delete", "--help"},
+			want: joinHelpLines(
+				"删除生产平台",
+				"",
+				"用法: hyperbdrctl source delete --id <source_id> [参数]",
+				"",
+				"参数:",
+				"      --id string       资源 ID（必须）",
+				"      --force           强制执行",
+				"      --debug           输出请求调试日志",
+				"      --lang string     显示语言，可选 en / zh_cn，默认值 en",
+				"  -o, --output string   输出格式，可选 table / json，默认值 table",
+				"  -h, --help            显示帮助信息",
+				"",
+				"使用说明:",
+				"  该命令用于删除单个生产平台连接。",
+				"",
+				"  最小删除方式如下：",
+				"    hyperbdrctl source delete --id <source_id>",
+				"",
+				"  只有在后端要求强制删除时，才附加：",
+				"    --force",
+				"",
+				"  如需先确认目标生产平台 ID，可以执行：",
+				"    hyperbdrctl source list --type vmware",
+				"    hyperbdrctl source detail --id <source_id>",
 			),
 		},
 		{
