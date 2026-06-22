@@ -18,9 +18,14 @@ func TestBootConfigHelpShowsFetchCommands(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := out.String()
-	for _, want := range []string{"fetch-block-resources", "fetch-oss-resources", "Usage Notes:"} {
+	for _, want := range []string{"fetch-block-resources", "fetch-oss-resources", "Usage Notes:", "hyperbdrctl boot-config apply --help"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
 	}
 	assertNoHelpFooter(t, text)
@@ -55,6 +60,11 @@ func TestBootConfigFetchResourcesHelpUsesGroupLayout(t *testing.T) {
 				t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
 			}
 		}
+		for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+			if strings.Contains(text, unwanted) {
+				t.Fatalf("args=%v help should not include %q: %q", tt.args, unwanted, text)
+			}
+		}
 		assertNoHelpFooter(t, text)
 	}
 }
@@ -68,13 +78,15 @@ func TestBootConfigFetchOSSAliyunHelpUsesFourSectionLayout(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := out.String()
-	for _, want := range []string{"Usage Notes:", "--cloud-account-id", "--zone-id", "--flavor-id", "regions,zones", "boot-config-wizard subnet-config"} {
+	for _, want := range []string{"Usage Notes:", "--cloud-account-id", "--zone-id", "--flavor-id", "regions,zones", "boot-config-wizard subnet-config", "target account list --storage-type objectstorage"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	if strings.Contains(text, "\nCommands:\n") {
-		t.Fatalf("provider help should not include commands section: %q", text)
+	for _, unwanted := range []string{"\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("provider help should not include %q: %q", unwanted, text)
+		}
 	}
 	assertNoHelpFooter(t, text)
 }
@@ -88,13 +100,15 @@ func TestBootConfigFetchOSSHuaweiHelpUsesFourSectionLayout(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := out.String()
-	for _, want := range []string{"Usage Notes:", "--cloud-account-id", "--zone-id", "--flavor-vcpus", "regions,zones", "boot-config-wizard subnet-config"} {
+	for _, want := range []string{"Usage Notes:", "--cloud-account-id", "--zone-id", "--flavor-vcpus", "regions,zones", "boot-config-wizard subnet-config", "target account list --storage-type objectstorage"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	if strings.Contains(text, "\nCommands:\n") {
-		t.Fatalf("provider help should not include commands section: %q", text)
+	for _, unwanted := range []string{"\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("provider help should not include %q: %q", unwanted, text)
+		}
 	}
 	assertNoHelpFooter(t, text)
 }

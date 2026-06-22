@@ -254,8 +254,8 @@ func bootConfigFetchProviderUsageNotes(ctx *context, entry catalog.CloudEntry, s
 	case storageType == "objectstorage" && entry.Provider == "huawei":
 		return ctx.loc.T("cmd.boot_config_top.fetch_oss_resources.huawei.usage_notes")
 	case storageType == "block":
-		return fmt.Sprintf(ctx.loc.T("cmd.boot_config_top.fetch_block_resources.provider.usage_notes"), localizedCloudEntryName(ctx, entry))
+		return fmt.Sprintf(ctx.loc.T("cmd.boot_config_top.fetch_block_resources.provider.usage_notes"), localizedCloudEntryName(ctx, entry), entry.Provider)
 	default:
-		return fmt.Sprintf(ctx.loc.T("cmd.boot_config_top.fetch_oss_resources.provider.usage_notes"), localizedCloudEntryName(ctx, entry))
+		return fmt.Sprintf(ctx.loc.T("cmd.boot_config_top.fetch_oss_resources.provider.usage_notes"), localizedCloudEntryName(ctx, entry), entry.Provider)
 	}
 }

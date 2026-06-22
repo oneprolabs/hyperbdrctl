@@ -22,7 +22,7 @@ func TestTopLevelBootConfigRequiresSubcommand(t *testing.T) {
 	}
 }
 
-func TestTopLevelBootConfigApplyHelpShowsOverrideFlags(t *testing.T) {
+func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -31,11 +31,29 @@ func TestTopLevelBootConfigApplyHelpShowsOverrideFlags(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := out.String()
-	for _, want := range []string{"--set", "--set-json", "--preview-request", "Automatic behavior", "Minimum Flags"} {
+	for _, want := range []string{
+		"Usage:",
+		"\nFlags:\n",
+		"--id",
+		"--file",
+		"--set",
+		"--set-json",
+		"--preview-request",
+		"Usage Notes:",
+		"hyperbdrctl boot-config apply \\",
+		"--region-id cn-shanghai",
+		"--file < dynamic flags < --set < --set-json",
+	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q: %q", want, got)
 		}
 	}
+	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nCommands:\n", "\nGlobal Flags:\n", "\nRelated Commands:\n", "\nAutomatic behavior:\n", "\nMinimum Flags:\n"} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, got)
+		}
+	}
+	assertNoHelpFooter(t, got)
 }
 
 func TestTopLevelBootConfigHelpShowsGetSubcommand(t *testing.T) {
@@ -47,11 +65,17 @@ func TestTopLevelBootConfigHelpShowsGetSubcommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := out.String()
-	for _, want := range []string{"Commands:", "get", "apply", "fetch-block-resources", "fetch-oss-resources", "Usage Notes:"} {
+	for _, want := range []string{"Commands:", "get", "apply", "fetch-block-resources", "fetch-oss-resources", "Usage Notes:", "hyperbdrctl boot-config get --id <host_id>", "hyperbdrctl boot-config apply --help"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q: %q", want, got)
 		}
 	}
+	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, got)
+		}
+	}
+	assertNoHelpFooter(t, got)
 }
 
 func TestTopLevelBootConfigGetHelpUsesModernLayout(t *testing.T) {

@@ -35,9 +35,9 @@ func newTopLevelBootConfigCommand(ctx *context) *cobra.Command {
 	}, func(args []string) error {
 		return runTopLevelBootConfig(ctx, append([]string{"apply"}, args...))
 	})
-	addAutomaticBehavior(applyCmd, ctx, "cmd.boot_config_top.apply.automatic_behavior")
-	addMinimumFlags(applyCmd, ctx, "cmd.boot_config_top.apply.minimum_flags")
-	addRelatedCommands(applyCmd, ctx, "cmd.boot_config_top.apply.related")
+	addHelpLayout(applyCmd, helpLayoutFourSection)
+	addUsageLine(applyCmd, ctx, "cmd.boot_config_top.apply.usage_line")
+	addUsageNotes(applyCmd, ctx, "cmd.boot_config_top.apply.usage_notes")
 	cmd.AddCommand(
 		getCmd,
 		applyCmd,
