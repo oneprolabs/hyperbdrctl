@@ -211,6 +211,20 @@ func TestObjectStoragesCreateRejectsRemovedCloudTypeFlag(t *testing.T) {
 	}
 }
 
+func TestObjectStoragesCreateRejectsFileFlag(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "oss", "create",
+		"--file", "./tmp/object-storage-create.json",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined: -file") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestObjectStoragesDeleteRequiresForceWhenAssociatedHostsExist(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

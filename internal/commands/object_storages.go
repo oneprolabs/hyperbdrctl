@@ -97,7 +97,6 @@ func runObjectStorageBuckets(ctx *context, args []string) error {
 
 func runObjectStorageCreate(ctx *context, args []string) error {
 	fs := newFlagSet("target oss create")
-	file := fs.String("file", "", "")
 	displayName := fs.String("display-name", "", "")
 	authURL := fs.String("auth-url", "", "")
 	regionID := fs.String("region-id", "", "")
@@ -118,19 +117,9 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 		return err
 	}
 
-	var rawBody interface{}
-	if *file != "" {
-		body, err := apiRequestBody(*file, "")
-		if err != nil {
-			return err
-		}
-		rawBody = body
-	}
-
 	service := appobjectstorage.NewService(commandPosterAdapter{ctx: ctx})
 	if *previewRequest {
 		prepared, err := service.PrepareCreate(appobjectstorage.CreateSpec{
-			RawBody:          rawBody,
 			DisplayName:      *displayName,
 			AuthURL:          *authURL,
 			RegionID:         *regionID,
@@ -152,7 +141,6 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 		return output.JSON(ctx.out, prepared.Body)
 	}
 	resp, err := service.Create(appobjectstorage.CreateSpec{
-		RawBody:          rawBody,
 		DisplayName:      *displayName,
 		AuthURL:          *authURL,
 		RegionID:         *regionID,

@@ -48,7 +48,6 @@ type AssociatedResourcesSpec struct {
 }
 
 type CreateSpec struct {
-	RawBody          interface{}
 	DisplayName      string
 	CloudType        string
 	AuthURL          string
@@ -148,12 +147,6 @@ func (s Service) Delete(spec DeleteSpec) (client.APIResponse, error) {
 }
 
 func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
-	if spec.RawBody != nil {
-		return PreparedCreateRequest{
-			Path: "/api/v2/createStorage",
-			Body: spec.RawBody,
-		}, nil
-	}
 	spec.CloudType = normalizeObjectStorageCloudType(spec.CloudType, spec.AuthURL)
 	if spec.AuthURL == "" {
 		return PreparedCreateRequest{}, fmt.Errorf("auth-url is required")

@@ -793,17 +793,16 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	case "hyperbdrctl target oss create":
 		return []flagHelpSpec{
-			{name: "file"},
 			{name: "display-name"},
-			{name: "auth-url", noteKey: "help.note_required_unless_file"},
-			{name: "region-id", noteKey: "help.note_required_unless_file"},
-			{name: "access-key-id", noteKey: "help.note_required_unless_file"},
-			{name: "access-key-secret", noteKey: "help.note_required_unless_file"},
+			{name: "auth-url", required: true},
+			{name: "region-id", required: true},
+			{name: "access-key-id", required: true},
+			{name: "access-key-secret", required: true},
 			{name: "protocol", defaultValue: "s3"},
 			{name: "bucket-lookup", defaultValue: "dns"},
 			{name: "use-tls", defaultValue: "true"},
 			{name: "bucket-mode", choices: []string{"existing", "new"}, defaultValue: "existing"},
-			{name: "bucket-name", noteKey: "help.note_required_unless_file"},
+			{name: "bucket-name", required: true},
 			{name: "public-endpoint"},
 			{name: "internal-endpoint"},
 			{name: "cloud-type-select"},
