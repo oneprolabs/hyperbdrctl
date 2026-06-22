@@ -318,8 +318,13 @@ func newTargetOSSCommand(ctx *context) *cobra.Command {
 		}, func(args []string) error {
 			return runTargetOSS(ctx, append([]string{"buckets"}, args...))
 		}),
+		newRawLeafCommand(ctx, "catalog", "cmd.target.oss.catalog.short", "cmd.target.oss.catalog.long", "cmd.target.oss.catalog.examples", "cmd.target.oss.catalog.notes", func(cmd *cobra.Command) {
+			addFlagString(cmd, ctx, "provider")
+		}, func(args []string) error {
+			return runTargetOSS(ctx, append([]string{"catalog"}, args...))
+		}),
 		newRawLeafCommand(ctx, "create", "cmd.target.oss.create.short", "cmd.target.oss.create.long", "cmd.target.oss.create.examples", "cmd.target.oss.create.notes", func(cmd *cobra.Command) {
-			for _, name := range []string{"display-name", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup", "bucket-mode", "bucket-name", "public-endpoint", "internal-endpoint", "cloud-type-select", "app-id"} {
+			for _, name := range []string{"display-name", "provider", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup", "bucket-mode", "bucket-name", "public-endpoint", "internal-endpoint", "cloud-type-select", "app-id"} {
 				addFlagString(cmd, ctx, name)
 			}
 			addFlagBool(cmd, ctx, "use-tls")

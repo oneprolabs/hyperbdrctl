@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"flag"
 	"fmt"
 	"sort"
 	"strings"
@@ -57,6 +58,8 @@ func runObjectStorages(ctx *context, args []string) error {
 		return runTargetOSSWait(ctx, args[1:])
 	case "buckets":
 		return runObjectStorageBuckets(ctx, args[1:])
+	case "catalog":
+		return runObjectStorageCatalog(ctx, args[1:])
 	case "create":
 		return runObjectStorageCreate(ctx, args[1:])
 	case "delete":
@@ -98,12 +101,13 @@ func runObjectStorageBuckets(ctx *context, args []string) error {
 func runObjectStorageCreate(ctx *context, args []string) error {
 	fs := newFlagSet("target oss create")
 	displayName := fs.String("display-name", "", "")
+	provider := fs.String("provider", "", "")
 	authURL := fs.String("auth-url", "", "")
 	regionID := fs.String("region-id", "", "")
 	accessKeyID := fs.String("access-key-id", "", "")
 	accessKeySecret := fs.String("access-key-secret", "", "")
-	protocol := fs.String("protocol", "s3", "")
-	bucketLookup := fs.String("bucket-lookup", "dns", "")
+	protocol := fs.String("protocol", "", "")
+	bucketLookup := fs.String("bucket-lookup", "", "")
 	useTLS := fs.Bool("use-tls", true, "")
 	bucketMode := fs.String("bucket-mode", "existing", "")
 	bucketName := fs.String("bucket-name", "", "")
@@ -117,30 +121,7 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 		return err
 	}
 
-	service := appobjectstorage.NewService(commandPosterAdapter{ctx: ctx})
-	if *previewRequest {
-		prepared, err := service.PrepareCreate(appobjectstorage.CreateSpec{
-			DisplayName:      *displayName,
-			AuthURL:          *authURL,
-			RegionID:         *regionID,
-			AccessKeyID:      *accessKeyID,
-			AccessKeySecret:  *accessKeySecret,
-			Protocol:         *protocol,
-			BucketLookup:     *bucketLookup,
-			UseTLS:           *useTLS,
-			BucketMode:       *bucketMode,
-			BucketName:       *bucketName,
-			PublicEndpoint:   *publicEndpoint,
-			InternalEndpoint: *internalEndpoint,
-			CloudTypeSelect:  *cloudTypeSelect,
-			AppID:            *appID,
-		})
-		if err != nil {
-			return err
-		}
-		return output.JSON(ctx.out, prepared.Body)
-	}
-	resp, err := service.Create(appobjectstorage.CreateSpec{
+	spec := appobjectstorage.CreateSpec{
 		DisplayName:      *displayName,
 		AuthURL:          *authURL,
 		RegionID:         *regionID,
@@ -155,11 +136,92 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 		InternalEndpoint: *internalEndpoint,
 		CloudTypeSelect:  *cloudTypeSelect,
 		AppID:            *appID,
-	})
+	}
+	if err := applyObjectStorageCatalogDefaults(ctx, fs, *provider, &spec); err != nil {
+		return err
+	}
+
+	service := appobjectstorage.NewService(commandPosterAdapter{ctx: ctx})
+	if *previewRequest {
+		prepared, err := service.PrepareCreate(spec)
+		if err != nil {
+			return err
+		}
+		return output.JSON(ctx.out, prepared.Body)
+	}
+	resp, err := service.Create(spec)
 	if err != nil {
 		return err
 	}
 	return writeResponse(ctx, resp, "", nil)
+}
+
+func runObjectStorageCatalog(ctx *context, args []string) error {
+	fs := newFlagSet("target oss catalog")
+	provider := fs.String("provider", "", "")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if ctx.cfg.Output == "json" {
+		rawProviders, err := loadObjectStorageCatalogRaw(ctx)
+		if err != nil {
+			return err
+		}
+		if *provider == "" {
+			return output.JSON(ctx.out, rawProviders)
+		}
+		matchedProvider, ok := findObjectStorageCatalogProviderRaw(rawProviders, *provider)
+		if !ok {
+			return fmt.Errorf(ctx.loc.T("error.object_storage_catalog_provider_not_found"), *provider)
+		}
+		return output.JSON(ctx.out, matchedProvider)
+	}
+
+	providers, err := loadObjectStorageCatalog(ctx)
+	if err != nil {
+		return err
+	}
+	if *provider == "" {
+		return writeRows(ctx, objectStorageCatalogProviderRows(providers, ctx.loc.Lang()), objectStorageCatalogProviderColumns())
+	}
+	matchedProvider, ok := findObjectStorageCatalogProvider(providers, *provider)
+	if !ok {
+		return fmt.Errorf(ctx.loc.T("error.object_storage_catalog_provider_not_found"), *provider)
+	}
+	return writeRows(ctx, objectStorageCatalogRegionRows(*matchedProvider, ctx.loc.Lang()), objectStorageCatalogRegionColumns())
+}
+
+func applyObjectStorageCatalogDefaults(ctx *context, fs *flag.FlagSet, provider string, spec *appobjectstorage.CreateSpec) error {
+	if strings.TrimSpace(provider) == "" {
+		return nil
+	}
+	if strings.TrimSpace(spec.RegionID) == "" {
+		return missing(ctx, "error.missing_region_id")
+	}
+	matchedProvider, matchedRegion, err := resolveObjectStorageCatalogRegion(ctx, provider, spec.RegionID)
+	if err != nil {
+		return err
+	}
+	spec.CloudType = matchedProvider.ID
+	if !flagWasSet(fs, "auth-url") {
+		spec.AuthURL = matchedRegion.AuthURL
+	}
+	if !flagWasSet(fs, "public-endpoint") {
+		spec.PublicEndpoint = matchedRegion.ExternalEndpoint
+	}
+	if !flagWasSet(fs, "internal-endpoint") {
+		spec.InternalEndpoint = matchedRegion.InternalEndpoint
+	}
+	if !flagWasSet(fs, "protocol") {
+		spec.Protocol = matchedRegion.Protocol
+	}
+	if !flagWasSet(fs, "bucket-lookup") {
+		spec.BucketLookup = matchedRegion.BucketLookup
+	}
+	if !flagWasSet(fs, "cloud-type-select") {
+		spec.CloudTypeSelect = matchedProvider.ID + "," + spec.RegionID
+	}
+	return nil
 }
 
 func runObjectStorageDelete(ctx *context, args []string) error {

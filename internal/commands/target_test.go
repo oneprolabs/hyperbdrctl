@@ -550,6 +550,7 @@ func TestTargetOSSHelpUsesGroupLayout(t *testing.T) {
 		"detail",
 		"wait",
 		"buckets",
+		"catalog",
 		"create",
 		"delete",
 		"Usage Notes:",
@@ -591,8 +592,12 @@ func TestTargetOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 			want: []string{"Usage Notes:", "--auth-url", "--bucket-lookup"},
 		},
 		{
+			args: []string{"target", "oss", "catalog", "--help"},
+			want: []string{"Usage Notes:", "--provider", "hyperbdrctl target oss catalog --provider aliyun"},
+		},
+		{
 			args: []string{"target", "oss", "create", "--help"},
-			want: []string{"Usage Notes:", "--display-name", "<cloud-type>-<region-id>", "existing / new", "--auth-url string", "--bucket-name string"},
+			want: []string{"Usage Notes:", "--provider", "--region-id", "<cloud-type>-<region-id>", "existing / new", "--bucket-name string"},
 		},
 		{
 			args: []string{"target", "oss", "delete", "--help"},

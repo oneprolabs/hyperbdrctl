@@ -256,6 +256,31 @@ func TestAcceptsAPICode200AsSuccess(t *testing.T) {
 	}
 }
 
+func TestGetRawReturnsOriginalJSONBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[{"id":"aliyun","regions":[{"id":"oss-cn-beijing"}]}]`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	tokenPath := filepath.Join(dir, "token.json")
+	if err := config.SaveToken(tokenPath, config.Token{Token: "cached-token"}); err != nil {
+		t.Fatal(err)
+	}
+	c, err := New(config.Resolved{Config: config.Config{Host: srv.URL, Scene: "dr", Lang: "en"}, CachePath: tokenPath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := c.GetRaw("/static/json/s3.json", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(body)) != `[{"id":"aliyun","regions":[{"id":"oss-cn-beijing"}]}]` {
+		t.Fatalf("body = %q", string(body))
+	}
+}
+
 func TestPathQueryIsPreservedAsRealQuery(t *testing.T) {
 	var gotPath string
 	var gotQuery string

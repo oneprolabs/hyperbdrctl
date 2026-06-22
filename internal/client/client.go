@@ -122,6 +122,10 @@ func (c *Client) Get(path string, q url.Values) (APIResponse, error) {
 	return c.Request("GET", path, q, nil, nil)
 }
 
+func (c *Client) GetRaw(path string, q url.Values) ([]byte, error) {
+	return c.requestRaw("GET", path, q, nil, nil)
+}
+
 func (c *Client) Post(path string, body interface{}) (APIResponse, error) {
 	return c.Request("POST", path, nil, body, nil)
 }
@@ -145,6 +149,21 @@ func (c *Client) Request(method, path string, q url.Values, body interface{}, he
 	return resp, err
 }
 
+func (c *Client) requestRaw(method, path string, q url.Values, body interface{}, headers http.Header) ([]byte, error) {
+	if err := c.ensureAuthenticated(); err != nil {
+		return nil, err
+	}
+	method = strings.ToUpper(method)
+	respBody, err := c.doRawWithHeaders(method, path, q, body, true, headers)
+	if isUnauthorized(err) {
+		if _, loginErr := c.Login(); loginErr != nil {
+			return nil, err
+		}
+		return c.doRawWithHeaders(method, path, q, body, true, headers)
+	}
+	return respBody, err
+}
+
 func (c *Client) ensureAuthenticated() error {
 	if c.token != "" {
 		return nil
@@ -158,6 +177,61 @@ func (c *Client) ensureAuthenticated() error {
 
 func (c *Client) do(method, path string, q url.Values, body interface{}, auth bool) (APIResponse, error) {
 	return c.doWithHeaders(method, path, q, body, auth, nil)
+}
+
+func (c *Client) doRawWithHeaders(method, path string, q url.Values, body interface{}, auth bool, headers http.Header) ([]byte, error) {
+	u, err := c.url(path, q)
+	if err != nil {
+		return nil, err
+	}
+	var r io.Reader
+	debugBody := ""
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+		r = bytes.NewReader(b)
+		debugBody = sanitizeDebugBody(b)
+	}
+	req, err := http.NewRequest(method, u, r)
+	if err != nil {
+		return nil, err
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("X-SCENE", c.cfg.Scene)
+	req.Header.Set("X-LANG", apiLang(c.cfg.Lang))
+	if auth && c.token != "" {
+		req.Header.Set("X-Auth-Token", c.token)
+	}
+	for name, values := range headers {
+		for _, value := range values {
+			req.Header.Add(name, value)
+		}
+	}
+
+	start := time.Now()
+	httpResp, err := c.httpClient.Do(req)
+	if err != nil {
+		c.debug(method, u, debugBody, 0, time.Since(start), "", err)
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+	respBody, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		c.debug(method, u, debugBody, httpResp.StatusCode, time.Since(start), httpResp.Header.Get("X-Request-Id"), err)
+		return nil, err
+	}
+	if httpResp.StatusCode < 200 || httpResp.StatusCode > 299 {
+		httpErr := HTTPError{StatusCode: httpResp.StatusCode, Message: errorMessage(httpResp, respBody)}
+		c.debug(method, u, debugBody, httpResp.StatusCode, time.Since(start), "", httpErr)
+		return nil, httpErr
+	}
+	c.debug(method, u, debugBody, httpResp.StatusCode, time.Since(start), "", nil)
+	return respBody, nil
 }
 
 func (c *Client) doWithHeaders(method, path string, q url.Values, body interface{}, auth bool, headers http.Header) (APIResponse, error) {

@@ -9,6 +9,59 @@ import (
 	"testing"
 )
 
+const testObjectStorageCatalogJSON = `[
+  {
+    "id": "aliyun",
+    "name": "阿里云",
+    "name_en": "Alibaba Cloud",
+    "regions": [
+      {
+        "id": "oss-cn-beijing",
+        "name": "华北2",
+        "name_en": "Beijing",
+        "auth_url": "oss-cn-beijing.aliyuncs.com",
+        "external_endpoint": "oss-cn-beijing.aliyuncs.com",
+        "internal_endpoint": "oss-cn-beijing-internal.aliyuncs.com",
+        "protocol": "s3",
+        "bucket_lookup": "path"
+      }
+    ]
+  },
+  {
+    "id": "huaweicloud",
+    "name": "华为云",
+    "name_en": "Huawei Cloud",
+    "regions": [
+      {
+        "id": "cn-north-4",
+        "name": "北京四",
+        "name_en": "Beijing 4",
+        "auth_url": "obs.cn-north-4.myhuaweicloud.com",
+        "external_endpoint": "obs.cn-north-4.myhuaweicloud.com",
+        "internal_endpoint": "obs.internal.cn-north-4.myhuaweicloud.com",
+        "protocol": "obs",
+        "bucket_lookup": "dns"
+      }
+    ]
+  },
+  {
+    "id": "ens",
+    "name": "天翼云 ENS",
+    "name_en": "ENS",
+    "regions": [
+      {
+        "id": "ens-region-1",
+        "name": "ENS 区域",
+        "name_en": "ENS Region",
+        "auth_url": "obs.ens.example.com",
+        "external_endpoint": "obs.ens.example.com",
+        "internal_endpoint": "obs.internal.ens.example.com",
+        "protocol": "eos"
+      }
+    ]
+  }
+]`
+
 func TestObjectStoragesBucketsBuildsValidatedAliyunRequest(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -433,5 +486,375 @@ func TestObjectStoragesDetailRequiresID(t *testing.T) {
 	err := Execute(withHost(t, "https://example.invalid", "target", "oss", "detail"), &out, &errOut)
 	if err == nil || err.Error() != "id is required" {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestObjectStoragesCatalogListsProviders(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "target", "oss", "catalog"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{"Name", "Alibaba Cloud", "Huawei Cloud", "Region Count", "aliyun", "huaweicloud"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"Name (EN)", "阿里云", "华为云"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("output should not contain %q: %q", unwanted, text)
+		}
+	}
+}
+
+func TestObjectStoragesCatalogListsRegionsForProvider(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "target", "oss", "catalog", "--provider", "aliyun"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{"oss-cn-beijing", "Beijing", "oss-cn-beijing.aliyuncs.com", "s3", "path"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"英文名称", "Name (EN)", "华北2"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("output should not contain %q: %q", unwanted, text)
+		}
+	}
+}
+
+func TestObjectStoragesCatalogUsesLocalizedNameForZhCN(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--lang", "zh_cn", "target", "oss", "catalog", "--provider", "aliyun"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{"名称", "华北2", "oss-cn-beijing.aliyuncs.com"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"英文名称", "Name (EN)", "Beijing"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("output should not contain %q: %q", unwanted, text)
+		}
+	}
+}
+
+func TestObjectStoragesCatalogJSONOutputPreservesRawProvider(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--output", "json", "target", "oss", "catalog", "--provider", "ens"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var got map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got["id"] != "ens" {
+		t.Fatalf("provider = %+v", got)
+	}
+	regions, ok := got["regions"].([]interface{})
+	if !ok || len(regions) != 1 {
+		t.Fatalf("regions = %+v", got["regions"])
+	}
+	region := regions[0].(map[string]interface{})
+	if region["protocol"] != "eos" {
+		t.Fatalf("region = %+v", region)
+	}
+	if _, exists := region["bucket_lookup"]; exists {
+		t.Fatalf("raw region should preserve missing bucket_lookup: %+v", region)
+	}
+}
+
+func TestObjectStoragesCatalogJSONOutputListsFullProviderArray(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--output", "json", "target", "oss", "catalog"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var got []map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 3 || got[0]["id"] != "aliyun" || got[1]["id"] != "huaweicloud" || got[2]["id"] != "ens" {
+		t.Fatalf("providers = %+v", got)
+	}
+}
+
+func TestObjectStoragesCatalogProviderNotFound(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "target", "oss", "catalog", "--provider", "missing"), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "provider") || !strings.Contains(err.Error(), "missing") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestObjectStoragesCatalogRejectsInvalidJSON(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"bad":`))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "target", "oss", "catalog"), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "JSON") && !strings.Contains(err.Error(), "unexpected end") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestObjectStoragesCreateWithProviderUsesCatalogDefaults(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPath string
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/static/json/s3.json":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+		case "/api/v2/createStorage":
+			gotPath = r.URL.Path
+			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+				t.Fatal(err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{"storage": map[string]interface{}{"uuid": "storage-1"}},
+			})
+		default:
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"target", "oss", "create",
+		"--provider", "aliyun",
+		"--region-id", "oss-cn-beijing",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--bucket-name", "bucket-1",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/api/v2/createStorage" {
+		t.Fatalf("path = %q", gotPath)
+	}
+	if gotBody["cloud_type"] != "aliyun" || gotBody["display_name"] != "aliyun-oss-cn-beijing" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+	config := gotBody["config"].(map[string]interface{})
+	if config["auth_url"] != "oss-cn-beijing.aliyuncs.com" || config["public_endpoint"] != "oss-cn-beijing.aliyuncs.com" || config["internal_endpoint"] != "oss-cn-beijing-internal.aliyuncs.com" {
+		t.Fatalf("config = %+v", config)
+	}
+	if config["protocol"] != "s3" || config["bucket_lookup"] != "path" {
+		t.Fatalf("config = %+v", config)
+	}
+	metadata := gotBody["metadata"].(map[string]interface{})
+	if metadata["cloud_type_select"] != "aliyun,oss-cn-beijing" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestObjectStoragesCreateWithProviderPreviewAllowsOverrides(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"target", "oss", "create",
+		"--provider", "huaweicloud",
+		"--region-id", "cn-north-4",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--bucket-name", "bucket-1",
+		"--internal-endpoint", "override.internal.example.com",
+		"--bucket-lookup", "path",
+		"--protocol", "obs",
+		"--preview-request",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var gotBody map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &gotBody); err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["cloud_type"] != "huaweicloud" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+	config := gotBody["config"].(map[string]interface{})
+	if config["auth_url"] != "obs.cn-north-4.myhuaweicloud.com" || config["public_endpoint"] != "obs.cn-north-4.myhuaweicloud.com" {
+		t.Fatalf("config = %+v", config)
+	}
+	if config["internal_endpoint"] != "override.internal.example.com" || config["protocol"] != "obs" || config["bucket_lookup"] != "path" {
+		t.Fatalf("config = %+v", config)
+	}
+	metadata := gotBody["metadata"].(map[string]interface{})
+	if metadata["cloud_type_select"] != "huaweicloud,cn-north-4" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestObjectStoragesCreateWithProviderRequiresRegion(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "oss", "create",
+		"--provider", "aliyun",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--bucket-name", "bucket-1",
+	), &out, &errOut)
+	if err == nil || err.Error() != "region-id is required" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestObjectStoragesCreateWithProviderRejectsUnknownProviderOrRegion(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "oss", "create",
+		"--provider", "missing",
+		"--region-id", "oss-cn-beijing",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--bucket-name", "bucket-1",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "provider") || !strings.Contains(err.Error(), "missing") {
+		t.Fatalf("provider err = %v", err)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	err = Execute(withHost(t, srv.URL,
+		"target", "oss", "create",
+		"--provider", "aliyun",
+		"--region-id", "missing-region",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--bucket-name", "bucket-1",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "missing-region") {
+		t.Fatalf("region err = %v", err)
 	}
 }
