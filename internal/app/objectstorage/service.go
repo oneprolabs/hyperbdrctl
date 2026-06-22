@@ -147,11 +147,11 @@ func (s Service) Delete(spec DeleteSpec) (client.APIResponse, error) {
 }
 
 func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
-	spec.CloudType = normalizeObjectStorageCloudType(spec.CloudType, spec.AuthURL)
+	spec.CloudType = normalizeObjectStorageCloudType(spec.CloudType)
 	if spec.AuthURL == "" {
 		return PreparedCreateRequest{}, fmt.Errorf("auth-url is required")
 	}
-	if spec.RegionID == "" {
+	if spec.RegionID == "" && spec.CloudType != "custom" {
 		return PreparedCreateRequest{}, fmt.Errorf("region-id is required")
 	}
 	if spec.AccessKeyID == "" {
@@ -181,7 +181,11 @@ func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
 		spec.InternalEndpoint = spec.AuthURL
 	}
 	if spec.CloudTypeSelect == "" {
-		spec.CloudTypeSelect = spec.CloudType + "," + spec.RegionID
+		if spec.CloudType == "custom" {
+			spec.CloudTypeSelect = "custom"
+		} else {
+			spec.CloudTypeSelect = spec.CloudType + "," + spec.RegionID
+		}
 	}
 
 	return PreparedCreateRequest{
@@ -212,20 +216,12 @@ func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
 	}, nil
 }
 
-func normalizeObjectStorageCloudType(value, authURL string) string {
+func normalizeObjectStorageCloudType(value string) string {
 	normalized := strings.TrimSpace(strings.ToLower(value))
 	if normalized != "" {
 		return normalized
 	}
-	authURL = strings.TrimSpace(strings.ToLower(authURL))
-	switch {
-	case strings.Contains(authURL, "myhuaweicloud.com"):
-		return "huawei"
-	case strings.Contains(authURL, "aliyuncs.com"):
-		return "aliyun"
-	default:
-		return "aliyun"
-	}
+	return "custom"
 }
 
 func defaultObjectStorageDisplayName(cloudType, regionID string) string {

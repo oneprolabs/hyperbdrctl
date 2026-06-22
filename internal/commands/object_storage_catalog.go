@@ -151,6 +151,19 @@ func localizedObjectStorageCatalogName(name, nameEn, lang string) string {
 	return name
 }
 
+func defaultObjectStorageCatalogDisplayName(provider objectStorageCatalogProvider, region objectStorageCatalogRegion, lang string) string {
+	providerName := strings.TrimSpace(localizedObjectStorageCatalogName(provider.Name, provider.NameEn, lang))
+	regionName := strings.TrimSpace(localizedObjectStorageCatalogName(region.Name, region.NameEn, lang))
+	switch {
+	case providerName == "":
+		return regionName
+	case regionName == "":
+		return providerName
+	default:
+		return providerName + "-" + regionName
+	}
+}
+
 func resolveObjectStorageCatalogRegion(ctx *context, providerID, regionID string) (objectStorageCatalogProvider, objectStorageCatalogRegion, error) {
 	providers, err := loadObjectStorageCatalog(ctx)
 	if err != nil {

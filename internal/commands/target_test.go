@@ -597,7 +597,7 @@ func TestTargetOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 		},
 		{
 			args: []string{"target", "oss", "create", "--help"},
-			want: []string{"Usage Notes:", "--provider", "--region-id", "<cloud-type>-<region-id>", "existing / new", "--bucket-name string"},
+			want: []string{"Usage Notes:", "--provider", "Custom", "target oss catalog --provider aliyun", "existing / new", "--bucket-name string"},
 		},
 		{
 			args: []string{"target", "oss", "delete", "--help"},
@@ -626,6 +626,28 @@ func TestTargetOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 			}
 		}
 		assertNoHelpFooter(t, text)
+	}
+}
+
+func TestTargetOSSCreateHelpUsesCustomModeInChinese(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"--lang", "zh_cn", "target", "oss", "create", "--help"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{"使用说明", "其它平台", "--provider custom", "--region-id string"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("target oss create zh help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"<cloud-type>-<region-id>", "基于 `--auth-url` 的兼容回退行为", "区域 ID（必须）"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("target oss create zh help should not expose %q: %q", unwanted, text)
+		}
 	}
 }
 

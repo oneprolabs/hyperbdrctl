@@ -156,7 +156,7 @@ func TestObjectStoragesCreateBuildsValidatedAliyunNewBucketPayload(t *testing.T)
 	if gotPath != "/api/v2/createStorage" {
 		t.Fatalf("path = %q", gotPath)
 	}
-	if gotBody["display_name"] != "aliyun-beijing" || gotBody["cloud_type"] != "aliyun" || gotBody["type"] != "objectstorage" {
+	if gotBody["display_name"] != "aliyun-beijing" || gotBody["cloud_type"] != "custom" || gotBody["type"] != "objectstorage" {
 		t.Fatalf("body = %+v", gotBody)
 	}
 	config := gotBody["config"].(map[string]interface{})
@@ -167,7 +167,7 @@ func TestObjectStoragesCreateBuildsValidatedAliyunNewBucketPayload(t *testing.T)
 		t.Fatalf("body = %+v", gotBody)
 	}
 	metadata := gotBody["metadata"].(map[string]interface{})
-	if metadata["cloud_type_select"] != "aliyun,oss-cn-beijing" || metadata["app_id"] != "" {
+	if metadata["cloud_type_select"] != "custom" || metadata["app_id"] != "" {
 		t.Fatalf("body = %+v", gotBody)
 	}
 	if !strings.Contains(out.String(), `"storage"`) {
@@ -207,9 +207,16 @@ func TestObjectStoragesCreatePreviewRequestPrintsRequestBody(t *testing.T) {
 	if gotBody["display_name"] != "aliyun-beijing" || gotBody["type"] != "objectstorage" {
 		t.Fatalf("body = %+v", gotBody)
 	}
+	if gotBody["cloud_type"] != "custom" {
+		t.Fatalf("body = %+v", gotBody)
+	}
 	config := gotBody["config"].(map[string]interface{})
 	if config["need_creation"] != true || config["bucket_name"] != "data-sync-storage-20260527163153-iioq38" {
 		t.Fatalf("config = %+v", config)
+	}
+	metadata := gotBody["metadata"].(map[string]interface{})
+	if metadata["cloud_type_select"] != "custom" {
+		t.Fatalf("body = %+v", gotBody)
 	}
 }
 
@@ -245,7 +252,44 @@ func TestObjectStoragesCreateAutoGeneratesDisplayNameWithoutFlag(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if gotBody["display_name"] != "aliyun-oss-cn-beijing" {
+	if gotBody["display_name"] != "Custom" || gotBody["cloud_type"] != "custom" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+	metadata := gotBody["metadata"].(map[string]interface{})
+	if metadata["cloud_type_select"] != "custom" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+}
+
+func TestObjectStoragesCreateAutoGeneratesZhCNCustomDisplayNameWithoutFlag(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"storage": map[string]interface{}{"uuid": "storage-1"}},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--lang", "zh_cn",
+		"target", "oss", "create",
+		"--auth-url", "192.168.8.171:9000",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--bucket-name", "bucket-1",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["display_name"] != "其它平台" || gotBody["cloud_type"] != "custom" {
 		t.Fatalf("body = %+v", gotBody)
 	}
 }
@@ -734,7 +778,7 @@ func TestObjectStoragesCreateWithProviderUsesCatalogDefaults(t *testing.T) {
 	if gotPath != "/api/v2/createStorage" {
 		t.Fatalf("path = %q", gotPath)
 	}
-	if gotBody["cloud_type"] != "aliyun" || gotBody["display_name"] != "aliyun-oss-cn-beijing" {
+	if gotBody["cloud_type"] != "aliyun" || gotBody["display_name"] != "Alibaba Cloud-Beijing" {
 		t.Fatalf("body = %+v", gotBody)
 	}
 	config := gotBody["config"].(map[string]interface{})
@@ -788,6 +832,9 @@ func TestObjectStoragesCreateWithProviderPreviewAllowsOverrides(t *testing.T) {
 	if gotBody["cloud_type"] != "huaweicloud" {
 		t.Fatalf("body = %+v", gotBody)
 	}
+	if gotBody["display_name"] != "Huawei Cloud-Beijing 4" {
+		t.Fatalf("body = %+v", gotBody)
+	}
 	config := gotBody["config"].(map[string]interface{})
 	if config["auth_url"] != "obs.cn-north-4.myhuaweicloud.com" || config["public_endpoint"] != "obs.cn-north-4.myhuaweicloud.com" {
 		t.Fatalf("config = %+v", config)
@@ -798,6 +845,76 @@ func TestObjectStoragesCreateWithProviderPreviewAllowsOverrides(t *testing.T) {
 	metadata := gotBody["metadata"].(map[string]interface{})
 	if metadata["cloud_type_select"] != "huaweicloud,cn-north-4" {
 		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestObjectStoragesCreateWithoutProviderAllowsEmptyRegion(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"storage": map[string]interface{}{"uuid": "storage-1"}},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "oss", "create",
+		"--auth-url", "192.168.8.171:9000",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--bucket-name", "bucket-1",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := gotBody["config"].(map[string]interface{})
+	if config["region_id"] != "" || gotBody["cloud_type"] != "custom" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+}
+
+func TestObjectStoragesCreateWithProviderCustomMatchesDirectMode(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"storage": map[string]interface{}{"uuid": "storage-1"}},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "oss", "create",
+		"--provider", "custom",
+		"--auth-url", "192.168.8.171:9000",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--bucket-name", "bucket-1",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["cloud_type"] != "custom" || gotBody["display_name"] != "Custom" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+	metadata := gotBody["metadata"].(map[string]interface{})
+	if metadata["cloud_type_select"] != "custom" {
+		t.Fatalf("body = %+v", gotBody)
 	}
 }
 

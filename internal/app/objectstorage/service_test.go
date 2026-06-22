@@ -88,7 +88,7 @@ func TestServiceAssociatedResourcesBuildsQuery(t *testing.T) {
 	}
 }
 
-func TestServicePrepareCreateAutoGeneratesDisplayName(t *testing.T) {
+func TestServicePrepareCreateDefaultsCloudTypeToCustom(t *testing.T) {
 	service := NewService(&fakeAPI{})
 
 	prepared, err := service.PrepareCreate(CreateSpec{
@@ -103,18 +103,50 @@ func TestServicePrepareCreateAutoGeneratesDisplayName(t *testing.T) {
 	}
 
 	body := prepared.Body.(map[string]interface{})
-	if body["display_name"] != "aliyun-oss-cn-beijing" {
+	if body["display_name"] != "custom-oss-cn-beijing" {
 		t.Fatalf("body = %+v", body)
 	}
-	if body["cloud_type"] != "aliyun" {
+	if body["cloud_type"] != "custom" {
+		t.Fatalf("body = %+v", body)
+	}
+	metadata := body["metadata"].(map[string]interface{})
+	if metadata["cloud_type_select"] != "custom" {
 		t.Fatalf("body = %+v", body)
 	}
 }
 
-func TestServicePrepareCreateInfersHuaweiCloudTypeFromAuthURL(t *testing.T) {
+func TestServicePrepareCreateAllowsEmptyRegionForCustom(t *testing.T) {
 	service := NewService(&fakeAPI{})
 
 	prepared, err := service.PrepareCreate(CreateSpec{
+		AuthURL:         "192.168.8.171:9000",
+		AccessKeyID:     "ak",
+		AccessKeySecret: "sk",
+		BucketName:      "bucket-1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := prepared.Body.(map[string]interface{})
+	if body["cloud_type"] != "custom" || body["display_name"] != "custom" {
+		t.Fatalf("body = %+v", body)
+	}
+	config := body["config"].(map[string]interface{})
+	if config["region_id"] != "" {
+		t.Fatalf("body = %+v", body)
+	}
+	metadata := body["metadata"].(map[string]interface{})
+	if metadata["cloud_type_select"] != "custom" {
+		t.Fatalf("body = %+v", body)
+	}
+}
+
+func TestServicePrepareCreatePreservesExplicitCloudType(t *testing.T) {
+	service := NewService(&fakeAPI{})
+
+	prepared, err := service.PrepareCreate(CreateSpec{
+		CloudType:       "huaweicloud",
 		AuthURL:         "obs.cn-north-1.myhuaweicloud.com",
 		RegionID:        "cn-north-1",
 		AccessKeyID:     "ak",
@@ -126,11 +158,11 @@ func TestServicePrepareCreateInfersHuaweiCloudTypeFromAuthURL(t *testing.T) {
 	}
 
 	body := prepared.Body.(map[string]interface{})
-	if body["cloud_type"] != "huawei" || body["display_name"] != "huawei-cn-north-1" {
+	if body["cloud_type"] != "huaweicloud" || body["display_name"] != "huaweicloud-cn-north-1" {
 		t.Fatalf("body = %+v", body)
 	}
 	metadata := body["metadata"].(map[string]interface{})
-	if metadata["cloud_type_select"] != "huawei,cn-north-1" {
+	if metadata["cloud_type_select"] != "huaweicloud,cn-north-1" {
 		t.Fatalf("body = %+v", body)
 	}
 }

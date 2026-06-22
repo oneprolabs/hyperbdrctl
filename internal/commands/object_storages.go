@@ -137,7 +137,7 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 		CloudTypeSelect:  *cloudTypeSelect,
 		AppID:            *appID,
 	}
-	if err := applyObjectStorageCatalogDefaults(ctx, fs, *provider, &spec); err != nil {
+	if err := applyObjectStorageCreateDefaults(ctx, fs, *provider, &spec); err != nil {
 		return err
 	}
 
@@ -191,14 +191,22 @@ func runObjectStorageCatalog(ctx *context, args []string) error {
 	return writeRows(ctx, objectStorageCatalogRegionRows(*matchedProvider, ctx.loc.Lang()), objectStorageCatalogRegionColumns())
 }
 
-func applyObjectStorageCatalogDefaults(ctx *context, fs *flag.FlagSet, provider string, spec *appobjectstorage.CreateSpec) error {
-	if strings.TrimSpace(provider) == "" {
+func applyObjectStorageCreateDefaults(ctx *context, fs *flag.FlagSet, provider string, spec *appobjectstorage.CreateSpec) error {
+	normalizedProvider := normalizeObjectStorageCreateProvider(provider)
+	if normalizedProvider == "" || normalizedProvider == "custom" {
+		spec.CloudType = "custom"
+		if !flagWasSet(fs, "cloud-type-select") && strings.TrimSpace(spec.CloudTypeSelect) == "" {
+			spec.CloudTypeSelect = "custom"
+		}
+		if !flagWasSet(fs, "display-name") && strings.TrimSpace(spec.DisplayName) == "" {
+			spec.DisplayName = ctx.loc.T("value.object_storage.display_name.custom")
+		}
 		return nil
 	}
 	if strings.TrimSpace(spec.RegionID) == "" {
 		return missing(ctx, "error.missing_region_id")
 	}
-	matchedProvider, matchedRegion, err := resolveObjectStorageCatalogRegion(ctx, provider, spec.RegionID)
+	matchedProvider, matchedRegion, err := resolveObjectStorageCatalogRegion(ctx, normalizedProvider, spec.RegionID)
 	if err != nil {
 		return err
 	}
@@ -221,7 +229,14 @@ func applyObjectStorageCatalogDefaults(ctx *context, fs *flag.FlagSet, provider 
 	if !flagWasSet(fs, "cloud-type-select") {
 		spec.CloudTypeSelect = matchedProvider.ID + "," + spec.RegionID
 	}
+	if !flagWasSet(fs, "display-name") && strings.TrimSpace(spec.DisplayName) == "" {
+		spec.DisplayName = defaultObjectStorageCatalogDisplayName(matchedProvider, matchedRegion, ctx.loc.Lang())
+	}
 	return nil
+}
+
+func normalizeObjectStorageCreateProvider(provider string) string {
+	return strings.TrimSpace(strings.ToLower(provider))
 }
 
 func runObjectStorageDelete(ctx *context, args []string) error {

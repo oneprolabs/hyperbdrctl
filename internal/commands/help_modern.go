@@ -804,7 +804,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "display-name"},
 			{name: "provider"},
 			{name: "auth-url"},
-			{name: "region-id", required: true},
+			{name: "region-id"},
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},
 			{name: "protocol"},
