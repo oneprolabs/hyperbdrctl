@@ -1,10 +1,8 @@
 package license
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
 
 	"hyperbdr-client/internal/client"
 )
@@ -35,7 +33,6 @@ type RegCodeSpec struct {
 type ActivateSpec struct {
 	KKTY string
 	DDTY string
-	File string
 }
 
 func (s Service) List(spec ListSpec) (client.APIResponse, error) {
@@ -49,32 +46,16 @@ func (s Service) RegCode(spec RegCodeSpec) (client.APIResponse, error) {
 	return s.api.Get("/api/v2/getLicenseRegCode", cloneValues(spec.Query))
 }
 
-func (s Service) ActivateBody(spec ActivateSpec) (map[string]string, error) {
-	body := map[string]string{}
-	if spec.File != "" {
-		b, err := os.ReadFile(spec.File)
-		if err != nil {
-			return nil, err
-		}
-		if err := json.Unmarshal(b, &body); err != nil {
-			return nil, err
-		}
-	}
-	if spec.KKTY != "" {
-		body["kkty"] = spec.KKTY
-	}
-	if spec.DDTY != "" {
-		body["ddty"] = spec.DDTY
-	}
-	return body, nil
-}
-
-func (s Service) Activate(body map[string]string) (client.APIResponse, error) {
-	if body["kkty"] == "" {
+func (s Service) Activate(spec ActivateSpec) (client.APIResponse, error) {
+	if spec.KKTY == "" {
 		return client.APIResponse{}, fmt.Errorf("kkty is required")
 	}
-	if body["ddty"] == "" {
+	if spec.DDTY == "" {
 		return client.APIResponse{}, fmt.Errorf("ddty is required")
+	}
+	body := map[string]string{
+		"kkty": spec.KKTY,
+		"ddty": spec.DDTY,
 	}
 	return s.api.Post("/api/v2/activateLicense", body)
 }

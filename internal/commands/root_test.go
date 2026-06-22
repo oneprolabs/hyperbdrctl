@@ -581,7 +581,7 @@ func TestNonPassthroughCommandsStillRejectUnknownFlags(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "license", "activate", "--kkty", "k", "--ddty", "d", "--custom-step", "3"), &out, &errOut)
+	err := Execute(withHost(t, "https://example.invalid", "license", "activate", "--ddty", "d", "--custom-step", "3"), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined") {
 		t.Fatalf("err = %v", err)
 	}
@@ -639,8 +639,7 @@ func TestLicenseHelpShowsModernGuidance(t *testing.T) {
 		"Usage Notes:",
 		"hyperbdrctl license list",
 		"hyperbdrctl license reg-code",
-		"hyperbdrctl license activate --kkty <reg_code> --ddty <activation_code>",
-		"hyperbdrctl license activate --file ./tmp/license-activate.json",
+		"hyperbdrctl license activate --ddty <activation_code>",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
@@ -654,7 +653,7 @@ func TestLicenseHelpShowsModernGuidance(t *testing.T) {
 	assertNoHelpFooter(t, text)
 }
 
-func TestLicenseActivateHelpShowsFileAwareFlags(t *testing.T) {
+func TestLicenseActivateHelpShowsRequiredDDTYOnly(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -665,14 +664,17 @@ func TestLicenseActivateHelpShowsFileAwareFlags(t *testing.T) {
 
 	text := out.String()
 	for _, want := range []string{
-		"--kkty",
 		"--ddty",
-		"--file",
-		"required unless --file is used",
-		"hyperbdrctl license activate --file ./tmp/license-activate.json",
+		"(required)",
+		"hyperbdrctl license activate --ddty <activation_code>",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"--kkty", "--file", "required unless --file is used"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
 	}
 	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nGlobal Flags:\n"} {

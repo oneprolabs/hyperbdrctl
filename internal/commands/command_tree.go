@@ -356,9 +356,7 @@ func newLicensesCommand(ctx *context) *cobra.Command {
 	addUsageNotes(regCodeCmd, ctx, "cmd.licenses.reg_code.usage_notes")
 
 	activateCmd := newRawLeafCommand(ctx, "activate", "cmd.licenses.activate.short", "cmd.licenses.activate.long", "cmd.licenses.activate.examples", "cmd.licenses.activate.notes", func(cmd *cobra.Command) {
-		addFlagString(cmd, ctx, "kkty")
 		addFlagString(cmd, ctx, "ddty")
-		addFlagString(cmd, ctx, "file")
 	}, func(args []string) error {
 		return runLicenses(ctx, append([]string{"activate"}, args...))
 	})

@@ -589,9 +589,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	case "hyperbdrctl license activate":
 		return []flagHelpSpec{
-			{name: "kkty", noteKey: "help.note_required_unless_file"},
-			{name: "ddty", noteKey: "help.note_required_unless_file"},
-			{name: "file"},
+			{name: "ddty", required: true},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},

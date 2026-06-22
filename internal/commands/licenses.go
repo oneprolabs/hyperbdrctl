@@ -43,27 +43,25 @@ func runLicenses(ctx *context, args []string) error {
 		return writeLicenseRegCodeResponse(ctx, resp)
 	case "activate":
 		fs := newFlagSet("license activate")
-		kkty := fs.String("kkty", "", "")
 		ddty := fs.String("ddty", "", "")
-		file := fs.String("file", "", "")
 		if err := fs.Parse(args[1:]); err != nil {
 			return err
 		}
-		body, err := service.ActivateBody(applicense.ActivateSpec{
-			KKTY: *kkty,
-			DDTY: *ddty,
-			File: *file,
-		})
+		if *ddty == "" {
+			return missing(ctx, "error.missing_ddty")
+		}
+		regCodeResp, err := service.RegCode(applicense.RegCodeSpec{})
 		if err != nil {
 			return err
 		}
-		if body["kkty"] == "" {
+		kkty := licenseRegCodeValue(regCodeResp)
+		if kkty == "" {
 			return missing(ctx, "error.missing_kkty")
 		}
-		if body["ddty"] == "" {
-			return missing(ctx, "error.missing_ddty")
-		}
-		resp, err := service.Activate(body)
+		resp, err := service.Activate(applicense.ActivateSpec{
+			KKTY: kkty,
+			DDTY: *ddty,
+		})
 		if err != nil {
 			return err
 		}

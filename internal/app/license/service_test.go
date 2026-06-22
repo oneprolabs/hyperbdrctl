@@ -30,7 +30,7 @@ func TestServiceActivateRejectsMissingFields(t *testing.T) {
 	api := &fakeAPI{}
 	service := NewService(api)
 
-	_, err := service.Activate(map[string]string{"kkty": "k"})
+	_, err := service.Activate(ActivateSpec{KKTY: "k"})
 	if err == nil || err.Error() != "ddty is required" {
 		t.Fatalf("err = %v", err)
 	}

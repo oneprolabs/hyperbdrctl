@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -110,33 +109,46 @@ func TestLicensesJSONKeepsRawFields(t *testing.T) {
 	}
 }
 
-func TestLicensesActivateWithFlags(t *testing.T) {
+func TestLicensesActivateFetchesRegCodeBeforePost(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	var gotPath string
+	var gotPaths []string
 	var gotBody map[string]string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-			t.Fatal(err)
+		gotPaths = append(gotPaths, r.URL.Path)
+		switch r.URL.Path {
+		case "/api/v2/getLicenseRegCode":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{"kkty": "reg-code-value"},
+			})
+		case "/api/v2/activateLicense":
+			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+				t.Fatal(err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{"license": map[string]interface{}{"id": "license-1", "state": "valid"}},
+			})
+		default:
+			t.Fatalf("unexpected path %q", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code": "00000000",
-			"data": map[string]interface{}{"license": map[string]interface{}{"id": "license-1", "state": "valid"}},
-		})
 	}))
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "license", "activate", "--kkty", "k", "--ddty", "d"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "license", "activate", "--ddty", "d"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if gotPath != "/api/v2/activateLicense" {
-		t.Fatalf("path = %q", gotPath)
+	if len(gotPaths) != 2 {
+		t.Fatalf("paths = %#v", gotPaths)
 	}
-	if gotBody["kkty"] != "k" || gotBody["ddty"] != "d" {
+	if gotPaths[0] != "/api/v2/getLicenseRegCode" || gotPaths[1] != "/api/v2/activateLicense" {
+		t.Fatalf("paths = %#v", gotPaths)
+	}
+	if gotBody["kkty"] != "reg-code-value" || gotBody["ddty"] != "d" {
 		t.Fatalf("body = %+v", gotBody)
 	}
 	if !strings.Contains(out.String(), "license-1") {
@@ -144,30 +156,35 @@ func TestLicensesActivateWithFlags(t *testing.T) {
 	}
 }
 
-func TestLicensesActivateWithFile(t *testing.T) {
+func TestLicensesActivateRequiresDDTY(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
-	bodyPath := filepath.Join(dir, "activate.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"kkty":"file-k","ddty":"file-d"}`), 0600); err != nil {
-		t.Fatal(err)
-	}
 
-	var gotBody map[string]string
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid", "license", "activate"), &out, &errOut)
+	if err == nil || err.Error() != "ddty is required" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestLicensesActivateStopsWhenRegCodeLookupFails(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var requests int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-			t.Fatal(err)
-		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"ok": true}})
+		requests++
+		http.Error(w, "boom", http.StatusInternalServerError)
 	}))
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "license", "activate", "--file", bodyPath), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
+	err := Execute(withHost(t, srv.URL, "license", "activate", "--ddty", "d"), &out, &errOut)
+	if err == nil {
+		t.Fatal("expected error")
 	}
-	if gotBody["kkty"] != "file-k" || gotBody["ddty"] != "file-d" {
-		t.Fatalf("body = %+v", gotBody)
+	if requests != 1 {
+		t.Fatalf("requests = %d", requests)
 	}
 }
 
@@ -177,6 +194,37 @@ func setUserDirs(t *testing.T, dir string) {
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
 	t.Setenv("APPDATA", filepath.Join(dir, "AppData", "Roaming"))
 	t.Setenv("LOCALAPPDATA", filepath.Join(dir, "AppData", "Local"))
+}
+
+func TestLicensesActivateStopsWhenRegCodeMissing(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPaths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPaths = append(gotPaths, r.URL.Path)
+		switch r.URL.Path {
+		case "/api/v2/getLicenseRegCode":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{},
+			})
+		case "/api/v2/activateLicense":
+			t.Fatal("activate should not be called when kkty is missing")
+		default:
+			t.Fatalf("unexpected path %q", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "license", "activate", "--ddty", "d"), &out, &errOut)
+	if err == nil || err.Error() != "kkty is required" {
+		t.Fatalf("err = %v", err)
+	}
+	if len(gotPaths) != 1 || gotPaths[0] != "/api/v2/getLicenseRegCode" {
+		t.Fatalf("paths = %#v", gotPaths)
+	}
 }
 
 func withHost(t *testing.T, host string, args ...string) []string {
