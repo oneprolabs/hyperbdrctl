@@ -22,6 +22,24 @@ func TestTopLevelBootConfigRequiresSubcommand(t *testing.T) {
 	}
 }
 
+func TestRemovedTopLevelBootConfigFetchCommandsReturnUnknownCommand(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := [][]string{
+		{"boot-config", "fetch-block-resources"},
+		{"boot-config", "fetch-oss-resources"},
+	}
+
+	for _, args := range cases {
+		var out, errOut bytes.Buffer
+		err := Execute(args, &out, &errOut)
+		if err == nil || !strings.Contains(err.Error(), "unknown") {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
+	}
+}
+
 func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

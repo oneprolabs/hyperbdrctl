@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 )
@@ -32,12 +31,6 @@ func TestGetCommandsPassUnknownFlagsAsQuery(t *testing.T) {
 		{name: "target oss detail", args: []string{"target", "oss", "detail", "--id", "storage-1", "--custom-step", "3"}, path: "/api/v2/getStorageDetailInfo"},
 		{name: "license list", args: []string{"license", "list", "--custom-step", "3"}, path: "/api/v2/getLicenses"},
 		{name: "license reg-code", args: []string{"license", "reg-code", "--custom-step", "3"}, path: "/api/v2/getLicenseRegCode"},
-		{name: "boot-config-wizard storages", args: []string{"boot-config-wizard", "storages", "--custom-step", "3"}, path: "/api/v2/getStorages"},
-		{name: "boot-config-wizard storage-detail", args: []string{"boot-config-wizard", "storage-detail", "--storage-id", "storage-1", "--custom-step", "3"}, path: "/api/v2/getStorageDetailInfo"},
-		{name: "boot-config-wizard target-platforms", args: []string{"boot-config-wizard", "target-platforms", "--custom-step", "3"}, path: "/api/v2/getCloudAccounts"},
-		{name: "boot-config-wizard target-accounts", args: []string{"boot-config-wizard", "target-accounts", "--custom-step", "3"}, path: "/api/v2/getCloudAccounts"},
-		{name: "boot-config-wizard host-profile", args: []string{"boot-config-wizard", "host-profile", "--id", "host-1", "--custom-step", "3"}, path: "/api/v2/getHostDetail"},
-		{name: "boot-config-wizard strategies", args: []string{"boot-config-wizard", "strategies", "--custom-step", "3"}, path: "/api/v2/getHostPolicyList"},
 		{name: "upgrade host", args: []string{"upgrade", "host", "--custom-step", "3"}, path: "/api/v2/getUpgradeHostList"},
 	}
 
@@ -65,73 +58,5 @@ func TestGetCommandsPassUnknownFlagsAsQuery(t *testing.T) {
 				t.Fatalf("query = %q", gotQuery)
 			}
 		})
-	}
-}
-
-func TestBootConfigWizardTargetPlatformsUsesCloudAccountsAlias(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	var gotPath string
-	var gotQuery url.Values
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		gotQuery = r.URL.Query()
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{}})
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL,
-		"boot-config-wizard", "target-platforms",
-		"--target-type", "recovery",
-		"--cloud-type", "vmware_obs",
-	), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if gotPath != "/api/v2/getCloudAccounts" {
-		t.Fatalf("path = %q, want %q", gotPath, "/api/v2/getCloudAccounts")
-	}
-	if gotQuery.Get("storage_type") != "objectstorage" {
-		t.Fatalf("storage_type = %q, want %q", gotQuery.Get("storage_type"), "objectstorage")
-	}
-	if gotQuery.Get("status") != "available" {
-		t.Fatalf("status = %q, want %q", gotQuery.Get("status"), "available")
-	}
-	if gotQuery.Get("cloud_type") != "vmware_obs" {
-		t.Fatalf("cloud_type = %q, want %q", gotQuery.Get("cloud_type"), "vmware_obs")
-	}
-	if gotQuery.Get("target_type") != "" {
-		t.Fatalf("target_type = %q, want empty", gotQuery.Get("target_type"))
-	}
-}
-
-func TestBootConfigWizardStoragesDefaultsStatusOnly(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-	var gotPath string
-	var gotQuery url.Values
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		gotQuery = r.URL.Query()
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{}})
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL,
-		"boot-config-wizard", "storages",
-	), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if gotPath != "/api/v2/getStorages" {
-		t.Fatalf("path = %q, want %q", gotPath, "/api/v2/getStorages")
-	}
-	if gotQuery.Get("type") != "" {
-		t.Fatalf("type = %q, want empty", gotQuery.Get("type"))
-	}
-	if gotQuery.Get("status") != "available" {
-		t.Fatalf("status = %q, want %q", gotQuery.Get("status"), "available")
 	}
 }

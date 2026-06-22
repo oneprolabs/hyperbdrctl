@@ -161,8 +161,6 @@ func TestTargetAccountHelpUsesGroupLayout(t *testing.T) {
 		"list",
 		"detail",
 		"wait",
-		"fetch-block-resources",
-		"fetch-oss-resources",
 		"create",
 		"create-block",
 		"create-oss",
@@ -362,88 +360,6 @@ func TestUnifiedFlagDescriptionsInChineseHelp(t *testing.T) {
 	}
 }
 
-func TestTargetAccountFetchResourcesHelpUsesGroupLayout(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	cases := []struct {
-		args []string
-		want []string
-	}{
-		{
-			args: []string{"target", "account", "fetch-block-resources", "--help"},
-			want: []string{"\nCommands:\n", "aliyun", "openstack", "Usage Notes:"},
-		},
-		{
-			args: []string{"target", "account", "fetch-oss-resources", "--help"},
-			want: []string{"\nCommands:\n", "aliyun", "openstack", "Usage Notes:"},
-		},
-	}
-
-	for _, tt := range cases {
-		var out, errOut bytes.Buffer
-		if err := Execute(tt.args, &out, &errOut); err != nil {
-			t.Fatalf("args=%v err=%v", tt.args, err)
-		}
-
-		text := out.String()
-		for _, want := range tt.want {
-			if !strings.Contains(text, want) {
-				t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
-			}
-		}
-		assertNoHelpFooter(t, text)
-	}
-}
-
-func TestTargetAccountFetchResourcesProviderHelpUsesFourSectionLayout(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	cases := []struct {
-		args []string
-		want []string
-	}{
-		{
-			args: []string{"target", "account", "fetch-block-resources", "aliyun", "--help"},
-			want: []string{"Usage Notes:", "--cloud-auth-type", "--fetch-res", "fetch-block-resources aliyun", "--access-id + --access-secret => aksk"},
-		},
-		{
-			args: []string{"target", "account", "fetch-block-resources", "openstack", "--help"},
-			want: []string{"Usage Notes:", "--auth-url", "--username", "--user-domain-id", "fetch-block-resources openstack", "regions,projects"},
-		},
-		{
-			args: []string{"target", "account", "fetch-oss-resources", "aliyun", "--help"},
-			want: []string{"Usage Notes:", "--cloud-auth-type", "--fetch-res", "fetch-oss-resources aliyun", "--access-id + --access-secret => aksk"},
-		},
-		{
-			args: []string{"target", "account", "fetch-oss-resources", "openstack", "--help"},
-			want: []string{"Usage Notes:", "--auth-url", "--username", "--user-domain-id", "fetch-oss-resources openstack", "--output json", "optional"},
-		},
-	}
-
-	for _, tt := range cases {
-		var out, errOut bytes.Buffer
-		if err := Execute(tt.args, &out, &errOut); err != nil {
-			t.Fatalf("args=%v err=%v", tt.args, err)
-		}
-
-		text := out.String()
-		for _, want := range tt.want {
-			if !strings.Contains(text, want) {
-				t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
-			}
-		}
-		if strings.Contains(text, "\nCommands:\n") {
-			t.Fatalf("provider help should not include commands section args=%v: %q", tt.args, text)
-		}
-		if strings.Contains(text, "--cloud-type") || strings.Contains(text, "--storage-type") {
-			t.Fatalf("provider help should not expose legacy flags args=%v: %q", tt.args, text)
-		}
-		assertNoHelpFooter(t, text)
-	}
-}
-
 func TestTargetAccountCreateProviderHelpUsesGroupLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -493,8 +409,6 @@ func TestTargetCloudSyncGatewayHelpUsesGroupLayout(t *testing.T) {
 		"list",
 		"detail",
 		"wait",
-		"resources",
-		"subnet-config",
 		"create",
 		"Usage Notes:",
 	} {
@@ -529,14 +443,6 @@ func TestTargetCloudSyncGatewayLeafHelpUsesFourSectionLayout(t *testing.T) {
 		{
 			args: []string{"target", "cloud-sync-gateway", "wait", "--help"},
 			want: []string{"Usage Notes:", "--id", "--interval-seconds", "--timeout-seconds"},
-		},
-		{
-			args: []string{"target", "cloud-sync-gateway", "resources", "--help"},
-			want: []string{"Usage Notes:", "--fetch-res", "--cloud-account-id <account_id>", "--output json"},
-		},
-		{
-			args: []string{"target", "cloud-sync-gateway", "subnet-config", "--help"},
-			want: []string{"Usage Notes:", "--network-id", "--cloud-type"},
 		},
 	}
 
@@ -739,13 +645,23 @@ func TestLegacyObjectStoragesAndTargetInfoAreRemoved(t *testing.T) {
 	}
 }
 
-func TestTargetAccountLegacyFetchResourcesShowsMigration(t *testing.T) {
+func TestRemovedTargetCommandsReturnUnknownCommand(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	var out, errOut bytes.Buffer
-	err := Execute([]string{"target", "account", "fetch-resources", "--cloud-type", "aliyun_bs"}, &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), "use target account fetch-block-resources <provider> or target account fetch-oss-resources <provider>") {
-		t.Fatalf("err = %v", err)
+	cases := [][]string{
+		{"target", "account", "fetch-resources"},
+		{"target", "account", "fetch-block-resources"},
+		{"target", "account", "fetch-oss-resources"},
+		{"target", "cloud-sync-gateway", "resources"},
+		{"target", "cloud-sync-gateway", "subnet-config"},
+	}
+
+	for _, args := range cases {
+		var out, errOut bytes.Buffer
+		err := Execute(args, &out, &errOut)
+		if err == nil || !strings.Contains(err.Error(), "unknown") {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
 	}
 }

@@ -32,7 +32,6 @@ func newRootCommand(ctx *context) *cobra.Command {
 		newTopLevelBootConfigCommand(ctx),
 		newBootConfigCLIAliasCommand(ctx),
 		newBatchBootConfigCommand(ctx),
-		newBootConfigWizardCommand(ctx),
 		newTasksCommand(ctx),
 		newSourcesCommand(ctx),
 		newLicensesCommand(ctx),

@@ -28,8 +28,6 @@ func TestBlockStoragesHelpShowsGuidedSections(t *testing.T) {
 		"\nCommands:\n",
 		"Usage Notes:",
 		"create",
-		"resources",
-		"subnet-config",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)

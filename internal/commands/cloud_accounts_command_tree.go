@@ -41,18 +41,6 @@ func newCloudAccountsCommand(ctx *context) *cobra.Command {
 	})
 	configureTargetAccountLeafHelp(waitCmd, ctx, "cmd.target.account.wait.usage_line", "cmd.target.account.wait.usage_notes")
 
-	fetchResourcesCmd := newDeprecatedCloudAccountsFetchResourcesCommand(ctx)
-
-	fetchBlockResourcesCmd := newCloudAccountsFetchBlockResourcesCommand(ctx)
-	addHelpLayout(fetchBlockResourcesCmd, helpLayoutGroup)
-	addUsageLine(fetchBlockResourcesCmd, ctx, "cmd.target.account.fetch_block_resources.usage_line")
-	addUsageNotes(fetchBlockResourcesCmd, ctx, "cmd.target.account.fetch_block_resources.usage_notes")
-
-	fetchOSSResourcesCmd := newCloudAccountsFetchOSSResourcesCommand(ctx)
-	addHelpLayout(fetchOSSResourcesCmd, helpLayoutGroup)
-	addUsageLine(fetchOSSResourcesCmd, ctx, "cmd.target.account.fetch_oss_resources.usage_line")
-	addUsageNotes(fetchOSSResourcesCmd, ctx, "cmd.target.account.fetch_oss_resources.usage_notes")
-
 	createCmd := newCloudAccountsCreateCommand(ctx)
 	configureTargetAccountLeafHelp(createCmd, ctx, "cmd.target.account.create.usage_line", "cmd.target.account.create.usage_notes")
 
@@ -79,13 +67,10 @@ func newCloudAccountsCommand(ctx *context) *cobra.Command {
 		listCmd,
 		detailCmd,
 		waitCmd,
-		fetchBlockResourcesCmd,
-		fetchOSSResourcesCmd,
 		createCmd,
 		createBlockCmd,
 		createOSSCmd,
 		deleteCmd,
-		fetchResourcesCmd,
 	)
 	return cmd
 }

@@ -95,13 +95,13 @@ func TestTopLevelBootConfigIsRouted(t *testing.T) {
 	}
 }
 
-func TestTopLevelBootConfigWizardIsRouted(t *testing.T) {
+func TestTopLevelBootConfigWizardIsRemoved(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid", "boot-config-wizard"), &out, &errOut)
-	if err == nil || err.Error() != "boot-config-wizard requires subcommand" {
+	if err == nil || !strings.Contains(err.Error(), `unknown command "boot-config-wizard"`) {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -126,7 +126,6 @@ func TestHiddenTopLevelCommandHelpRemainsAvailable(t *testing.T) {
 		want []string
 	}{
 		{args: []string{"help", "api"}, want: []string{"Usage:", "request"}},
-		{args: []string{"help", "boot-config-wizard"}, want: []string{"Usage:", "storages", "target-auth-info"}},
 		{args: []string{"help", "tasks"}, want: []string{"Usage:", "list", "steps"}},
 		{args: []string{"help", "upgrade"}, want: []string{"Usage:", "host"}},
 	}
@@ -142,6 +141,17 @@ func TestHiddenTopLevelCommandHelpRemainsAvailable(t *testing.T) {
 				t.Fatalf("args=%v help missing %q: %q", tc.args, want, text)
 			}
 		}
+	}
+}
+
+func TestRemovedTopLevelCommandHelpIsUnavailable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute([]string{"help", "boot-config-wizard"}, &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "unknown") || !strings.Contains(err.Error(), "boot-config-wizard") {
+		t.Fatalf("err = %v", err)
 	}
 }
 

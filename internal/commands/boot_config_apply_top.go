@@ -39,17 +39,9 @@ func newTopLevelBootConfigCommand(ctx *context) *cobra.Command {
 	addUsageLine(applyCmd, ctx, "cmd.boot_config_top.apply.usage_line")
 	addUsageNotes(applyCmd, ctx, "cmd.boot_config_top.apply.usage_notes")
 
-	fetchBlockCmd := newBootConfigFetchBlockResourcesCommand(ctx)
-	fetchBlockCmd.Hidden = true
-
-	fetchOSSCmd := newBootConfigFetchOSSResourcesCommand(ctx)
-	fetchOSSCmd.Hidden = true
-
 	cmd.AddCommand(
 		getCmd,
 		applyCmd,
-		fetchBlockCmd,
-		fetchOSSCmd,
 	)
 	return cmd
 }

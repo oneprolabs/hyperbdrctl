@@ -129,32 +129,12 @@ func newTargetCloudSyncGatewayCommand(ctx *context) *cobra.Command {
 	})
 	configureTargetCloudSyncGatewayLeafHelp(waitCmd, ctx, "cmd.target.cloud_sync_gateway.wait.usage_line", "cmd.target.cloud_sync_gateway.wait.usage_notes")
 
-	resourcesCmd := newRawLeafCommand(ctx, "resources", "cmd.block_storages.resources.short", "cmd.block_storages.resources.long", "cmd.block_storages.resources.examples", "cmd.block_storages.resources.notes", func(cmd *cobra.Command) {
-		for _, name := range []string{"cloud-account-id", "fetch-res", "region-id", "zone-id", "flavor-id", "flavor-vcpus", "flavor-ram", "purpose", "image-type"} {
-			addFlagString(cmd, ctx, name)
-		}
-	}, func(args []string) error {
-		return runBlockStorages(ctx, append([]string{"resources"}, args...))
-	})
-	configureTargetCloudSyncGatewayLeafHelp(resourcesCmd, ctx, "cmd.target.cloud_sync_gateway.resources.usage_line", "cmd.target.cloud_sync_gateway.resources.usage_notes")
-
-	subnetConfigCmd := newRawLeafCommand(ctx, "subnet-config", "cmd.block_storages.subnet_config.short", "cmd.block_storages.subnet_config.long", "cmd.block_storages.subnet_config.examples", "cmd.block_storages.subnet_config.notes", func(cmd *cobra.Command) {
-		for _, name := range []string{"cloud-account-id", "cloud-type", "region-id", "zone-id", "network-id", "subnet-id"} {
-			addFlagString(cmd, ctx, name)
-		}
-	}, func(args []string) error {
-		return runBlockStorages(ctx, append([]string{"subnet-config"}, args...))
-	})
-	configureTargetCloudSyncGatewayLeafHelp(subnetConfigCmd, ctx, "cmd.target.cloud_sync_gateway.subnet_config.usage_line", "cmd.target.cloud_sync_gateway.subnet_config.usage_notes")
-
 	createCmd := newBlockStoragesCreateCommand(ctx)
 
 	cmd.AddCommand(
 		listCmd,
 		detailCmd,
 		waitCmd,
-		resourcesCmd,
-		subnetConfigCmd,
 		createCmd,
 	)
 	return cmd
