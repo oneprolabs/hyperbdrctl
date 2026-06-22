@@ -58,8 +58,13 @@ func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 		"--set-json",
 		"--preview-request",
 		"Usage Notes:",
+		"hyperbdrctl host list",
+		"hyperbdrctl target account list",
+		"hyperbdrctl target cloud-sync-gateway list",
+		"hyperbdrctl target oss list",
+		"hyperbdrctl target resource fetch --help",
 		"hyperbdrctl boot-config apply \\",
-		"hyperbdrctl target resource fetch --cloud-account-id <account_id> --fetch-res regions,zones",
+		"Using a file:",
 		"--region-id cn-shanghai",
 		"--file < dynamic flags < --set < --set-json",
 	} {
@@ -89,7 +94,17 @@ func TestTopLevelBootConfigHelpShowsGetSubcommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := out.String()
-	for _, want := range []string{"Commands:", "get", "apply", "Usage Notes:", "hyperbdrctl boot-config get --id <host_id>", "hyperbdrctl boot-config apply --help"} {
+	for _, want := range []string{
+		"Commands:",
+		"get",
+		"apply",
+		"Usage Notes:",
+		"hyperbdrctl host list",
+		"hyperbdrctl boot-config get --id <host_id>",
+		"hyperbdrctl target cloud-sync-gateway list",
+		"hyperbdrctl target resource fetch --help",
+		"hyperbdrctl boot-config apply --help",
+	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q: %q", want, got)
 		}
@@ -123,6 +138,7 @@ func TestTopLevelBootConfigGetHelpUsesModernLayout(t *testing.T) {
 		"Usage Notes:",
 		"hyperbdrctl boot-config get --id <host_id>",
 		"hyperbdrctl --output json boot-config get --id <host_id>",
+		"current boot configuration on a host",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q: %q", want, got)
@@ -134,6 +150,32 @@ func TestTopLevelBootConfigGetHelpUsesModernLayout(t *testing.T) {
 		}
 	}
 	assertNoHelpFooter(t, got)
+}
+
+func TestTopLevelBootConfigHelpZhCNMatchesArchiveGuidance(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"--lang", "zh_cn", "help", "boot-config"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	for _, want := range []string{
+		"主机启动配置",
+		"查看主机启动配置",
+		"该命令组用于单主机启动配置的获取和应用。",
+		"hyperbdrctl host list",
+		"hyperbdrctl target account list",
+		"hyperbdrctl target cloud-sync-gateway list",
+		"hyperbdrctl target oss list",
+		"hyperbdrctl target resource fetch --help",
+		"hyperbdrctl boot-config apply --help",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("help missing %q: %q", want, got)
+		}
+	}
 }
 
 func TestTopLevelBootConfigGetAvailable(t *testing.T) {
