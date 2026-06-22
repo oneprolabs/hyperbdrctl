@@ -589,7 +589,7 @@ func TestTargetOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 		},
 		{
 			args: []string{"target", "oss", "buckets", "--help"},
-			want: []string{"Usage Notes:", "--auth-url", "--bucket-lookup"},
+			want: []string{"Usage Notes:", "--provider", "--auth-url", "--bucket-lookup"},
 		},
 		{
 			args: []string{"target", "oss", "catalog", "--help"},

@@ -779,7 +779,8 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	case "hyperbdrctl target oss buckets":
 		return []flagHelpSpec{
-			{name: "auth-url", required: true},
+			{name: "provider"},
+			{name: "auth-url"},
 			{name: "region-id"},
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},

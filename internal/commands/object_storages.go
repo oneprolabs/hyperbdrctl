@@ -71,19 +71,19 @@ func runObjectStorages(ctx *context, args []string) error {
 
 func runObjectStorageBuckets(ctx *context, args []string) error {
 	fs := newFlagSet("target oss buckets")
+	provider := fs.String("provider", "", "")
 	authURL := fs.String("auth-url", "", "")
 	regionID := fs.String("region-id", "", "")
 	accessKeyID := fs.String("access-key-id", "", "")
 	accessKeySecret := fs.String("access-key-secret", "", "")
-	protocol := fs.String("protocol", "s3", "")
-	bucketLookup := fs.String("bucket-lookup", "dns", "")
+	protocol := fs.String("protocol", "", "")
+	bucketLookup := fs.String("bucket-lookup", "", "")
 	useTLS := fs.Bool("use-tls", true, "")
 
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	service := appobjectstorage.NewService(commandPosterAdapter{ctx: ctx})
-	resp, err := service.Buckets(appobjectstorage.BucketsSpec{
+	spec := appobjectstorage.BucketsSpec{
 		AuthURL:         *authURL,
 		RegionID:        *regionID,
 		AccessKeyID:     *accessKeyID,
@@ -91,7 +91,12 @@ func runObjectStorageBuckets(ctx *context, args []string) error {
 		Protocol:        *protocol,
 		BucketLookup:    *bucketLookup,
 		UseTLS:          *useTLS,
-	})
+	}
+	if err := applyObjectStorageBucketsDefaults(ctx, fs, *provider, &spec); err != nil {
+		return err
+	}
+	service := appobjectstorage.NewService(commandPosterAdapter{ctx: ctx})
+	resp, err := service.Buckets(spec)
 	if err != nil {
 		return err
 	}
@@ -231,6 +236,30 @@ func applyObjectStorageCreateDefaults(ctx *context, fs *flag.FlagSet, provider s
 	}
 	if !flagWasSet(fs, "display-name") && strings.TrimSpace(spec.DisplayName) == "" {
 		spec.DisplayName = defaultObjectStorageCatalogDisplayName(matchedProvider, matchedRegion, ctx.loc.Lang())
+	}
+	return nil
+}
+
+func applyObjectStorageBucketsDefaults(ctx *context, fs *flag.FlagSet, provider string, spec *appobjectstorage.BucketsSpec) error {
+	normalizedProvider := normalizeObjectStorageCreateProvider(provider)
+	if normalizedProvider == "" || normalizedProvider == "custom" {
+		return nil
+	}
+	if strings.TrimSpace(spec.RegionID) == "" {
+		return missing(ctx, "error.missing_region_id")
+	}
+	_, matchedRegion, err := resolveObjectStorageCatalogRegion(ctx, normalizedProvider, spec.RegionID)
+	if err != nil {
+		return err
+	}
+	if !flagWasSet(fs, "auth-url") {
+		spec.AuthURL = matchedRegion.AuthURL
+	}
+	if !flagWasSet(fs, "protocol") {
+		spec.Protocol = matchedRegion.Protocol
+	}
+	if !flagWasSet(fs, "bucket-lookup") {
+		spec.BucketLookup = matchedRegion.BucketLookup
 	}
 	return nil
 }

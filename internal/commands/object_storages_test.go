@@ -111,6 +111,74 @@ func TestObjectStoragesBucketsBuildsValidatedAliyunRequest(t *testing.T) {
 	}
 }
 
+func TestObjectStoragesBucketsWithProviderUsesCatalogDefaults(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPath string
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/static/json/s3.json":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+		case "/api/v2/objectStorageBuckets":
+			gotPath = r.URL.Path
+			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+				t.Fatal(err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"buckets": []map[string]interface{}{
+						{"name": "bucket-1", "location": "oss-cn-beijing"},
+					},
+				},
+			})
+		default:
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "oss", "buckets",
+		"--provider", "aliyun",
+		"--region-id", "oss-cn-beijing",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/api/v2/objectStorageBuckets" {
+		t.Fatalf("path = %q", gotPath)
+	}
+	if gotBody["auth_url"] != "oss-cn-beijing.aliyuncs.com" || gotBody["region_id"] != "oss-cn-beijing" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+	if gotBody["protocol"] != "s3" || gotBody["bucket_lookup"] != "path" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+}
+
+func TestObjectStoragesBucketsWithProviderRequiresRegion(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"target", "oss", "buckets",
+		"--provider", "aliyun",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+	), &out, &errOut)
+	if err == nil || err.Error() != "region-id is required" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestObjectStoragesCreateBuildsValidatedAliyunNewBucketPayload(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
