@@ -685,6 +685,77 @@ func TestLicenseActivateHelpShowsRequiredDDTYOnly(t *testing.T) {
 	assertNoHelpFooter(t, text)
 }
 
+func TestLicenseHelpOmitsArchivedRemovedNotesInBothLanguages(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		name     string
+		args     []string
+		unwanted []string
+	}{
+		{
+			name: "zh group",
+			args: []string{"--lang", "zh_cn", "license", "--help"},
+			unwanted: []string{
+				"`license activate` 会自动查询当前环境的注册码",
+			},
+		},
+		{
+			name: "zh reg-code",
+			args: []string{"--lang", "zh_cn", "license", "reg-code", "--help"},
+			unwanted: []string{
+				"不要把注册码写入共享报告、工单或聊天记录。",
+			},
+		},
+		{
+			name: "zh activate",
+			args: []string{"--lang", "zh_cn", "license", "activate", "--help"},
+			unwanted: []string{
+				"CLI 会在发送激活请求前自动查询当前环境的 `kkty`",
+				"避免把激活码输出到共享日志、报告或工单。",
+			},
+		},
+		{
+			name: "en group",
+			args: []string{"license", "--help"},
+			unwanted: []string{
+				"`license activate` automatically fetches the current environment registration code",
+			},
+		},
+		{
+			name: "en reg-code",
+			args: []string{"license", "reg-code", "--help"},
+			unwanted: []string{
+				"Do not copy registration codes into shared reports, tickets, or chat logs.",
+			},
+		},
+		{
+			name: "en activate",
+			args: []string{"license", "activate", "--help"},
+			unwanted: []string{
+				"The CLI automatically fetches the current environment `kkty` before it sends the activation request",
+				"Avoid printing activation codes into shared logs, reports, or tickets.",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute(tc.args, &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+			text := out.String()
+			for _, unwanted := range tc.unwanted {
+				if strings.Contains(text, unwanted) {
+					t.Fatalf("help should not include %q: %q", unwanted, text)
+				}
+			}
+		})
+	}
+}
+
 func TestParseQueryFlagsIntoRejectsUnknownFlagsByDefault(t *testing.T) {
 	fs := newFlagSet("test")
 	fs.String("known", "", "")
