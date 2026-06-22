@@ -1054,11 +1054,14 @@ func TestCloudAccountsListBuildsQuery(t *testing.T) {
 			"data": map[string]interface{}{
 				"cloud_accounts": []map[string]interface{}{
 					{
-						"id":               "account-1",
-						"name":             "aliyun-account",
-						"display_username": "demo-user",
-						"cloud_type":       "aliyun_obs",
-						"storage_type":     "objectstorage",
+						"id":                  "account-1",
+						"name":                "aliyun-account",
+						"display_username":    "demo-user",
+						"cloud_type":          "aliyun_obs",
+						"storage_type":        "objectstorage",
+						"status":              "available",
+						"display_status":      "Available",
+						"display_task_status": "Idle",
 					},
 				},
 			},
@@ -1083,13 +1086,16 @@ func TestCloudAccountsListBuildsQuery(t *testing.T) {
 		}
 	}
 	text := out.String()
-	for _, want := range []string{"Display Username", "demo-user", "Cloud Type", "Storage Type", "aliyun_obs", "objectstorage"} {
+	for _, want := range []string{"Display Username", "demo-user", "Cloud Type", "Storage Type", "Status", "Task Status", "aliyun_obs", "objectstorage", "Available", "Idle"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("output = %q, missing %q", text, want)
 		}
 	}
 	if strings.Contains(text, "UUID") {
 		t.Fatalf("output should not include UUID column: %q", text)
+	}
+	if strings.Contains(text, "available") {
+		t.Fatalf("output should use display_status instead of raw status: %q", text)
 	}
 }
 

@@ -251,14 +251,16 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 			"data": map[string]interface{}{
 				"cloud_accounts": []map[string]interface{}{
 					{
-						"id":               "account-1",
-						"uuid":             "uuid-1",
-						"name":             "demo-object",
-						"display_username": "demo-user",
-						"cloud_type":       "openstack",
-						"storage_type":     "objectstorage",
-						"status":           "available",
-						"created_at":       "2026-06-18 10:00:00",
+						"id":                  "account-1",
+						"uuid":                "uuid-1",
+						"name":                "demo-object",
+						"display_username":    "demo-user",
+						"cloud_type":          "openstack",
+						"storage_type":        "objectstorage",
+						"status":              "available",
+						"display_status":      "Available",
+						"display_task_status": "Idle",
+						"created_at":          "2026-06-18 10:00:00",
 					},
 				},
 			},
@@ -281,6 +283,10 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 		"demo-user",
 		"Cloud Type",
 		"openstack",
+		"Status",
+		"Available",
+		"Task Status",
+		"Idle",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("vertical output missing %q: %q", want, text)
@@ -288,6 +294,9 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 	}
 	if strings.Contains(text, "UUID") {
 		t.Fatalf("vertical output should not include UUID: %q", text)
+	}
+	if strings.Contains(text, "\navailable\n") {
+		t.Fatalf("vertical output should use display_status instead of raw status: %q", text)
 	}
 }
 

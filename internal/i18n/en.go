@@ -69,6 +69,7 @@ var en = map[string]string{
 	"table.unused":                                         "Unused",
 	"table.used":                                           "Used",
 	"table.display_status":                                 "Status",
+	"table.display_task_status":                            "Task Status",
 	"table.expire_at":                                      "Expire At",
 	"table.kkty":                                           "Registration Code",
 	"table.platform":                                       "Platform",

@@ -69,6 +69,7 @@ var zhCN = map[string]string{
 	"table.unused":                                         "未使用",
 	"table.used":                                           "已使用",
 	"table.display_status":                                 "状态",
+	"table.display_task_status":                            "任务状态",
 	"table.expire_at":                                      "过期时间",
 	"table.kkty":                                           "注册码",
 	"table.platform":                                       "平台",
