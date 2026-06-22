@@ -67,6 +67,10 @@ type DeleteSpec struct {
 	Force bool
 }
 
+type DeleteSynchNodeSpec struct {
+	ID string
+}
+
 func (s Service) List(spec ListSpec) (client.APIResponse, error) {
 	q := cloneValues(spec.Query)
 	if sourceType := normalizeReadSourceType(spec.SourceType); sourceType != "" {
@@ -151,6 +155,14 @@ func (s Service) Delete(spec DeleteSpec) (client.APIResponse, error) {
 	if spec.Force {
 		path += "?force=true"
 	}
+	return s.api.Delete(path, nil)
+}
+
+func (s Service) DeleteSynchNode(spec DeleteSynchNodeSpec) (client.APIResponse, error) {
+	if spec.ID == "" {
+		return client.APIResponse{}, fmt.Errorf("id is required")
+	}
+	path := "/hypermotion/v1/synch_nodes/" + url.PathEscape(spec.ID)
 	return s.api.Delete(path, nil)
 }
 

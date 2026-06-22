@@ -625,6 +625,7 @@ func TestSourceHelpUsesGroupLayout(t *testing.T) {
 		"\nFlags:\n",
 		"\nCommands:\n",
 		"delete",
+		"sync-node-delete",
 		"list",
 		"detail",
 		"vms",
@@ -666,6 +667,10 @@ func TestSourceLeafHelpUsesFourSectionLayout(t *testing.T) {
 		{
 			args: []string{"source", "delete", "--help"},
 			want: []string{"Usage Notes:", "--id", "--force", "hyperbdrctl source detail --id <source_id>"},
+		},
+		{
+			args: []string{"source", "sync-node-delete", "--help"},
+			want: []string{"Usage Notes:", "--id", "hyperbdrctl source sync-nodes"},
 		},
 	}
 
@@ -760,6 +765,49 @@ func TestSourceDeleteRequiresID(t *testing.T) {
 	}
 }
 
+func TestSourceSyncNodeDeleteUsesDeleteEndpoint(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotMethod string
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.RequestURI()
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"deleted": true, "id": "node-1"},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--output", "json", "source", "sync-node-delete", "--id", "node-1"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotMethod != http.MethodDelete {
+		t.Fatalf("method = %q", gotMethod)
+	}
+	if gotPath != "/hypermotion/v1/synch_nodes/node-1" {
+		t.Fatalf("path = %q", gotPath)
+	}
+	if !strings.Contains(out.String(), `"deleted": true`) && !strings.Contains(out.String(), `"deleted":true`) {
+		t.Fatalf("output = %q", out.String())
+	}
+}
+
+func TestSourceSyncNodeDeleteRequiresID(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid", "source", "sync-node-delete"), &out, &errOut)
+	if err == nil || err.Error() != "id is required" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestSourceEnHelpMatchesExpected(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -788,6 +836,7 @@ func TestSourceEnHelpMatchesExpected(t *testing.T) {
 				"  delete                   Delete production platform",
 				"  detail                   Show production platform detail",
 				"  list                     List production platforms",
+				"  sync-node-delete         Delete sync proxy node",
 				"  sync-nodes               List sync proxy nodes",
 				"  vms                      List Agentless VMs",
 				"",
@@ -810,6 +859,7 @@ func TestSourceEnHelpMatchesExpected(t *testing.T) {
 				"  To inspect the mutating flows and required inputs, continue with:",
 				"    hyperbdrctl source create --help",
 				"    hyperbdrctl source delete --help",
+				"    hyperbdrctl source sync-node-delete --help",
 			),
 		},
 		{
@@ -904,6 +954,33 @@ func TestSourceEnHelpMatchesExpected(t *testing.T) {
 				"  To confirm the target production platform ID first, run:",
 				"    hyperbdrctl source list --type vmware",
 				"    hyperbdrctl source detail --id <source_id>",
+			),
+		},
+		{
+			args: []string{"--lang", "en", "source", "sync-node-delete", "--help"},
+			want: joinHelpLines(
+				"Delete sync proxy node",
+				"",
+				"Usage: hyperbdrctl source sync-node-delete --id <node_id> [flags]",
+				"",
+				"Flags:",
+				"      --id string       Resource ID (required)",
+				"      --debug           Output request debug logs",
+				"      --lang string     Display language, choices en / zh_cn, default en",
+				"  -o, --output string   Output format, choices table / json, default table",
+				"  -h, --help            Show help information",
+				"",
+				"Usage Notes:",
+				"  Use this command to delete one sync proxy node.",
+				"",
+				"  The minimum delete command is:",
+				"    hyperbdrctl source sync-node-delete --id <node_id>",
+				"",
+				"  To confirm the target sync proxy node ID first, run:",
+				"    hyperbdrctl source sync-nodes",
+				"",
+				"  After delete returns, run this again when you need to verify the remaining nodes:",
+				"    hyperbdrctl source sync-nodes",
 			),
 		},
 		{
@@ -1108,6 +1185,7 @@ func TestSourceZhHelpMatchesArchive(t *testing.T) {
 				"  delete                   删除生产平台",
 				"  detail                   查看生产平台详情",
 				"  list                     列出生产平台",
+				"  sync-node-delete         删除同步代理节点",
 				"  sync-nodes               列出同步代理节点",
 				"  vms                      列出 Agentless 虚拟机",
 				"",
@@ -1130,6 +1208,7 @@ func TestSourceZhHelpMatchesArchive(t *testing.T) {
 				"  如需继续查看写入流程和所需参数，可以执行：",
 				"    hyperbdrctl source create --help",
 				"    hyperbdrctl source delete --help",
+				"    hyperbdrctl source sync-node-delete --help",
 			),
 		},
 		{
@@ -1224,6 +1303,33 @@ func TestSourceZhHelpMatchesArchive(t *testing.T) {
 				"  如需先确认目标生产平台 ID，可以执行：",
 				"    hyperbdrctl source list --type vmware",
 				"    hyperbdrctl source detail --id <source_id>",
+			),
+		},
+		{
+			args: []string{"--lang", "zh_cn", "source", "sync-node-delete", "--help"},
+			want: joinHelpLines(
+				"删除同步代理节点",
+				"",
+				"用法: hyperbdrctl source sync-node-delete --id <node_id> [参数]",
+				"",
+				"参数:",
+				"      --id string       资源 ID（必须）",
+				"      --debug           输出请求调试日志",
+				"      --lang string     显示语言，可选 en / zh_cn，默认值 en",
+				"  -o, --output string   输出格式，可选 table / json，默认值 table",
+				"  -h, --help            显示帮助信息",
+				"",
+				"使用说明:",
+				"  该命令用于删除单个同步代理节点。",
+				"",
+				"  最小删除方式如下：",
+				"    hyperbdrctl source sync-node-delete --id <node_id>",
+				"",
+				"  如需先确认目标同步代理节点 ID，可以执行：",
+				"    hyperbdrctl source sync-nodes",
+				"",
+				"  删除成功后，如需继续校验剩余节点，可以再次执行：",
+				"    hyperbdrctl source sync-nodes",
 			),
 		},
 		{

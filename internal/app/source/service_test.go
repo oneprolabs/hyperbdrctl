@@ -182,3 +182,29 @@ func TestServiceDeleteRequiresID(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestServiceDeleteSynchNodeBuildsPath(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.DeleteSynchNode(DeleteSynchNodeSpec{ID: "node-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.deletePath != "/hypermotion/v1/synch_nodes/node-1" {
+		t.Fatalf("path = %q", api.deletePath)
+	}
+	if api.deleteBody != nil {
+		t.Fatalf("body = %#v", api.deleteBody)
+	}
+}
+
+func TestServiceDeleteSynchNodeRequiresID(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.DeleteSynchNode(DeleteSynchNodeSpec{})
+	if err == nil || err.Error() != "id is required" {
+		t.Fatalf("err = %v", err)
+	}
+}

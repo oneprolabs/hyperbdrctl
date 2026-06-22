@@ -235,6 +235,11 @@ func newSourcesCommand(ctx *context) *cobra.Command {
 		}, func(args []string) error {
 			return runSources(ctx, append([]string{"delete"}, args...))
 		}),
+		newRawLeafCommand(ctx, "sync-node-delete", "cmd.sources.sync_node_delete.short", "cmd.sources.sync_node_delete.long", "cmd.sources.sync_node_delete.examples", "cmd.sources.sync_node_delete.notes", func(cmd *cobra.Command) {
+			addFlagString(cmd, ctx, "id")
+		}, func(args []string) error {
+			return runSources(ctx, append([]string{"sync-node-delete"}, args...))
+		}),
 		newRawLeafCommand(ctx, "vms", "cmd.sources.vms.short", "cmd.sources.vms.long", "cmd.sources.vms.examples", "cmd.sources.vms.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "connection-type")
 			addFlagString(cmd, ctx, "connection-uuid")
