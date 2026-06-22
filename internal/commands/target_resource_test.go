@@ -262,3 +262,140 @@ func TestTargetResourceFetchActionRuleUsesCloudAccountAction(t *testing.T) {
 		t.Fatalf("path=%q", gotPostPath)
 	}
 }
+
+func TestTargetResourceFetchFlavorFiltersRenderTable(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		switch r.URL.Path {
+		case "/hypermotion/v1/cloud_accounts/account-1":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"cloud_type":   "aliyun_obs",
+					"storage_type": "objectstorage",
+					"region_id":    "cn-beijing",
+				},
+			})
+		case "/api/v3/getCloudInfo":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"cloud_info": map[string]interface{}{
+						"flavors": []map[string]interface{}{
+							{
+								"id":          "ecs.u1-c1m2.large",
+								"name":        "ecs.u1-c1m2.large(2C4G)",
+								"vcpus":       2,
+								"ram_GB":      4,
+								"max_nic_num": 2,
+							},
+							{
+								"id":          "ecs.g6.xlarge",
+								"name":        "ecs.g6.xlarge(4C16G)",
+								"vcpus":       4,
+								"ram_GB":      16,
+								"max_nic_num": 4,
+							},
+						},
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"target", "resource", "fetch",
+		"--cloud-account-id", "account-1",
+		"--zone-id", "cn-beijing-h",
+		"--fetch-res", "flavors",
+		"--flavor-vcpus", "2",
+		"--flavor-ram", "4",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(gotQuery, "flavor_vcpus=") || strings.Contains(gotQuery, "flavor_ram=") {
+		t.Fatalf("query should not contain flavor filters: %q", gotQuery)
+	}
+	text := out.String()
+	if !strings.Contains(text, "ecs.u1-c1m2.large") {
+		t.Fatalf("output=%q, missing filtered row", text)
+	}
+	if strings.Contains(text, "ecs.g6.xlarge") {
+		t.Fatalf("output=%q, should filter non-matching flavor", text)
+	}
+}
+
+func TestTargetResourceFetchFlavorFiltersDoNotAffectJSONOutput(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/hypermotion/v1/cloud_accounts/account-1":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"cloud_type":   "aliyun_obs",
+					"storage_type": "objectstorage",
+					"region_id":    "cn-beijing",
+				},
+			})
+		case "/api/v3/getCloudInfo":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"cloud_info": map[string]interface{}{
+						"flavors": []map[string]interface{}{
+							{
+								"id":          "ecs.u1-c1m2.large",
+								"name":        "ecs.u1-c1m2.large(2C4G)",
+								"vcpus":       2,
+								"ram_GB":      4,
+								"max_nic_num": 2,
+							},
+							{
+								"id":          "ecs.g6.xlarge",
+								"name":        "ecs.g6.xlarge(4C16G)",
+								"vcpus":       4,
+								"ram_GB":      16,
+								"max_nic_num": 4,
+							},
+						},
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"target", "resource", "fetch",
+		"--cloud-account-id", "account-1",
+		"--zone-id", "cn-beijing-h",
+		"--fetch-res", "flavors",
+		"--flavor-vcpus", "2",
+		"--flavor-ram", "4",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := out.String()
+	for _, want := range []string{"ecs.u1-c1m2.large", "ecs.g6.xlarge"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("json output=%q, missing %q", text, want)
+		}
+	}
+}

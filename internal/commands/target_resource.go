@@ -108,20 +108,20 @@ func runTargetResourceDirectAuth(ctx *context, commandName, cloudType, storageTy
 	if err != nil {
 		return err
 	}
-	return writeTargetResourceResponse(ctx, result)
+	return writeTargetResourceResponse(ctx, result, nil)
 }
 
 func runTargetResourceFetch(ctx *context, args []string) error {
-	spec, err := parseTargetResourceFetchArgs(args)
+	parsed, err := parseTargetResourceFetchArgs(args)
 	if err != nil {
 		return err
 	}
 	service := apptargetresource.NewService(commandAPIAdapter{ctx: ctx})
-	result, err := service.Fetch(spec)
+	result, err := service.Fetch(parsed.spec)
 	if err != nil {
 		return err
 	}
-	return writeTargetResourceResponse(ctx, result)
+	return writeTargetResourceResponse(ctx, result, parsed.meta)
 }
 
 func parseTargetResourceDirectAuthArgs(commandName, cloudType, storageType string, args []string) (apptargetresource.DirectAuthSpec, error) {
@@ -191,12 +191,18 @@ func parseTargetResourceDirectAuthArgs(commandName, cloudType, storageType strin
 	return spec, nil
 }
 
-func parseTargetResourceFetchArgs(args []string) (apptargetresource.AccountFetchSpec, error) {
+type parsedTargetResourceFetchCommand struct {
+	spec apptargetresource.AccountFetchSpec
+	meta map[string]interface{}
+}
+
+func parseTargetResourceFetchArgs(args []string) (parsedTargetResourceFetchCommand, error) {
 	spec := apptargetresource.AccountFetchSpec{Query: url.Values{}}
+	meta := map[string]interface{}{}
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		if !strings.HasPrefix(arg, "--") {
-			return apptargetresource.AccountFetchSpec{}, fmt.Errorf("unexpected argument %q", arg)
+			return parsedTargetResourceFetchCommand{}, fmt.Errorf("unexpected argument %q", arg)
 		}
 		name, value, hasInline := splitFlag(arg)
 		name = strings.TrimPrefix(name, "--")
@@ -204,48 +210,55 @@ func parseTargetResourceFetchArgs(args []string) (apptargetresource.AccountFetch
 		case "cloud-account-id":
 			v, next, err := strictFlagValue(args, i, value, hasInline)
 			if err != nil {
-				return apptargetresource.AccountFetchSpec{}, err
+				return parsedTargetResourceFetchCommand{}, err
 			}
 			spec.CloudAccountID = v
 			i = next
 		case "fetch-res":
 			v, next, err := strictFlagValue(args, i, value, hasInline)
 			if err != nil {
-				return apptargetresource.AccountFetchSpec{}, err
+				return parsedTargetResourceFetchCommand{}, err
 			}
 			spec.FetchRes = v
 			i = next
 		case "region-id":
 			v, next, err := strictFlagValue(args, i, value, hasInline)
 			if err != nil {
-				return apptargetresource.AccountFetchSpec{}, err
+				return parsedTargetResourceFetchCommand{}, err
 			}
 			spec.RegionID = v
 			i = next
 		case "zone-id":
 			v, next, err := strictFlagValue(args, i, value, hasInline)
 			if err != nil {
-				return apptargetresource.AccountFetchSpec{}, err
+				return parsedTargetResourceFetchCommand{}, err
 			}
 			spec.ZoneID = v
 			i = next
 		case "flavor-id":
 			v, next, err := strictFlagValue(args, i, value, hasInline)
 			if err != nil {
-				return apptargetresource.AccountFetchSpec{}, err
+				return parsedTargetResourceFetchCommand{}, err
 			}
 			spec.FlavorID = v
+			i = next
+		case "flavor-vcpus", "flavor-ram":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedTargetResourceFetchCommand{}, err
+			}
+			meta[strings.ReplaceAll(name, "-", "_")] = v
 			i = next
 		default:
 			v, next, err := targetResourceOptionalFlagValue(args, i, value, hasInline)
 			if err != nil {
-				return apptargetresource.AccountFetchSpec{}, err
+				return parsedTargetResourceFetchCommand{}, err
 			}
 			spec.Query.Set(strings.ReplaceAll(name, "-", "_"), v)
 			i = next
 		}
 	}
-	return spec, nil
+	return parsedTargetResourceFetchCommand{spec: spec, meta: meta}, nil
 }
 
 func targetResourceOptionalFlagValue(args []string, idx int, inline string, hasInline bool) (string, int, error) {

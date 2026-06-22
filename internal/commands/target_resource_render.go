@@ -9,7 +9,7 @@ import (
 	"hyperbdr-client/internal/output"
 )
 
-func writeTargetResourceResponse(ctx *context, result apptargetresource.Result) error {
+func writeTargetResourceResponse(ctx *context, result apptargetresource.Result, meta map[string]interface{}) error {
 	if ctx.cfg.Output == "json" {
 		return writeResponse(ctx, result.Response, "", nil)
 	}
@@ -32,18 +32,26 @@ func writeTargetResourceResponse(ctx *context, result apptargetresource.Result) 
 		if err := writeSectionTitle(ctx, ctx.loc.T(section.TitleKey)); err != nil {
 			return err
 		}
-		if err := writeTargetResourceSection(ctx, section); err != nil {
+		if err := writeTargetResourceSection(ctx, section, meta); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func writeTargetResourceSection(ctx *context, section normalizetargetresource.Section) error {
+func writeTargetResourceSection(ctx *context, section normalizetargetresource.Section, meta map[string]interface{}) error {
 	if len(section.Rows) == 0 {
 		return writeValue(ctx, section.Value)
 	}
-	return output.Table(ctx.out, ctx.loc, section.Rows, visibleColumns(section.Rows, targetResourceColumns(section.Resource)))
+	rows := section.Rows
+	if section.Resource == "flavors" {
+		filtered, err := filterFlavorRows(rows, meta)
+		if err != nil {
+			return err
+		}
+		rows = filtered
+	}
+	return output.Table(ctx.out, ctx.loc, rows, visibleColumns(rows, targetResourceColumns(section.Resource)))
 }
 
 func targetResourceColumns(resource string) []output.Column {
