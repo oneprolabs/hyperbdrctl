@@ -766,6 +766,63 @@ func TestLicenseHelpOmitsArchivedRemovedNotesInBothLanguages(t *testing.T) {
 	}
 }
 
+func TestLicenseHelpMatchesArchivedConcisePhrasingInBothLanguages(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "zh group",
+			args: []string{"--lang", "zh_cn", "license", "--help"},
+			want: []string{
+				"查看当前许可证列表：",
+				"获取注册码，并据此生成激活码：",
+			},
+		},
+		{
+			name: "zh activate",
+			args: []string{"--lang", "zh_cn", "license", "activate", "--help"},
+			want: []string{
+				"执行激活命令：",
+			},
+		},
+		{
+			name: "en group",
+			args: []string{"license", "--help"},
+			want: []string{
+				"Review the current license list:",
+				"Fetch the registration code and generate the activation code from it:",
+			},
+		},
+		{
+			name: "en activate",
+			args: []string{"license", "activate", "--help"},
+			want: []string{
+				"run the activation command:",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute(tc.args, &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+			text := out.String()
+			for _, want := range tc.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+		})
+	}
+}
+
 func TestParseQueryFlagsIntoRejectsUnknownFlagsByDefault(t *testing.T) {
 	fs := newFlagSet("test")
 	fs.String("known", "", "")
