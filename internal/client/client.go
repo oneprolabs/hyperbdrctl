@@ -8,10 +8,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
 	"hyperbdr-client/internal/config"
+	"hyperbdr-client/internal/i18n"
 )
 
 type Client struct {
@@ -50,17 +52,17 @@ type APIError struct {
 }
 
 func (e HTTPError) Error() string {
-	if e.Message == "" {
-		return fmt.Sprintf("http %d", e.StatusCode)
+	if strings.TrimSpace(e.Message) != "" {
+		return e.Message
 	}
-	return fmt.Sprintf("http %d: %s", e.StatusCode, e.Message)
+	return fmt.Sprintf("http %d", e.StatusCode)
 }
 
 func (e APIError) Error() string {
-	if e.Message == "" {
-		return fmt.Sprintf("api %s", e.Code)
+	if strings.TrimSpace(e.Message) != "" {
+		return e.Message
 	}
-	return fmt.Sprintf("api %s: %s", e.Code, e.Message)
+	return fmt.Sprintf("api %s", e.Code)
 }
 
 func New(cfg config.Resolved) (*Client, error) {
@@ -226,7 +228,7 @@ func (c *Client) doRawWithHeaders(method, path string, q url.Values, body interf
 		return nil, err
 	}
 	if httpResp.StatusCode < 200 || httpResp.StatusCode > 299 {
-		httpErr := HTTPError{StatusCode: httpResp.StatusCode, Message: errorMessage(httpResp, respBody)}
+		httpErr := HTTPError{StatusCode: httpResp.StatusCode, Message: errorMessage(httpResp, respBody, c.cfg.Lang)}
 		c.debug(method, u, debugBody, httpResp.StatusCode, time.Since(start), "", httpErr)
 		return nil, httpErr
 	}
@@ -281,7 +283,7 @@ func (c *Client) doWithHeaders(method, path string, q url.Values, body interface
 		return APIResponse{}, err
 	}
 	if httpResp.StatusCode < 200 || httpResp.StatusCode > 299 {
-		httpErr := HTTPError{StatusCode: httpResp.StatusCode, Message: errorMessage(httpResp, respBody)}
+		httpErr := HTTPError{StatusCode: httpResp.StatusCode, Message: errorMessage(httpResp, respBody, c.cfg.Lang)}
 		c.debug(method, u, debugBody, httpResp.StatusCode, time.Since(start), "", httpErr)
 		return APIResponse{}, httpErr
 	}
@@ -291,7 +293,7 @@ func (c *Client) doWithHeaders(method, path string, q url.Values, body interface
 		return APIResponse{}, err
 	}
 	if !isSuccessCode(apiResp.Code) {
-		apiErr := APIError{Code: apiResp.Code, Message: apiErrorMessage(apiResp)}
+		apiErr := APIError{Code: apiResp.Code, Message: apiErrorMessage(apiResp, c.cfg.Lang)}
 		c.debug(method, u, debugBody, httpResp.StatusCode, time.Since(start), apiResp.TraceID, apiErr)
 		return APIResponse{}, apiErr
 	}
@@ -425,20 +427,26 @@ func decodeAPIResponse(b []byte) (APIResponse, error) {
 	}, nil
 }
 
-func errorMessage(resp *http.Response, body []byte) string {
-	if v := resp.Header.Get("Server-Error-Message"); v != "" {
-		return v
-	}
+func errorMessage(resp *http.Response, body []byte, lang string) string {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(body, &raw); err == nil {
+		if msg := formatRemoteError(raw, resp.StatusCode, lang); msg != "" {
+			return msg
+		}
 		if v := stringValue(raw["faultstring"]); v != "" {
 			return v
 		}
 	}
+	if v := resp.Header.Get("Server-Error-Message"); v != "" {
+		return v
+	}
 	return string(bytes.TrimSpace(body))
 }
 
-func apiErrorMessage(resp APIResponse) string {
+func apiErrorMessage(resp APIResponse, lang string) string {
+	if msg := formatRemoteError(resp.Raw, 0, lang); msg != "" {
+		return msg
+	}
 	if resp.Title != "" {
 		return resp.Title
 	}
@@ -452,6 +460,209 @@ func apiErrorMessage(resp APIResponse) string {
 		}
 	}
 	return ""
+}
+
+func formatRemoteError(raw map[string]interface{}, status int, lang string) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	if !hasStructuredRemoteError(raw) {
+		return ""
+	}
+	loc := i18n.New(lang)
+	summary := remoteErrorSummary(raw, status, loc)
+	details := remoteErrorDetails(raw, lang)
+	code := strings.TrimSpace(stringValue(raw["code"]))
+	traceID := strings.TrimSpace(stringValue(raw["trace_id"]))
+
+	lines := []string{
+		fmt.Sprintf("%s: %s", loc.T("error.output.summary"), valueOrDash(summary)),
+		fmt.Sprintf("%s: %s", loc.T("error.output.details"), valueOrDash(details)),
+		fmt.Sprintf("%s: %s", loc.T("error.output.code"), valueOrDash(code)),
+		fmt.Sprintf("%s: %s", loc.T("error.output.trace_id"), valueOrDash(traceID)),
+	}
+	return strings.Join(lines, "\n")
+}
+
+func hasStructuredRemoteError(raw map[string]interface{}) bool {
+	for _, key := range []string{"code", "trace_id", "message", "failed_reason", "title", "error"} {
+		if _, ok := raw[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func remoteErrorSummary(raw map[string]interface{}, status int, loc i18n.Localizer) string {
+	if isAuthFailure(raw, status) {
+		return loc.T("error.output.auth_failed")
+	}
+	if isResourceNotFound(raw, status) {
+		return loc.T("error.output.resource_not_found")
+	}
+	if status >= http.StatusInternalServerError {
+		return loc.T("error.output.internal_error")
+	}
+	if title := strings.TrimSpace(stringValue(raw["title"])); title != "" {
+		return title
+	}
+	return loc.T("error.output.request_failed")
+}
+
+func remoteErrorDetails(raw map[string]interface{}, lang string) string {
+	if messages := extractFieldMessages(raw); len(messages) > 0 {
+		return strings.Join(messages, detailSeparator(lang))
+	}
+	for _, value := range []string{
+		strings.TrimSpace(stringValue(raw["message"])),
+		strings.TrimSpace(stringValue(raw["failed_reason"])),
+		errorMapValue(raw, "message"),
+		errorMapValue(raw, "reasons"),
+		strings.TrimSpace(stringValue(raw["title"])),
+	} {
+		if value != "" {
+			return value
+		}
+	}
+	if errVal := raw["error"]; errVal != nil {
+		if b, err := json.Marshal(errVal); err == nil && string(b) != "{}" {
+			return string(b)
+		}
+	}
+	if b, err := json.Marshal(raw); err == nil && string(b) != "{}" {
+		return string(b)
+	}
+	return ""
+}
+
+func extractFieldMessages(raw map[string]interface{}) []string {
+	errorMap, ok := raw["error"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	fieldsMap, ok := errorMap["fields"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	keys := make([]string, 0, len(fieldsMap))
+	for key := range fieldsMap {
+		if key == "traceback" {
+			continue
+		}
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	seen := map[string]struct{}{}
+	var messages []string
+	for _, key := range keys {
+		collectFieldStrings(fieldsMap[key], seen, &messages)
+	}
+	return messages
+}
+
+func collectFieldStrings(v interface{}, seen map[string]struct{}, messages *[]string) {
+	switch t := v.(type) {
+	case string:
+		s := strings.TrimSpace(t)
+		if s == "" {
+			return
+		}
+		if _, ok := seen[s]; ok {
+			return
+		}
+		seen[s] = struct{}{}
+		*messages = append(*messages, s)
+	case []interface{}:
+		for _, item := range t {
+			collectFieldStrings(item, seen, messages)
+		}
+	case map[string]interface{}:
+		keys := make([]string, 0, len(t))
+		for key := range t {
+			if key == "traceback" {
+				continue
+			}
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			collectFieldStrings(t[key], seen, messages)
+		}
+	}
+}
+
+func isAuthFailure(raw map[string]interface{}, status int) bool {
+	if status == http.StatusUnauthorized || status == http.StatusForbidden {
+		return true
+	}
+	if status != 0 && status != http.StatusBadRequest {
+		return false
+	}
+	if messages := extractFieldMessages(raw); len(messages) > 0 {
+		combined := strings.ToLower(strings.Join(messages, " "))
+		for _, pattern := range []string{
+			"用户名或密码",
+			"账号或者密码错误",
+			"密码输入机会",
+			"username or password",
+			"password incorrect",
+			"authentication failed",
+		} {
+			if strings.Contains(combined, strings.ToLower(pattern)) {
+				return true
+			}
+		}
+	}
+	errorMap, ok := raw["error"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	fieldsMap, ok := errorMap["fields"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	_, hasPassword := fieldsMap["password"]
+	_, hasCode := fieldsMap["code"]
+	return hasPassword || hasCode
+}
+
+func isResourceNotFound(raw map[string]interface{}, status int) bool {
+	if status == http.StatusNotFound {
+		return true
+	}
+	text := strings.ToLower(strings.Join([]string{
+		strings.TrimSpace(stringValue(raw["message"])),
+		strings.TrimSpace(stringValue(raw["failed_reason"])),
+		strings.TrimSpace(stringValue(raw["title"])),
+	}, " "))
+	for _, pattern := range []string{"could not be found", "not found", "不存在", "未找到"} {
+		if strings.Contains(text, strings.ToLower(pattern)) {
+			return true
+		}
+	}
+	return false
+}
+
+func errorMapValue(raw map[string]interface{}, key string) string {
+	errorMap, ok := raw["error"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(stringValue(errorMap[key]))
+}
+
+func detailSeparator(lang string) string {
+	if lang == "zh_cn" {
+		return "；"
+	}
+	return "; "
+}
+
+func valueOrDash(v string) string {
+	if strings.TrimSpace(v) == "" {
+		return "-"
+	}
+	return v
 }
 
 func isSuccessCode(code string) bool {

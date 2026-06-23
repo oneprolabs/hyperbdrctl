@@ -317,13 +317,14 @@ func TestPathQueryIsPreservedAsRealQuery(t *testing.T) {
 func TestErrorMessagePriority(t *testing.T) {
 	tests := []struct {
 		name   string
+		lang   string
 		header string
 		body   string
 		want   string
 	}{
-		{name: "header", header: "from-header", body: `{"faultstring":"from-body"}`, want: "from-header"},
-		{name: "faultstring", body: `{"faultstring":"from-body"}`, want: "from-body"},
-		{name: "raw", body: `plain`, want: "plain"},
+		{name: "json over header", lang: "zh_cn", header: "from-header", body: `{"code":"c000","message":"Account demo could not be found.","trace_id":"trace-1"}`, want: "错误: 资源不存在\n详情: Account demo could not be found.\n错误码: c000\n追踪ID: trace-1"},
+		{name: "faultstring", lang: "en", body: `{"faultstring":"from-body"}`, want: "from-body"},
+		{name: "raw", lang: "en", body: `plain`, want: "plain"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -335,7 +336,7 @@ func TestErrorMessagePriority(t *testing.T) {
 				_, _ = w.Write([]byte(tt.body))
 			}))
 			defer srv.Close()
-			c, err := New(config.Resolved{Config: config.Config{Host: srv.URL, Scene: "dr", Lang: "en"}})
+			c, err := New(config.Resolved{Config: config.Config{Host: srv.URL, Scene: "dr", Lang: tt.lang}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -354,9 +355,10 @@ func TestErrorMessagePriority(t *testing.T) {
 func TestAPIErrorOnNonSuccessCode(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code":  "10000001",
-			"title": "business failed",
-			"error": map[string]interface{}{},
+			"code":     "10000001",
+			"message":  "Account demo could not be found.",
+			"trace_id": "trace-api-1",
+			"error":    map[string]interface{}{},
 		})
 	}))
 	defer srv.Close()
@@ -370,8 +372,90 @@ func TestAPIErrorOnNonSuccessCode(t *testing.T) {
 	if !ok {
 		t.Fatalf("err = %T %v", err, err)
 	}
-	if apiErr.Code != "10000001" || apiErr.Message != "business failed" {
+	want := "Error: Resource not found\nDetails: Account demo could not be found.\nCode: 10000001\nTrace ID: trace-api-1"
+	if apiErr.Code != "10000001" || apiErr.Message != want {
 		t.Fatalf("api err = %+v", apiErr)
+	}
+}
+
+func TestHTTPErrorFormatsAuthFailureInZhCN(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00008002",
+			"data": map[string]interface{}{},
+			"error": map[string]interface{}{
+				"fields": map[string]interface{}{
+					"code":     []string{"账号或者密码错误，您还有9次密码输入机会，连续输入10次错误，账号将被锁定30分钟"},
+					"password": []string{"用户名或密码不正确"},
+				},
+				"message":   "",
+				"reasons":   "",
+				"traceback": "",
+			},
+			"title":    "无效的参数",
+			"trace_id": "4ca752f0875f40b18b3c0a887dfbe508",
+		})
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	tokenPath := filepath.Join(dir, "token.json")
+	if err := config.SaveToken(tokenPath, config.Token{Token: "cached-token"}); err != nil {
+		t.Fatal(err)
+	}
+	c, err := New(config.Resolved{Config: config.Config{Host: srv.URL, Scene: "migration", Lang: "zh_cn"}, CachePath: tokenPath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.Get("/api/v2/getHosts", nil)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := "错误: 认证失败\n详情: 账号或者密码错误，您还有9次密码输入机会，连续输入10次错误，账号将被锁定30分钟；用户名或密码不正确\n错误码: 00008002\n追踪ID: 4ca752f0875f40b18b3c0a887dfbe508"
+	if err.Error() != want {
+		t.Fatalf("err = %q", err.Error())
+	}
+}
+
+func TestHTTPErrorFormatsInternalErrorInZhCN(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "c000",
+			"data": map[string]interface{}{},
+			"error": map[string]interface{}{
+				"fields": map[string]interface{}{
+					"traceback": "  File \"/usr/lib/python3.6/site-packages/unicloud/api/v1/wsgi.py\"",
+				},
+				"message":   "",
+				"reasons":   "",
+				"traceback": "",
+			},
+			"failed_reason": "",
+			"service":       "Unicloud",
+			"title":         "'graph_flow.Flow: Get cloud info(len=2)' requires ['zone'] but no other entity produces said requirements",
+			"trace_id":      "3bec8b13badb487d91f360ff27552549",
+		})
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	tokenPath := filepath.Join(dir, "token.json")
+	if err := config.SaveToken(tokenPath, config.Token{Token: "cached-token"}); err != nil {
+		t.Fatal(err)
+	}
+	c, err := New(config.Resolved{Config: config.Config{Host: srv.URL, Scene: "migration", Lang: "zh_cn"}, CachePath: tokenPath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.Get("/api/v2/getTargetCloudInfo", nil)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	want := "错误: 后端内部错误\n详情: 'graph_flow.Flow: Get cloud info(len=2)' requires ['zone'] but no other entity produces said requirements\n错误码: c000\n追踪ID: 3bec8b13badb487d91f360ff27552549"
+	if err.Error() != want {
+		t.Fatalf("err = %q", err.Error())
 	}
 }
 
