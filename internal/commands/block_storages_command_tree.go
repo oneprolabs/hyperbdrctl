@@ -120,6 +120,15 @@ func newTargetCloudSyncGatewayCommand(ctx *context) *cobra.Command {
 	})
 	configureTargetCloudSyncGatewayLeafHelp(detailCmd, ctx, "cmd.target.cloud_sync_gateway.detail.usage_line", "cmd.target.cloud_sync_gateway.detail.usage_notes")
 
+	deleteCmd := newRawLeafCommand(ctx, "delete", "cmd.block_storages.delete.short", "cmd.block_storages.delete.long", "cmd.block_storages.delete.examples", "cmd.block_storages.delete.notes", func(cmd *cobra.Command) {
+		addFlagString(cmd, ctx, "id")
+		addFlagString(cmd, ctx, "ids")
+		addFlagBool(cmd, ctx, "force")
+	}, func(args []string) error {
+		return runBlockStorages(ctx, append([]string{"delete"}, args...))
+	})
+	configureTargetCloudSyncGatewayLeafHelp(deleteCmd, ctx, "cmd.target.cloud_sync_gateway.delete.usage_line", "cmd.target.cloud_sync_gateway.delete.usage_notes")
+
 	waitCmd := newRawLeafCommand(ctx, "wait", "cmd.block_storages.wait.short", "cmd.block_storages.wait.long", "cmd.block_storages.wait.examples", "cmd.block_storages.wait.notes", func(cmd *cobra.Command) {
 		addFlagString(cmd, ctx, "id")
 		addFlagInt(cmd, ctx, "interval-seconds")
@@ -134,6 +143,7 @@ func newTargetCloudSyncGatewayCommand(ctx *context) *cobra.Command {
 	cmd.AddCommand(
 		listCmd,
 		detailCmd,
+		deleteCmd,
 		waitCmd,
 		createCmd,
 	)

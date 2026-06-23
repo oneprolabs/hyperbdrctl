@@ -56,6 +56,24 @@ func runBlockStorages(ctx *context, args []string) error {
 		return writeResponse(ctx, resp, "", nil)
 	case "wait":
 		return runTargetCloudSyncGatewayWait(ctx, args[1:])
+	case "delete":
+		fs := newFlagSet("target cloud-sync-gateway delete")
+		id := fs.String("id", "", "")
+		ids := fs.String("ids", "", "")
+		force := fs.Bool("force", false, "")
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+		service := appblockstorage.NewService(commandAPIAdapter{ctx: ctx})
+		resp, err := service.Delete(appblockstorage.DeleteSpec{
+			ID:    *id,
+			IDs:   *ids,
+			Force: *force,
+		})
+		if err != nil {
+			return err
+		}
+		return writeResponse(ctx, resp, "", nil)
 	case "resources":
 		fs := newFlagSet("target cloud-sync-gateway resources")
 		cloudAccountID := fs.String("cloud-account-id", "", "")

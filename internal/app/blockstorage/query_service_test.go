@@ -240,6 +240,88 @@ func TestServiceDetailRequiresID(t *testing.T) {
 	}
 }
 
+func TestServiceDeleteRequiresIDOrIDs(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Delete(DeleteSpec{})
+	if err == nil || err.Error() != "id or ids is required" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestServiceDeleteBuildsSingleStorageRequest(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Delete(DeleteSpec{ID: "storage-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.postPath != "/hypermotion/v1/storages/action" {
+		t.Fatalf("path = %q", api.postPath)
+	}
+	body, ok := api.postBody.(map[string]interface{})
+	if !ok {
+		t.Fatalf("body = %#v", api.postBody)
+	}
+	deleteStorage := body["delete_storage"].(map[string]interface{})
+	storageUUIDs := deleteStorage["storage_uuids"].([]string)
+	if len(storageUUIDs) != 1 || storageUUIDs[0] != "storage-1" {
+		t.Fatalf("storage_uuids = %#v", deleteStorage["storage_uuids"])
+	}
+	if deleteStorage["force"] != false {
+		t.Fatalf("delete_storage = %#v", deleteStorage)
+	}
+}
+
+func TestServiceDeleteBuildsMultipleStorageRequest(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Delete(DeleteSpec{IDs: "storage-1, storage-2,, storage-3", Force: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := api.postBody.(map[string]interface{})
+	deleteStorage := body["delete_storage"].(map[string]interface{})
+	storageUUIDs := deleteStorage["storage_uuids"].([]string)
+	want := []string{"storage-1", "storage-2", "storage-3"}
+	if len(storageUUIDs) != len(want) {
+		t.Fatalf("storage_uuids = %#v", storageUUIDs)
+	}
+	for i, item := range want {
+		if storageUUIDs[i] != item {
+			t.Fatalf("storage_uuids = %#v", storageUUIDs)
+		}
+	}
+	if deleteStorage["force"] != true {
+		t.Fatalf("delete_storage = %#v", deleteStorage)
+	}
+}
+
+func TestServiceDeleteCombinesIDAndIDsInOrder(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Delete(DeleteSpec{ID: "storage-1", IDs: "storage-2,storage-3"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := api.postBody.(map[string]interface{})
+	deleteStorage := body["delete_storage"].(map[string]interface{})
+	storageUUIDs := deleteStorage["storage_uuids"].([]string)
+	want := []string{"storage-1", "storage-2", "storage-3"}
+	if len(storageUUIDs) != len(want) {
+		t.Fatalf("storage_uuids = %#v", storageUUIDs)
+	}
+	for i, item := range want {
+		if storageUUIDs[i] != item {
+			t.Fatalf("storage_uuids = %#v", storageUUIDs)
+		}
+	}
+}
+
 func TestServiceTransitionImagesBuildsQuery(t *testing.T) {
 	api := &fakeAPI{}
 	service := NewService(api)
