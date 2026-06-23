@@ -201,3 +201,39 @@ func TestServiceWaitUsesHostDetailPolling(t *testing.T) {
 		t.Fatalf("rows = %+v", result.Rows)
 	}
 }
+
+func TestWaitHostStateUsesBootFieldsForClean(t *testing.T) {
+	status, displayStatus, taskID, taskError := waitHostState(map[string]interface{}{
+		"status":                      "clean_done",
+		"display_status":              "status-clean",
+		"task_id":                     "task-status",
+		"task_error_description":      "status-error",
+		"boot_status":                 "not_boot",
+		"display_boot_status":         "boot-not-boot",
+		"boot_task_id":                "task-boot",
+		"boot_task_error_description": "boot-error",
+	}, "clean")
+	if status != "not_boot" || displayStatus != "boot-not-boot" || taskID != "task-boot" || taskError != "boot-error" {
+		t.Fatalf("status=%q displayStatus=%q taskID=%q taskError=%q", status, displayStatus, taskID, taskError)
+	}
+}
+
+func TestClassifyWaitStateForClean(t *testing.T) {
+	tests := []struct {
+		status string
+		want   string
+	}{
+		{status: "clean_done", want: "success"},
+		{status: "not_boot", want: "success"},
+		{status: "clean_doing", want: "running"},
+		{status: "boot_doing", want: "running"},
+		{status: "boot_done", want: "running"},
+		{status: "clean_failed", want: "failed"},
+	}
+
+	for _, tc := range tests {
+		if got := classifyWaitState("clean", tc.status, false); got != tc.want {
+			t.Fatalf("status=%q got=%q want=%q", tc.status, got, tc.want)
+		}
+	}
+}

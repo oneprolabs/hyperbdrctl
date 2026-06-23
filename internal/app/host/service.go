@@ -297,7 +297,7 @@ func waitHostState(host map[string]interface{}, operation string) (status, displ
 		return "", "", "", ""
 	}
 	switch operation {
-	case "boot":
+	case "boot", "clean":
 		return stringValue(host["boot_status"]), stringValue(host["display_boot_status"]), stringValue(host["boot_task_id"]), stringValue(host["boot_task_error_description"])
 	default:
 		return stringValue(host["status"]), stringValue(host["display_status"]), stringValue(host["task_id"]), stringValue(host["task_error_description"])
@@ -324,10 +324,10 @@ func classifyWaitState(operation, status string, notFound bool) string {
 			return "running"
 		}
 	case "clean":
-		if status == "clean_done" {
+		if status == "clean_done" || status == "not_boot" {
 			return "success"
 		}
-		if status == "clean_doing" || status == "" {
+		if status == "clean_doing" || status == "boot_doing" || status == "boot_done" || status == "" {
 			return "running"
 		}
 	case "deregister":

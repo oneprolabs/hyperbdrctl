@@ -273,6 +273,7 @@ func runHostsWait(ctx *context, args []string) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+	timeout := resolveHostWaitTimeout(*operation, *timeoutSeconds, flagWasSet(fs, "timeout-seconds"))
 
 	service := apphost.NewService(commandAPIAdapter{ctx: ctx})
 	result, err := service.Wait(apphost.WaitSpec{
@@ -280,7 +281,7 @@ func runHostsWait(ctx *context, args []string) error {
 		IDs:          *ids,
 		Operation:    *operation,
 		Interval:     time.Duration(*intervalSeconds) * time.Second,
-		Timeout:      time.Duration(*timeoutSeconds) * time.Second,
+		Timeout:      timeout,
 		IncludeSteps: *includeSteps,
 	})
 	if err != nil {
@@ -297,6 +298,13 @@ func runHostsWait(ctx *context, args []string) error {
 		return fmt.Errorf("one or more host wait operations failed")
 	}
 	return nil
+}
+
+func resolveHostWaitTimeout(operation string, timeoutSeconds int, timeoutWasSet bool) time.Duration {
+	if operation == "clean" && !timeoutWasSet {
+		timeoutSeconds = 300
+	}
+	return time.Duration(timeoutSeconds) * time.Second
 }
 
 func waitColumns() []output.Column {

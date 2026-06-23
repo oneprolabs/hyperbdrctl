@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestHostsListPassesUnknownFlagsAsQuery(t *testing.T) {
@@ -679,7 +680,7 @@ func TestHostsWaitBootUsesBootStatus(t *testing.T) {
 	}
 }
 
-func TestHostsWaitCleanUsesHostDetailStatus(t *testing.T) {
+func TestHostsWaitCleanUsesBootStatus(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -691,10 +692,11 @@ func TestHostsWaitCleanUsesHostDetailStatus(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"code": "00000000",
 			"data": map[string]interface{}{
-				"id":             "host-1",
-				"status":         status,
-				"display_status": status,
-				"task_id":        "task-clean",
+				"id":                          "host-1",
+				"boot_status":                 status,
+				"display_boot_status":         status,
+				"boot_task_id":                "task-clean",
+				"boot_task_error_description": "",
 			},
 		})
 	}))
@@ -717,6 +719,100 @@ func TestHostsWaitCleanUsesHostDetailStatus(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"task_id": "task-clean"`) || !strings.Contains(out.String(), `"status": "clean_done"`) {
 		t.Fatalf("output = %s", out.String())
+	}
+}
+
+func TestHostsWaitCleanTreatsNotBootAsSuccess(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	statuses := []string{"clean_doing", "not_boot"}
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		status := statuses[calls]
+		calls++
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"id":                  "host-1",
+				"boot_status":         status,
+				"display_boot_status": status,
+				"boot_task_id":        "task-clean",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"host", "wait",
+		"--id", "host-1",
+		"--operation", "clean",
+		"--interval-seconds", "0",
+		"--timeout-seconds", "10",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls != 2 {
+		t.Fatalf("calls = %d", calls)
+	}
+	if !strings.Contains(out.String(), `"result": "success"`) || !strings.Contains(out.String(), `"status": "not_boot"`) {
+		t.Fatalf("output = %s", out.String())
+	}
+}
+
+func TestHostsWaitCleanTreatsBootStatusesAsRunningUntilNotBoot(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	statuses := []string{"boot_doing", "boot_done", "not_boot"}
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		status := statuses[calls]
+		calls++
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"id":                  "host-1",
+				"boot_status":         status,
+				"display_boot_status": status,
+				"boot_task_id":        "task-clean",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"host", "wait",
+		"--id", "host-1",
+		"--operation", "clean",
+		"--interval-seconds", "0",
+		"--timeout-seconds", "10",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls != 3 {
+		t.Fatalf("calls = %d", calls)
+	}
+	if !strings.Contains(out.String(), `"result": "success"`) || !strings.Contains(out.String(), `"status": "not_boot"`) {
+		t.Fatalf("output = %s", out.String())
+	}
+}
+
+func TestResolveHostWaitTimeoutUsesCleanDefaultWhenUnset(t *testing.T) {
+	if got := resolveHostWaitTimeout("clean", 3600, false); got != 300*time.Second {
+		t.Fatalf("timeout = %s", got)
+	}
+}
+
+func TestResolveHostWaitTimeoutKeepsExplicitCleanTimeout(t *testing.T) {
+	if got := resolveHostWaitTimeout("clean", 10, true); got != 10*time.Second {
+		t.Fatalf("timeout = %s", got)
 	}
 }
 
