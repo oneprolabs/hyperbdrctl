@@ -237,3 +237,32 @@ func TestClassifyWaitStateForClean(t *testing.T) {
 		}
 	}
 }
+
+func TestClassifyWaitStateForSync(t *testing.T) {
+	tests := []struct {
+		status string
+		want   string
+	}{
+		{status: "sync_snapshot_done", want: "success"},
+		{status: "sync_doing", want: "running"},
+		{status: "", want: "running"},
+		{status: "host_register_done", want: "failed"},
+		{status: "paused", want: "failed"},
+		{status: "sync_failed", want: "failed"},
+	}
+
+	for _, tc := range tests {
+		if got := classifyWaitState("sync", tc.status, false); got != tc.want {
+			t.Fatalf("status=%q got=%q want=%q", tc.status, got, tc.want)
+		}
+	}
+}
+
+func TestWaitFailureMessageForSync(t *testing.T) {
+	if got := waitFailureMessage("host-1", "sync", "host_register_done", "registered"); got != "host has not started sync yet; run 'hyperbdrctl host sync --id host-1' first" {
+		t.Fatalf("message = %q", got)
+	}
+	if got := waitFailureMessage("host-1", "sync", "paused", "paused by backend"); got != "unexpected sync status: paused (paused by backend)" {
+		t.Fatalf("message = %q", got)
+	}
+}

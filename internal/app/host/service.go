@@ -243,6 +243,9 @@ func (s Service) waitForHost(hostID, operation string, interval, timeout time.Du
 					taskError = stepError
 				}
 			}
+			if taskError == "" {
+				taskError = waitFailureMessage(hostID, operation, status, displayStatus)
+			}
 			return waitResult(hostID, operation, result, status, displayStatus, taskID, elapsed, taskError)
 		}
 		if !time.Now().Before(deadline) {
@@ -313,9 +316,10 @@ func classifyWaitState(operation, status string, notFound bool) string {
 		if status == "sync_snapshot_done" {
 			return "success"
 		}
-		if status == "sync_doing" || status == "" || status == "host_register_done" {
+		if status == "sync_doing" || status == "" {
 			return "running"
 		}
+		return "failed"
 	case "boot":
 		if status == "boot_done" {
 			return "success"
@@ -342,6 +346,22 @@ func classifyWaitState(operation, status string, notFound bool) string {
 		return "failed"
 	}
 	return "running"
+}
+
+func waitFailureMessage(hostID, operation, status, displayStatus string) string {
+	switch operation {
+	case "sync":
+		if status == "host_register_done" {
+			return fmt.Sprintf("host has not started sync yet; run 'hyperbdrctl host sync --id %s' first", hostID)
+		}
+		if status != "" {
+			if displayStatus != "" && displayStatus != status {
+				return fmt.Sprintf("unexpected sync status: %s (%s)", status, displayStatus)
+			}
+			return fmt.Sprintf("unexpected sync status: %s", status)
+		}
+	}
+	return ""
 }
 
 func isFailureStatus(status string) bool {

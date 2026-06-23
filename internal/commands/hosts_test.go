@@ -596,7 +596,7 @@ func TestHostsWaitSyncUsesHostDetailStatus(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	statuses := []string{"host_register_done", "sync_doing", "sync_snapshot_done"}
+	statuses := []string{"sync_doing", "sync_snapshot_done"}
 	calls := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/getHostDetail" {
@@ -631,10 +631,83 @@ func TestHostsWaitSyncUsesHostDetailStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if calls != 3 {
+	if calls != 2 {
 		t.Fatalf("calls = %d", calls)
 	}
 	if !strings.Contains(out.String(), `"result": "success"`) || !strings.Contains(out.String(), `"status": "sync_snapshot_done"`) {
+		t.Fatalf("output = %s", out.String())
+	}
+}
+
+func TestHostsWaitSyncFailsWhenSyncHasNotStarted(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"id":             "host-1",
+				"status":         "host_register_done",
+				"display_status": "registered",
+				"task_id":        "task-sync",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"host", "wait",
+		"--id", "host-1",
+		"--operation", "sync",
+		"--interval-seconds", "0",
+		"--timeout-seconds", "10",
+	), &out, &errOut)
+	if err == nil {
+		t.Fatal("expected failure")
+	}
+	if calls != 1 {
+		t.Fatalf("calls = %d", calls)
+	}
+	if !strings.Contains(out.String(), `"result": "failed"`) || !strings.Contains(out.String(), `host has not started sync yet`) {
+		t.Fatalf("output = %s", out.String())
+	}
+}
+
+func TestHostsWaitSyncFailsForUnexpectedStatus(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"id":             "host-1",
+				"status":         "paused",
+				"display_status": "paused by backend",
+				"task_id":        "task-sync",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"host", "wait",
+		"--id", "host-1",
+		"--operation", "sync",
+		"--interval-seconds", "0",
+		"--timeout-seconds", "10",
+	), &out, &errOut)
+	if err == nil {
+		t.Fatal("expected failure")
+	}
+	if !strings.Contains(out.String(), `"result": "failed"`) || !strings.Contains(out.String(), `unexpected sync status: paused (paused by backend)`) {
 		t.Fatalf("output = %s", out.String())
 	}
 }
