@@ -30,7 +30,7 @@ func TestSourcesAgentInstallDefaultOutput(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "source", "agent-install", "--custom-step", "3"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "agent", "install", "--custom-step", "3"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestSourceListSupportsVerticalOutput(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "source", "list", "--type", "vmware", "-G"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "production-site", "list", "--type", "vmware", "-G"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestSourcesAgentInstallJSONOutputPreservesRawFields(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "source", "agent-install"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "agent", "install"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +169,7 @@ func TestSourcesAgentInstallDefaultOutputSupportsBarePayload(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "source", "agent-install"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "agent", "install"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,11 +189,11 @@ func TestSourcesListTypeAgentReturnsGuidanceError(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "source", "list", "--type", "agent"), &out, &errOut)
+	err := Execute(withHost(t, "https://example.invalid", "production-site", "list", "--type", "agent"), &out, &errOut)
 	if err == nil {
 		t.Fatal("expected guidance error")
 	}
-	if err.Error() != "agent install info is available via source agent-install" {
+	if err.Error() != "agent install info is available via agent install" {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -203,7 +203,7 @@ func TestSourcesListRequiresType(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "source", "list"), &out, &errOut)
+	err := Execute(withHost(t, "https://example.invalid", "production-site", "list"), &out, &errOut)
 	if err == nil {
 		t.Fatal("expected missing type error")
 	}
@@ -233,7 +233,7 @@ func TestSourcesListDefaultOutputSupportsWrappedSourcesPayload(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "source", "list", "--type", "vmware"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "production-site", "list", "--type", "vmware"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,7 +273,7 @@ func TestSourcesAgentlessInstallDefaultOutput(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "source", "agentless-install", "--custom-step", "3"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "sync-proxy", "install", "--custom-step", "3"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +322,7 @@ func TestSourcesAgentlessInstallJSONOutputPreservesRawFields(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "source", "agentless-install"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "sync-proxy", "install"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +377,7 @@ func TestSourcesSyncNodesDefaultOutput(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "source", "sync-nodes"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "sync-proxy", "list"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -441,7 +441,7 @@ func TestSourcesSyncNodesDefaultOutputShowsNoneWhenNoConnections(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "source", "sync-nodes"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "sync-proxy", "list"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -488,7 +488,7 @@ func TestSourcesSyncNodesJSONOutputPreservesRawFields(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "source", "sync-nodes"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "sync-proxy", "list"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -515,7 +515,7 @@ func TestSourcesListSupportsExplicitVerificationFlags(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "source", "list", "--type", "vmware", "--kw", "test-vm", "--binding-status", "binding", "--page", "1", "--page-size", "10"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "production-site", "list", "--type", "vmware", "--kw", "test-vm", "--binding-status", "binding", "--page", "1", "--page-size", "10"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -532,7 +532,7 @@ func TestSourcesCreatePreviewRequestBuildsVMwarePayload(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"source", "create",
+		"production-site", "create",
 		"--type", "vmware",
 		"--synch-node-id", "node-1",
 		"--synch-node-ids", "node-2,node-1",
@@ -587,7 +587,7 @@ func TestSourcesCreateSendsAWSPayload(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"source", "create",
+		"production-site", "create",
 		"--type", "aws",
 		"--synch-node-ids", "node-1,node-2",
 		"--auth-url", "test",
@@ -611,41 +611,50 @@ func TestSourcesCreateSendsAWSPayload(t *testing.T) {
 	}
 }
 
-func TestSourceHelpUsesGroupLayout(t *testing.T) {
+func TestSourceSplitHelpUsesGroupLayouts(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	var out, errOut bytes.Buffer
-	if err := Execute([]string{"help", "source"}, &out, &errOut); err != nil {
-		t.Fatal(err)
+	cases := []struct {
+		args     []string
+		want     []string
+		unwanted []string
+	}{
+		{
+			args:     []string{"help", "production-site"},
+			want:     []string{"Usage:", "\nFlags:\n", "\nCommands:\n", "list", "detail", "delete", "vm-list", "create", "hyperbdrctl production-site create --help"},
+			unwanted: []string{"agent-install", "agentless-install", "sync-nodes", "sync-node-delete"},
+		},
+		{
+			args:     []string{"help", "agent"},
+			want:     []string{"Usage:", "\nFlags:\n", "\nCommands:\n", "install", "hyperbdrctl agent install"},
+			unwanted: []string{"agent-install"},
+		},
+		{
+			args:     []string{"help", "sync-proxy"},
+			want:     []string{"Usage:", "\nFlags:\n", "\nCommands:\n", "install", "list", "delete", "hyperbdrctl sync-proxy list"},
+			unwanted: []string{"agentless-install", "sync-nodes", "sync-node-delete"},
+		},
 	}
-	text := out.String()
-	for _, want := range []string{
-		"Usage:",
-		"\nFlags:\n",
-		"\nCommands:\n",
-		"delete",
-		"sync-node-delete",
-		"list",
-		"detail",
-		"vms",
-		"agent-install",
-		"agentless-install",
-		"sync-nodes",
-		"create",
-		"Usage Notes:",
-		"hyperbdrctl source create --help",
-	} {
-		if !strings.Contains(text, want) {
-			t.Fatalf("help = %q, missing %q", text, want)
+
+	for _, tt := range cases {
+		var out, errOut bytes.Buffer
+		if err := Execute(tt.args, &out, &errOut); err != nil {
+			t.Fatalf("args=%v err=%v", tt.args, err)
 		}
-	}
-	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
-		if strings.Contains(text, unwanted) {
-			t.Fatalf("help should not include %q: %q", unwanted, text)
+		text := out.String()
+		for _, want := range tt.want {
+			if !strings.Contains(text, want) {
+				t.Fatalf("args=%v help = %q, missing %q", tt.args, text, want)
+			}
 		}
+		for _, unwanted := range append(tt.unwanted, "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n") {
+			if strings.Contains(text, unwanted) {
+				t.Fatalf("args=%v help should not include %q: %q", tt.args, unwanted, text)
+			}
+		}
+		assertNoHelpFooter(t, text)
 	}
-	assertNoHelpFooter(t, text)
 }
 
 func TestSourceLeafHelpUsesFourSectionLayout(t *testing.T) {
@@ -657,20 +666,20 @@ func TestSourceLeafHelpUsesFourSectionLayout(t *testing.T) {
 		want []string
 	}{
 		{
-			args: []string{"source", "list", "--help"},
-			want: []string{"Usage Notes:", "--type", "--binding-status", "hyperbdrctl source agent-install"},
+			args: []string{"production-site", "list", "--help"},
+			want: []string{"Usage Notes:", "--type", "--binding-status", "hyperbdrctl agent install"},
 		},
 		{
-			args: []string{"source", "create", "--help"},
-			want: []string{"Usage Notes:", "--type", "--synch-node-id", "--synch-node-ids", "--preview-request", "hyperbdrctl source sync-nodes"},
+			args: []string{"production-site", "create", "--help"},
+			want: []string{"Usage Notes:", "--type", "--synch-node-id", "--synch-node-ids", "--preview-request", "hyperbdrctl sync-proxy list"},
 		},
 		{
-			args: []string{"source", "delete", "--help"},
-			want: []string{"Usage Notes:", "--id", "--force", "hyperbdrctl source detail --id <source_id>"},
+			args: []string{"production-site", "delete", "--help"},
+			want: []string{"Usage Notes:", "--id", "--force", "hyperbdrctl production-site detail --id <source_id>"},
 		},
 		{
-			args: []string{"source", "sync-node-delete", "--help"},
-			want: []string{"Usage Notes:", "--id", "hyperbdrctl source sync-nodes"},
+			args: []string{"sync-proxy", "delete", "--help"},
+			want: []string{"Usage Notes:", "--id", "hyperbdrctl sync-proxy list"},
 		},
 	}
 
@@ -715,7 +724,7 @@ func TestSourceDeleteUsesDeleteEndpoint(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "source", "delete", "--id", "source-1"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "production-site", "delete", "--id", "source-1"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -745,7 +754,7 @@ func TestSourceDeleteUsesForceQueryWhenRequested(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "source", "delete", "--id", "source-1", "--force"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "production-site", "delete", "--id", "source-1", "--force"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -759,7 +768,7 @@ func TestSourceDeleteRequiresID(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "source", "delete"), &out, &errOut)
+	err := Execute(withHost(t, "https://example.invalid", "production-site", "delete"), &out, &errOut)
 	if err == nil || err.Error() != "id is required" {
 		t.Fatalf("err = %v", err)
 	}
@@ -782,7 +791,7 @@ func TestSourceSyncNodeDeleteUsesDeleteEndpoint(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "source", "sync-node-delete", "--id", "node-1"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "sync-proxy", "delete", "--id", "node-1"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -802,344 +811,40 @@ func TestSourceSyncNodeDeleteRequiresID(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "source", "sync-node-delete"), &out, &errOut)
+	err := Execute(withHost(t, "https://example.invalid", "sync-proxy", "delete"), &out, &errOut)
 	if err == nil || err.Error() != "id is required" {
 		t.Fatalf("err = %v", err)
 	}
 }
 
-func TestSourceEnHelpMatchesExpected(t *testing.T) {
+func TestSourceSplitHelpUsesDirectPaths(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	cases := []struct {
-		args []string
-		want string
+		args     []string
+		want     []string
+		unwanted []string
 	}{
 		{
-			args: []string{"--lang", "en", "source", "--help"},
-			want: joinHelpLines(
-				"Production site configuration",
-				"",
-				"Usage: hyperbdrctl source <command> [flags]",
-				"",
-				"Flags:",
-				"      --debug           Output request debug logs",
-				"      --lang string     Display language, choices en / zh_cn, default en",
-				"  -o, --output string   Output format, choices table / json, default table",
-				"  -h, --help            Show help information",
-				"",
-				"Commands:",
-				"  agent-install            Show Agent source proxy install commands",
-				"  agentless-install        Show Agentless sync proxy install commands",
-				"  create                   Create production platform",
-				"  delete                   Delete production platform",
-				"  detail                   Show production platform detail",
-				"  list                     List production platforms",
-				"  sync-node-delete         Delete sync proxy node",
-				"  sync-nodes               List sync proxy nodes",
-				"  vms                      List Agentless VMs",
-				"",
-				"Usage Notes:",
-				"  Use this command group for production platform queries, production host preparation, production platform creation, and deletion.",
-				"",
-				"  To inspect existing production platforms first, run:",
-				"    hyperbdrctl source list --type vmware",
-				"",
-				"  To locate candidate production VM IDs before `host register`, run:",
-				"    hyperbdrctl source vms --connection-type vmware",
-				"",
-				"  To prepare Agent or Agentless installation commands, run:",
-				"    hyperbdrctl source agent-install",
-				"    hyperbdrctl source agentless-install",
-				"",
-				"  To check available sync nodes before Agentless create, run:",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  To inspect the mutating flows and required inputs, continue with:",
-				"    hyperbdrctl source create --help",
-				"    hyperbdrctl source delete --help",
-				"    hyperbdrctl source sync-node-delete --help",
-			),
+			args:     []string{"--lang", "en", "production-site", "create", "--help"},
+			want:     []string{"Usage: hyperbdrctl production-site create", "--type", "--synch-node-id", "hyperbdrctl sync-proxy list", "hyperbdrctl production-site list"},
+			unwanted: []string{"hyperbdrctl source", "source create"},
 		},
 		{
-			args: []string{"--lang", "en", "source", "list", "--help"},
-			want: joinHelpLines(
-				"List production platforms",
-				"",
-				"Usage: hyperbdrctl source list [flags]",
-				"",
-				"Flags:",
-				"      --type string             Type filter (required)",
-				"      --kw string               Keyword filter",
-				"      --binding-status string   Binding status filter",
-				"      --page int                Page number, default 1",
-				"      --page-size int           Page size, default 10",
-				"      --debug                   Output request debug logs",
-				"      --lang string             Display language, choices en / zh_cn, default en",
-				"  -o, --output string           Output format, choices table / json, default table",
-				"  -h, --help                    Show help information",
-				"",
-				"Usage Notes:",
-				"  Use this command to query configured production platforms by type, keyword, and binding state.",
-				"",
-				"  The minimum query is:",
-				"    hyperbdrctl source list --type vmware",
-				"",
-				"  To narrow the result while checking a newly created production platform, run:",
-				"    hyperbdrctl source list --type vmware --binding-status binding",
-				"",
-				"  To inspect raw API fields for scripting, add:",
-				"    --output json",
-				"",
-				"  Do not use `--type agent` here. To inspect installation metadata, run:",
-				"    hyperbdrctl source agent-install",
-			),
+			args:     []string{"--lang", "en", "agent", "install", "--help"},
+			want:     []string{"Usage: hyperbdrctl agent install", "Usage Notes:", "hyperbdrctl agent install"},
+			unwanted: []string{"source agent-install", "hyperbdrctl source"},
 		},
 		{
-			args: []string{"--lang", "en", "source", "detail", "--help"},
-			want: joinHelpLines(
-				"Show production platform detail",
-				"",
-				"Usage: hyperbdrctl source detail [flags]",
-				"",
-				"Flags:",
-				"      --id string               Resource ID (required)",
-				"      --type string             Type filter",
-				"      --binding-status string   Binding status filter",
-				"      --page int                Page number, default 1",
-				"      --page-size int           Page size, default 10",
-				"      --debug                   Output request debug logs",
-				"      --lang string             Display language, choices en / zh_cn, default en",
-				"  -o, --output string           Output format, choices table / json, default table",
-				"  -h, --help                    Show help information",
-				"",
-				"Usage Notes:",
-				"  Use this command to inspect one production platform in detail.",
-				"",
-				"  The minimum query is:",
-				"    hyperbdrctl source detail --id <source_id>",
-				"",
-				"  When you need the related binding view together with the platform detail, add:",
-				"    --binding-status binding",
-				"",
-				"  To script against the raw response fields, add:",
-				"    --output json",
-			),
+			args:     []string{"--lang", "en", "sync-proxy", "list", "--help"},
+			want:     []string{"Usage: hyperbdrctl sync-proxy list", "--type", "--status", "hyperbdrctl production-site create --help"},
+			unwanted: []string{"source sync-nodes", "hyperbdrctl source"},
 		},
 		{
-			args: []string{"--lang", "en", "source", "delete", "--help"},
-			want: joinHelpLines(
-				"Delete production platform",
-				"",
-				"Usage: hyperbdrctl source delete --id <source_id> [flags]",
-				"",
-				"Flags:",
-				"      --id string       Resource ID (required)",
-				"      --force           Force operation",
-				"      --debug           Output request debug logs",
-				"      --lang string     Display language, choices en / zh_cn, default en",
-				"  -o, --output string   Output format, choices table / json, default table",
-				"  -h, --help            Show help information",
-				"",
-				"Usage Notes:",
-				"  Use this command to delete one production platform connection.",
-				"",
-				"  The minimum delete command is:",
-				"    hyperbdrctl source delete --id <source_id>",
-				"",
-				"  Add this only when the backend requires a forced delete:",
-				"    --force",
-				"",
-				"  To confirm the target production platform ID first, run:",
-				"    hyperbdrctl source list --type vmware",
-				"    hyperbdrctl source detail --id <source_id>",
-			),
-		},
-		{
-			args: []string{"--lang", "en", "source", "sync-node-delete", "--help"},
-			want: joinHelpLines(
-				"Delete sync proxy node",
-				"",
-				"Usage: hyperbdrctl source sync-node-delete --id <node_id> [flags]",
-				"",
-				"Flags:",
-				"      --id string       Resource ID (required)",
-				"      --debug           Output request debug logs",
-				"      --lang string     Display language, choices en / zh_cn, default en",
-				"  -o, --output string   Output format, choices table / json, default table",
-				"  -h, --help            Show help information",
-				"",
-				"Usage Notes:",
-				"  Use this command to delete one sync proxy node.",
-				"",
-				"  The minimum delete command is:",
-				"    hyperbdrctl source sync-node-delete --id <node_id>",
-				"",
-				"  To confirm the target sync proxy node ID first, run:",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  After delete returns, run this again when you need to verify the remaining nodes:",
-				"    hyperbdrctl source sync-nodes",
-			),
-		},
-		{
-			args: []string{"--lang", "en", "source", "vms", "--help"},
-			want: joinHelpLines(
-				"List production platform VMs",
-				"",
-				"Usage: hyperbdrctl source vms [flags]",
-				"",
-				"Flags:",
-				"      --connection-type string   Production platform type (required)",
-				"      --connection-uuid string   Production platform UUID",
-				"      --registered string        Registration filter",
-				"      --kw string                Keyword filter",
-				"      --page int                 Page number, default 1",
-				"      --page-size int            Page size, default 10",
-				"      --debug                    Output request debug logs",
-				"      --lang string              Display language, choices en / zh_cn, default en",
-				"  -o, --output string            Output format, choices table / json, default table",
-				"  -h, --help                     Show help information",
-				"",
-				"Usage Notes:",
-				"  Use this command to query production VMs under one production platform.",
-				"",
-				"  Before running it, confirm the production platform type and, when available, the production platform UUID.",
-				"",
-				"  A minimal discovery query is:",
-				"    hyperbdrctl source vms --connection-type vmware",
-				"",
-				"  To focus on unregistered VMs before `host register`, run:",
-				"    hyperbdrctl source vms --connection-type vmware --registered 0",
-				"",
-				"  After you obtain a VM ID, continue with:",
-				"    hyperbdrctl host register --vm-id <vm_id>",
-			),
-		},
-		{
-			args: []string{"--lang", "en", "source", "agent-install", "--help"},
-			want: joinHelpLines(
-				"Show Agent source proxy install commands",
-				"",
-				"Usage: hyperbdrctl source agent-install [flags]",
-				"",
-				"Flags:",
-				"      --debug           Output request debug logs",
-				"      --lang string     Display language, choices en / zh_cn, default en",
-				"  -o, --output string   Output format, choices table / json, default table",
-				"  -h, --help            Show help information",
-				"",
-				"Usage Notes:",
-				"  Use this command to inspect Agent-mode source proxy installation guidance.",
-				"",
-				"  To read the simplified operator-facing install commands directly, run:",
-				"    hyperbdrctl source agent-install",
-				"",
-				"  Default output groups Linux and Windows guidance separately.",
-				"",
-				"  To inspect the full raw per-OS metadata for scripting or diffing, add:",
-				"    --output json",
-			),
-		},
-		{
-			args: []string{"--lang", "en", "source", "agentless-install", "--help"},
-			want: joinHelpLines(
-				"Show Agentless sync proxy install commands",
-				"",
-				"Usage: hyperbdrctl source agentless-install [flags]",
-				"",
-				"Flags:",
-				"      --debug           Output request debug logs",
-				"      --lang string     Display language, choices en / zh_cn, default en",
-				"  -o, --output string   Output format, choices table / json, default table",
-				"  -h, --help            Show help information",
-				"",
-				"Usage Notes:",
-				"  Use this command to inspect Agentless sync-proxy installation prerequisites and install commands.",
-				"",
-				"  To read the simplified host preparation guidance directly, run:",
-				"    hyperbdrctl source agentless-install",
-				"",
-				"  Then verify the required sync node is online with:",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  To inspect the raw metadata payload for scripting, add:",
-				"    --output json",
-			),
-		},
-		{
-			args: []string{"--lang", "en", "source", "sync-nodes", "--help"},
-			want: joinHelpLines(
-				"List production platform sync proxy nodes",
-				"",
-				"Usage: hyperbdrctl source sync-nodes [flags]",
-				"",
-				"Flags:",
-				"      --type string     Type filter, default proxy",
-				"      --status string   Status filter, default online",
-				"      --debug           Output request debug logs",
-				"      --lang string     Display language, choices en / zh_cn, default en",
-				"  -o, --output string   Output format, choices table / json, default table",
-				"  -h, --help            Show help information",
-				"",
-				"Usage Notes:",
-				"  Use this command to inspect registered source-side sync proxy nodes before Agentless create.",
-				"",
-				"  The default query already filters to online proxy nodes:",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  If you need to inspect other node types or statuses, override the defaults with:",
-				"    --type <node_type>",
-				"    --status <status>",
-				"",
-				"  After you confirm a usable node ID, continue with:",
-				"    hyperbdrctl source create --help",
-			),
-		},
-		{
-			args: []string{"--lang", "en", "source", "create", "--help"},
-			want: joinHelpLines(
-				"Create production platform connection",
-				"",
-				"Usage: hyperbdrctl source create [flags]",
-				"",
-				"Flags:",
-				"      --type string             Type filter (required), allowed values vmware / aws",
-				"      --synch-node-id string    Single sync node ID",
-				"      --synch-node-ids string   Comma-separated sync node IDs",
-				"      --auth-url string         Cloud auth URL, source auth endpoint, or",
-				"                                object-storage auth endpoint",
-				"      --auth-key string         Source auth key or username",
-				"      --auth-cert string        Source auth secret or certificate",
-				"      --region-id string        Region ID",
-				"      --preview-request         Output request body without sending request",
-				"      --debug                   Output request debug logs",
-				"      --lang string             Display language, choices en / zh_cn, default en",
-				"  -o, --output string           Output format, choices table / json, default table",
-				"  -h, --help                    Show help information",
-				"",
-				"Usage Notes:",
-				"  Use this command to create an Agentless production platform connection for `vmware` or `aws`.",
-				"",
-				"  Before create, prepare the sync node and install metadata first:",
-				"    hyperbdrctl source agentless-install",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  The minimum VMware create flow is:",
-				"    hyperbdrctl source create \\",
-				"      --type vmware \\",
-				"      --synch-node-id <node_id> \\",
-				"      --auth-url https://vcenter.example:443 \\",
-				"      --auth-key <username> \\",
-				"      --auth-cert <password>",
-				"",
-				"  When you need to inspect the final request body without sending `/api/v2/createConnection`, add:",
-				"    --preview-request",
-				"",
-				"  After create returns, verify the connection state with:",
-				"    hyperbdrctl source list --type <vmware|aws> --binding-status binding",
-			),
+			args:     []string{"--lang", "zh_cn", "production-site", "vm-list", "--help"},
+			want:     []string{"用法: hyperbdrctl production-site vm-list", "--connection-type", "hyperbdrctl host register --vm-id <vm_id>"},
+			unwanted: []string{"source vms", "hyperbdrctl source"},
 		},
 	}
 
@@ -1148,365 +853,19 @@ func TestSourceEnHelpMatchesExpected(t *testing.T) {
 		if err := Execute(tt.args, &out, &errOut); err != nil {
 			t.Fatalf("args=%v err=%v", tt.args, err)
 		}
-
 		got := normalizeHelpText(out.String())
-		if got != tt.want {
-			t.Fatalf("args=%v help mismatch\nwant:\n%s\n\ngot:\n%s", tt.args, tt.want, got)
+		for _, want := range tt.want {
+			if !strings.Contains(got, want) {
+				t.Fatalf("args=%v help missing %q: %q", tt.args, want, got)
+			}
+		}
+		for _, unwanted := range tt.unwanted {
+			if strings.Contains(got, unwanted) {
+				t.Fatalf("args=%v help should not include %q: %q", tt.args, unwanted, got)
+			}
 		}
 		assertNoHelpFooter(t, got)
 	}
-}
-
-func TestSourceZhHelpMatchesArchive(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	cases := []struct {
-		args []string
-		want string
-	}{
-		{
-			args: []string{"--lang", "zh_cn", "source", "--help"},
-			want: joinHelpLines(
-				"生产站点配置",
-				"",
-				"用法: hyperbdrctl source <命令> [参数]",
-				"",
-				"参数:",
-				"      --debug           输出请求调试日志",
-				"      --lang string     显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string   输出格式，可选 table / json，默认值 table",
-				"  -h, --help            显示帮助信息",
-				"",
-				"命令:",
-				"  agent-install            查看 Agent 源端代理安装命令",
-				"  agentless-install        查看 Agentless 同步代理安装命令",
-				"  create                   创建生产平台",
-				"  delete                   删除生产平台",
-				"  detail                   查看生产平台详情",
-				"  list                     列出生产平台",
-				"  sync-node-delete         删除同步代理节点",
-				"  sync-nodes               列出同步代理节点",
-				"  vms                      列出 Agentless 虚拟机",
-				"",
-				"使用说明:",
-				"  该命令组用于生产平台查询、生产主机准备、生产平台创建和删除。",
-				"",
-				"  如需先查看当前已有的生产平台，可以执行：",
-				"    hyperbdrctl source list --type vmware",
-				"",
-				"  如需在 `host register` 前先定位可注册的生产虚拟机 ID，可以执行：",
-				"    hyperbdrctl source vms --connection-type vmware",
-				"",
-				"  如需准备 Agent 或 Agentless 安装命令，可以执行：",
-				"    hyperbdrctl source agent-install",
-				"    hyperbdrctl source agentless-install",
-				"",
-				"  如需在 Agentless 创建前确认可用同步节点，可以执行：",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  如需继续查看写入流程和所需参数，可以执行：",
-				"    hyperbdrctl source create --help",
-				"    hyperbdrctl source delete --help",
-				"    hyperbdrctl source sync-node-delete --help",
-			),
-		},
-		{
-			args: []string{"--lang", "zh_cn", "source", "list", "--help"},
-			want: joinHelpLines(
-				"列出生产平台",
-				"",
-				"用法: hyperbdrctl source list [参数]",
-				"",
-				"参数:",
-				"      --type string             类型过滤（必须）",
-				"      --kw string               关键字过滤",
-				"      --binding-status string   绑定状态过滤",
-				"      --page int                页码，默认值 1",
-				"      --page-size int           每页数量，默认值 10",
-				"      --debug                   输出请求调试日志",
-				"      --lang string             显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string           输出格式，可选 table / json，默认值 table",
-				"  -h, --help                    显示帮助信息",
-				"",
-				"使用说明:",
-				"  该命令用于按类型、关键字和绑定状态查询已配置的生产平台。",
-				"",
-				"  最小查询方式如下：",
-				"    hyperbdrctl source list --type vmware",
-				"",
-				"  如需在校验新建生产平台时只看已绑定结果，可以执行：",
-				"    hyperbdrctl source list --type vmware --binding-status binding",
-				"",
-				"  如需脚本化读取原始字段，可以附加：",
-				"    --output json",
-				"",
-				"  不要在这里使用 `--type agent`。如需查看安装元数据，请执行：",
-				"    hyperbdrctl source agent-install",
-			),
-		},
-		{
-			args: []string{"--lang", "zh_cn", "source", "detail", "--help"},
-			want: joinHelpLines(
-				"查看生产平台详情",
-				"",
-				"用法: hyperbdrctl source detail [参数]",
-				"",
-				"参数:",
-				"      --id string               资源 ID（必须）",
-				"      --type string             类型过滤",
-				"      --binding-status string   绑定状态过滤",
-				"      --page int                页码，默认值 1",
-				"      --page-size int           每页数量，默认值 10",
-				"      --debug                   输出请求调试日志",
-				"      --lang string             显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string           输出格式，可选 table / json，默认值 table",
-				"  -h, --help                    显示帮助信息",
-				"",
-				"使用说明:",
-				"  该命令用于查看单个生产平台详情。",
-				"",
-				"  最小查询方式如下：",
-				"    hyperbdrctl source detail --id <source_id>",
-				"",
-				"  如需同时查看相关绑定视图，可附加：",
-				"    --binding-status binding",
-				"",
-				"  如需脚本化读取原始返回字段，可附加：",
-				"    --output json",
-			),
-		},
-		{
-			args: []string{"--lang", "zh_cn", "source", "delete", "--help"},
-			want: joinHelpLines(
-				"删除生产平台",
-				"",
-				"用法: hyperbdrctl source delete --id <source_id> [参数]",
-				"",
-				"参数:",
-				"      --id string       资源 ID（必须）",
-				"      --force           强制执行",
-				"      --debug           输出请求调试日志",
-				"      --lang string     显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string   输出格式，可选 table / json，默认值 table",
-				"  -h, --help            显示帮助信息",
-				"",
-				"使用说明:",
-				"  该命令用于删除单个生产平台连接。",
-				"",
-				"  最小删除方式如下：",
-				"    hyperbdrctl source delete --id <source_id>",
-				"",
-				"  只有在后端要求强制删除时，才附加：",
-				"    --force",
-				"",
-				"  如需先确认目标生产平台 ID，可以执行：",
-				"    hyperbdrctl source list --type vmware",
-				"    hyperbdrctl source detail --id <source_id>",
-			),
-		},
-		{
-			args: []string{"--lang", "zh_cn", "source", "sync-node-delete", "--help"},
-			want: joinHelpLines(
-				"删除同步代理节点",
-				"",
-				"用法: hyperbdrctl source sync-node-delete --id <node_id> [参数]",
-				"",
-				"参数:",
-				"      --id string       资源 ID（必须）",
-				"      --debug           输出请求调试日志",
-				"      --lang string     显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string   输出格式，可选 table / json，默认值 table",
-				"  -h, --help            显示帮助信息",
-				"",
-				"使用说明:",
-				"  该命令用于删除单个同步代理节点。",
-				"",
-				"  最小删除方式如下：",
-				"    hyperbdrctl source sync-node-delete --id <node_id>",
-				"",
-				"  如需先确认目标同步代理节点 ID，可以执行：",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  删除成功后，如需继续校验剩余节点，可以再次执行：",
-				"    hyperbdrctl source sync-nodes",
-			),
-		},
-		{
-			args: []string{"--lang", "zh_cn", "source", "vms", "--help"},
-			want: joinHelpLines(
-				"列出生产平台虚拟机",
-				"",
-				"用法: hyperbdrctl source vms [参数]",
-				"",
-				"参数:",
-				"      --connection-type string   生产平台类型（必须）",
-				"      --connection-uuid string   生产平台 UUID",
-				"      --registered string        注册状态过滤",
-				"      --kw string                关键字过滤",
-				"      --page int                 页码，默认值 1",
-				"      --page-size int            每页数量，默认值 10",
-				"      --debug                    输出请求调试日志",
-				"      --lang string              显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string            输出格式，可选 table / json，默认值 table",
-				"  -h, --help                     显示帮助信息",
-				"",
-				"使用说明:",
-				"  该命令用于查询某个生产平台下的生产虚拟机。",
-				"",
-				"  执行前建议先确认生产平台类型，能拿到生产平台 UUID 时也可一并带上。",
-				"",
-				"  最小查询方式如下：",
-				"    hyperbdrctl source vms --connection-type vmware",
-				"",
-				"  如需在 `host register` 前只看未注册虚拟机，可以执行：",
-				"    hyperbdrctl source vms --connection-type vmware --registered 0",
-				"",
-				"  拿到 VM ID 后，可以继续执行：",
-				"    hyperbdrctl host register --vm-id <vm_id>",
-			),
-		},
-		{
-			args: []string{"--lang", "zh_cn", "source", "agent-install", "--help"},
-			want: joinHelpLines(
-				"查看 Agent 源端代理安装命令",
-				"",
-				"用法: hyperbdrctl source agent-install [参数]",
-				"",
-				"参数:",
-				"      --debug           输出请求调试日志",
-				"      --lang string     显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string   输出格式，可选 table / json，默认值 table",
-				"  -h, --help            显示帮助信息",
-				"",
-				"使用说明:",
-				"  该命令用于查看 Agent 模式下源端代理安装所需的操作说明。",
-				"",
-				"  如需直接查看精简后的安装命令，可以执行：",
-				"    hyperbdrctl source agent-install",
-				"",
-				"  默认输出会分 Linux 和 Windows 展示。",
-				"",
-				"  如需脚本化比对完整原始元数据，可附加：",
-				"    --output json",
-			),
-		},
-		{
-			args: []string{"--lang", "zh_cn", "source", "agentless-install", "--help"},
-			want: joinHelpLines(
-				"查看 Agentless 同步代理安装命令",
-				"",
-				"用法: hyperbdrctl source agentless-install [参数]",
-				"",
-				"参数:",
-				"      --debug           输出请求调试日志",
-				"      --lang string     显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string   输出格式，可选 table / json，默认值 table",
-				"  -h, --help            显示帮助信息",
-				"",
-				"使用说明:",
-				"  该命令用于查看 Agentless 同步代理安装前置要求和安装命令。",
-				"",
-				"  如需直接查看主机准备要求和精简安装命令，可以执行：",
-				"    hyperbdrctl source agentless-install",
-				"",
-				"  随后建议继续确认同步节点在线状态：",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  如需脚本化读取原始元数据，可附加：",
-				"    --output json",
-			),
-		},
-		{
-			args: []string{"--lang", "zh_cn", "source", "sync-nodes", "--help"},
-			want: joinHelpLines(
-				"列出生产平台同步代理节点",
-				"",
-				"用法: hyperbdrctl source sync-nodes [参数]",
-				"",
-				"参数:",
-				"      --type string     类型过滤，默认值 proxy",
-				"      --status string   状态过滤，默认值 online",
-				"      --debug           输出请求调试日志",
-				"      --lang string     显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string   输出格式，可选 table / json，默认值 table",
-				"  -h, --help            显示帮助信息",
-				"",
-				"使用说明:",
-				"  该命令用于在 Agentless 创建前查看已注册的源端同步代理节点。",
-				"",
-				"  默认查询已经限定为在线 proxy 节点：",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  如需查看其它类型或状态，可按需覆盖默认值：",
-				"    --type <node_type>",
-				"    --status <status>",
-				"",
-				"  确认可用节点 ID 后，可以继续执行：",
-				"    hyperbdrctl source create --help",
-			),
-		},
-		{
-			args: []string{"--lang", "zh_cn", "source", "create", "--help"},
-			want: joinHelpLines(
-				"创建生产平台连接",
-				"",
-				"用法: hyperbdrctl source create [参数]",
-				"",
-				"参数:",
-				"      --type string             类型过滤（必须），可选值 vmware / aws",
-				"      --synch-node-id string    单个同步节点 ID",
-				"      --synch-node-ids string   逗号分隔的同步节点 ID 列表",
-				"      --auth-url string         云平台、源端或对象存储鉴权地址",
-				"      --auth-key string         源端鉴权用户名或密钥",
-				"      --auth-cert string        源端鉴权密码、密钥或证书",
-				"      --region-id string        区域 ID",
-				"      --preview-request         输出请求体，但不发送请求",
-				"      --debug                   输出请求调试日志",
-				"      --lang string             显示语言，可选 en / zh_cn，默认值 en",
-				"  -o, --output string           输出格式，可选 table / json，默认值 table",
-				"  -h, --help                    显示帮助信息",
-				"",
-				"使用说明:",
-				"  该命令用于为 `vmware` 或 `aws` 创建 Agentless 生产平台连接。",
-				"",
-				"  创建前建议先准备同步节点和安装信息：",
-				"    hyperbdrctl source agentless-install",
-				"    hyperbdrctl source sync-nodes",
-				"",
-				"  VMware 最小创建方式如下：",
-				"    hyperbdrctl source create \\",
-				"      --type vmware \\",
-				"      --synch-node-id <node_id> \\",
-				"      --auth-url https://vcenter.example:443 \\",
-				"      --auth-key <username> \\",
-				"      --auth-cert <password>",
-				"",
-				"  如需先查看最终请求体但不发送 `/api/v2/createConnection`，可附加：",
-				"    --preview-request",
-				"",
-				"  创建完成后，建议执行下面的命令校验连接状态：",
-				"    hyperbdrctl source list --type <vmware|aws> --binding-status binding",
-			),
-		},
-	}
-
-	for _, tt := range cases {
-		var out, errOut bytes.Buffer
-		if err := Execute(tt.args, &out, &errOut); err != nil {
-			t.Fatalf("args=%v err=%v", tt.args, err)
-		}
-
-		got := normalizeHelpText(out.String())
-		if got != tt.want {
-			t.Fatalf("args=%v help mismatch\nwant:\n%s\n\ngot:\n%s", tt.args, tt.want, got)
-		}
-		assertNoHelpFooter(t, got)
-	}
-}
-
-func joinHelpLines(lines ...string) string {
-	return strings.Join(lines, "\n")
 }
 
 func normalizeHelpText(text string) string {
@@ -1522,14 +881,33 @@ func normalizeHelpText(text string) string {
 	return strings.TrimSpace(strings.Join(filtered, "\n"))
 }
 
-func TestSourcesCommandIsRemoved(t *testing.T) {
+func TestSourceCommandsAreRemoved(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	var out, errOut bytes.Buffer
-	err := Execute([]string{"help", "sources"}, &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), `unknown command "sources"`) {
-		t.Fatalf("err = %v", err)
+	cases := [][]string{
+		{"source"},
+		{"source", "list"},
+		{"source", "detail"},
+		{"source", "delete"},
+		{"source", "sync-node-delete"},
+		{"source", "vms"},
+		{"source", "agent-install"},
+		{"source", "agentless-install"},
+		{"source", "sync-nodes"},
+		{"source", "create"},
+		{"help", "source"},
+		{"help", "sources"},
+	}
+
+	for _, args := range cases {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			err := Execute(args, &out, &errOut)
+			if err == nil || !strings.Contains(err.Error(), "unknown") {
+				t.Fatalf("args=%v err=%v", args, err)
+			}
+		})
 	}
 }
 

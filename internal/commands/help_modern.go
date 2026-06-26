@@ -482,14 +482,14 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "lang"},
 			{name: "output"},
 		}
-	case "hyperbdrctl source":
+	case "hyperbdrctl production-site":
 		return []flagHelpSpec{
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl source list":
+	case "hyperbdrctl production-site list":
 		return []flagHelpSpec{
 			{name: "type", required: true},
 			{name: "kw"},
@@ -501,7 +501,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl source detail":
+	case "hyperbdrctl production-site detail":
 		return []flagHelpSpec{
 			{name: "id", required: true},
 			{name: "type"},
@@ -513,7 +513,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl source delete":
+	case "hyperbdrctl production-site delete":
 		return []flagHelpSpec{
 			{name: "id", required: true},
 			{name: "force"},
@@ -522,15 +522,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl source sync-node-delete":
-		return []flagHelpSpec{
-			{name: "id", required: true},
-			{name: "debug"},
-			{name: "lang"},
-			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
-			{name: "help"},
-		}
-	case "hyperbdrctl source vms":
+	case "hyperbdrctl production-site vm-list":
 		return []flagHelpSpec{
 			{name: "connection-type", required: true},
 			{name: "connection-uuid"},
@@ -543,21 +535,35 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl source agent-install":
+	case "hyperbdrctl agent":
 		return []flagHelpSpec{
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl source agentless-install":
+	case "hyperbdrctl agent install":
 		return []flagHelpSpec{
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl source sync-nodes":
+	case "hyperbdrctl sync-proxy":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl sync-proxy install":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl sync-proxy list":
 		return []flagHelpSpec{
 			{name: "type", defaultValue: "proxy"},
 			{name: "status", defaultValue: "online"},
@@ -566,7 +572,15 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl source create":
+	case "hyperbdrctl sync-proxy delete":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl production-site create":
 		return []flagHelpSpec{
 			{name: "type", required: true, choices: []string{"vmware", "aws"}},
 			{name: "synch-node-id"},

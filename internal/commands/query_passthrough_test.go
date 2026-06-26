@@ -15,12 +15,12 @@ func TestGetCommandsPassUnknownFlagsAsQuery(t *testing.T) {
 		args []string
 		path string
 	}{
-		{name: "source list", args: []string{"source", "list", "--type", "vmware", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
-		{name: "source detail", args: []string{"source", "detail", "--id", "conn-1", "--custom-step", "3"}, path: "/api/v2/getConnectionDetail"},
-		{name: "source vms", args: []string{"source", "vms", "--connection-type", "vmware", "--connection-uuid", "conn-1", "--custom-step", "3"}, path: "/hypermotion/v1/sources/vms"},
-		{name: "source agent-install", args: []string{"source", "agent-install", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
-		{name: "source agentless-install", args: []string{"source", "agentless-install", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
-		{name: "source sync-nodes", args: []string{"source", "sync-nodes", "--custom-step", "3"}, path: "/hypermotion/v1/synch_nodes"},
+		{name: "production-site list", args: []string{"production-site", "list", "--type", "vmware", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
+		{name: "production-site detail", args: []string{"production-site", "detail", "--id", "conn-1", "--custom-step", "3"}, path: "/api/v2/getConnectionDetail"},
+		{name: "production-site vm-list", args: []string{"production-site", "vm-list", "--connection-type", "vmware", "--connection-uuid", "conn-1", "--custom-step", "3"}, path: "/hypermotion/v1/sources/vms"},
+		{name: "agent install", args: []string{"agent", "install", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
+		{name: "sync-proxy install", args: []string{"sync-proxy", "install", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
+		{name: "sync-proxy list", args: []string{"sync-proxy", "list", "--custom-step", "3"}, path: "/hypermotion/v1/synch_nodes"},
 		{name: "target account list", args: []string{"target", "account", "list", "--custom-step", "3"}, path: "/api/v2/getCloudAccounts"},
 		{name: "target account detail", args: []string{"target", "account", "detail", "--id", "account-1", "--custom-step", "3"}, path: "/hypermotion/v1/cloud_accounts/account-1"},
 		{name: "target cloud-sync-gateway list", args: []string{"target", "cloud-sync-gateway", "list", "--custom-step", "3"}, path: "/api/v2/getStorages"},

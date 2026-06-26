@@ -29,7 +29,9 @@ func newRootCommand(ctx *context) *cobra.Command {
 		newConfigCommand(ctx),
 		newHostCommand(ctx),
 		newTopLevelBootConfigCommand(ctx),
-		newSourcesCommand(ctx),
+		newProductionSiteCommand(ctx),
+		newAgentCommand(ctx),
+		newSyncProxyCommand(ctx),
 		newLicensesCommand(ctx),
 		newTargetCommand(ctx),
 	)
@@ -164,13 +166,13 @@ func newConfigCommand(ctx *context) *cobra.Command {
 	return cmd
 }
 
-func newSourcesCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "source", "cmd.sources.short", "cmd.sources.long", "cmd.sources.examples", "cmd.sources.notes", "source")
+func newProductionSiteCommand(ctx *context) *cobra.Command {
+	cmd := newGroupCommand(ctx, "production-site", "cmd.production_site.short", "cmd.production_site.long", "cmd.production_site.examples", "cmd.production_site.notes", "production-site")
 	addHelpLayout(cmd, helpLayoutGroup)
-	addUsageLine(cmd, ctx, "cmd.sources.usage_line")
-	addUsageNotes(cmd, ctx, "cmd.sources.usage_notes")
+	addUsageLine(cmd, ctx, "cmd.production_site.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.production_site.usage_notes")
 	cmd.AddCommand(
-		newRawLeafCommand(ctx, "list", "cmd.sources.list.short", "cmd.sources.list.long", "cmd.sources.list.examples", "cmd.sources.list.notes", func(cmd *cobra.Command) {
+		newRawLeafCommand(ctx, "list", "cmd.production_site.list.short", "cmd.production_site.list.long", "cmd.production_site.list.examples", "cmd.production_site.list.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "type")
 			addFlagString(cmd, ctx, "kw")
 			addFlagString(cmd, ctx, "binding-status")
@@ -179,7 +181,7 @@ func newSourcesCommand(ctx *context) *cobra.Command {
 		}, func(args []string) error {
 			return runSources(ctx, append([]string{"list"}, args...))
 		}),
-		newRawLeafCommand(ctx, "detail", "cmd.sources.detail.short", "cmd.sources.detail.long", "cmd.sources.detail.examples", "cmd.sources.detail.notes", func(cmd *cobra.Command) {
+		newRawLeafCommand(ctx, "detail", "cmd.production_site.detail.short", "cmd.production_site.detail.long", "cmd.production_site.detail.examples", "cmd.production_site.detail.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "id")
 			addFlagString(cmd, ctx, "type")
 			addFlagString(cmd, ctx, "binding-status")
@@ -188,18 +190,13 @@ func newSourcesCommand(ctx *context) *cobra.Command {
 		}, func(args []string) error {
 			return runSources(ctx, append([]string{"detail"}, args...))
 		}),
-		newRawLeafCommand(ctx, "delete", "cmd.sources.delete.short", "cmd.sources.delete.long", "cmd.sources.delete.examples", "cmd.sources.delete.notes", func(cmd *cobra.Command) {
+		newRawLeafCommand(ctx, "delete", "cmd.production_site.delete.short", "cmd.production_site.delete.long", "cmd.production_site.delete.examples", "cmd.production_site.delete.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "id")
 			addFlagBool(cmd, ctx, "force")
 		}, func(args []string) error {
 			return runSources(ctx, append([]string{"delete"}, args...))
 		}),
-		newRawLeafCommand(ctx, "sync-node-delete", "cmd.sources.sync_node_delete.short", "cmd.sources.sync_node_delete.long", "cmd.sources.sync_node_delete.examples", "cmd.sources.sync_node_delete.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "id")
-		}, func(args []string) error {
-			return runSources(ctx, append([]string{"sync-node-delete"}, args...))
-		}),
-		newRawLeafCommand(ctx, "vms", "cmd.sources.vms.short", "cmd.sources.vms.long", "cmd.sources.vms.examples", "cmd.sources.vms.notes", func(cmd *cobra.Command) {
+		newRawLeafCommand(ctx, "vm-list", "cmd.production_site.vm_list.short", "cmd.production_site.vm_list.long", "cmd.production_site.vm_list.examples", "cmd.production_site.vm_list.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "connection-type")
 			addFlagString(cmd, ctx, "connection-uuid")
 			addFlagString(cmd, ctx, "registered")
@@ -209,21 +206,9 @@ func newSourcesCommand(ctx *context) *cobra.Command {
 		}, func(args []string) error {
 			return runSources(ctx, append([]string{"vms"}, args...))
 		}),
-		newRawLeafCommand(ctx, "agent-install", "cmd.sources.agent_install.short", "cmd.sources.agent_install.long", "cmd.sources.agent_install.examples", "cmd.sources.agent_install.notes", nil, func(args []string) error {
-			return runSources(ctx, append([]string{"agent-install"}, args...))
-		}),
-		newRawLeafCommand(ctx, "agentless-install", "cmd.sources.agentless_install.short", "cmd.sources.agentless_install.long", "cmd.sources.agentless_install.examples", "cmd.sources.agentless_install.notes", nil, func(args []string) error {
-			return runSources(ctx, append([]string{"agentless-install"}, args...))
-		}),
-		newRawLeafCommand(ctx, "sync-nodes", "cmd.sources.sync_nodes.short", "cmd.sources.sync_nodes.long", "cmd.sources.sync_nodes.examples", "cmd.sources.sync_nodes.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "type")
-			addFlagString(cmd, ctx, "status")
-		}, func(args []string) error {
-			return runSources(ctx, append([]string{"sync-nodes"}, args...))
-		}),
 	)
 
-	createCmd := newRawLeafCommand(ctx, "create", "cmd.sources.create.short", "cmd.sources.create.long", "cmd.sources.create.examples", "cmd.sources.create.notes", func(cmd *cobra.Command) {
+	createCmd := newRawLeafCommand(ctx, "create", "cmd.production_site.create.short", "cmd.production_site.create.long", "cmd.production_site.create.examples", "cmd.production_site.create.notes", func(cmd *cobra.Command) {
 		for _, name := range []string{"type", "synch-node-id", "synch-node-ids", "auth-url", "auth-key", "auth-cert", "region-id"} {
 			addFlagString(cmd, ctx, name)
 		}
@@ -234,11 +219,59 @@ func newSourcesCommand(ctx *context) *cobra.Command {
 	cmd.AddCommand(createCmd)
 	for _, child := range cmd.Commands() {
 		addHelpLayout(child, helpLayoutFourSection)
-		addUsageLine(child, ctx, "cmd.sources."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_line")
-		addUsageNotes(child, ctx, "cmd.sources."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_notes")
+		addUsageLine(child, ctx, "cmd.production_site."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_line")
+		addUsageNotes(child, ctx, "cmd.production_site."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_notes")
 		switch child.Name() {
-		case "create", "sync-nodes", "vms":
-			addHelpDescription(child, ctx, "cmd.sources."+strings.ReplaceAll(child.Name(), "-", "_")+".help_title")
+		case "create", "vm-list":
+			addHelpDescription(child, ctx, "cmd.production_site."+strings.ReplaceAll(child.Name(), "-", "_")+".help_title")
+		}
+	}
+	return cmd
+}
+
+func newAgentCommand(ctx *context) *cobra.Command {
+	cmd := newGroupCommand(ctx, "agent", "cmd.agent.short", "cmd.agent.long", "cmd.agent.examples", "cmd.agent.notes", "agent")
+	addHelpLayout(cmd, helpLayoutGroup)
+	addUsageLine(cmd, ctx, "cmd.agent.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.agent.usage_notes")
+	installCmd := newRawLeafCommand(ctx, "install", "cmd.agent.install.short", "cmd.agent.install.long", "cmd.agent.install.examples", "cmd.agent.install.notes", nil, func(args []string) error {
+		return runSources(ctx, append([]string{"agent-install"}, args...))
+	})
+	addHelpLayout(installCmd, helpLayoutFourSection)
+	addUsageLine(installCmd, ctx, "cmd.agent.install.usage_line")
+	addUsageNotes(installCmd, ctx, "cmd.agent.install.usage_notes")
+	cmd.AddCommand(installCmd)
+	return cmd
+}
+
+func newSyncProxyCommand(ctx *context) *cobra.Command {
+	cmd := newGroupCommand(ctx, "sync-proxy", "cmd.sync_proxy.short", "cmd.sync_proxy.long", "cmd.sync_proxy.examples", "cmd.sync_proxy.notes", "sync-proxy")
+	addHelpLayout(cmd, helpLayoutGroup)
+	addUsageLine(cmd, ctx, "cmd.sync_proxy.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.sync_proxy.usage_notes")
+	cmd.AddCommand(
+		newRawLeafCommand(ctx, "install", "cmd.sync_proxy.install.short", "cmd.sync_proxy.install.long", "cmd.sync_proxy.install.examples", "cmd.sync_proxy.install.notes", nil, func(args []string) error {
+			return runSources(ctx, append([]string{"agentless-install"}, args...))
+		}),
+		newRawLeafCommand(ctx, "list", "cmd.sync_proxy.list.short", "cmd.sync_proxy.list.long", "cmd.sync_proxy.list.examples", "cmd.sync_proxy.list.notes", func(cmd *cobra.Command) {
+			addFlagString(cmd, ctx, "type")
+			addFlagString(cmd, ctx, "status")
+		}, func(args []string) error {
+			return runSources(ctx, append([]string{"sync-nodes"}, args...))
+		}),
+		newRawLeafCommand(ctx, "delete", "cmd.sync_proxy.delete.short", "cmd.sync_proxy.delete.long", "cmd.sync_proxy.delete.examples", "cmd.sync_proxy.delete.notes", func(cmd *cobra.Command) {
+			addFlagString(cmd, ctx, "id")
+		}, func(args []string) error {
+			return runSources(ctx, append([]string{"sync-node-delete"}, args...))
+		}),
+	)
+	for _, child := range cmd.Commands() {
+		addHelpLayout(child, helpLayoutFourSection)
+		addUsageLine(child, ctx, "cmd.sync_proxy."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_line")
+		addUsageNotes(child, ctx, "cmd.sync_proxy."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_notes")
+		switch child.Name() {
+		case "list":
+			addHelpDescription(child, ctx, "cmd.sync_proxy.list.help_title")
 		}
 	}
 	return cmd

@@ -51,10 +51,12 @@ func TestUsageIsLocalized(t *testing.T) {
 	if !strings.Contains(out.String(), "license") {
 		t.Fatalf("usage missing license = %q", out.String())
 	}
-	if !strings.Contains(out.String(), "source") {
-		t.Fatalf("usage missing source = %q", out.String())
+	for _, visible := range []string{"production-site", "agent", "sync-proxy"} {
+		if !strings.Contains(out.String(), visible) {
+			t.Fatalf("usage missing %s = %q", visible, out.String())
+		}
 	}
-	for _, hidden := range []string{"\n  api", "\n  batch-boot-config", "\n  boot-config-wizard", "\n  tasks", "\n  upgrade"} {
+	for _, hidden := range []string{"\n  api", "\n  batch-boot-config", "\n  boot-config-wizard", "\n  tasks", "\n  upgrade", "\n  source "} {
 		if strings.Contains(text, hidden) {
 			t.Fatalf("usage should hide %q = %q", hidden, text)
 		}
