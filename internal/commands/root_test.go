@@ -73,17 +73,6 @@ func TestUsageIsLocalized(t *testing.T) {
 	}
 }
 
-func TestTopLevelAPIIsRouted(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	err := Execute([]string{"api", "request"}, &out, &errOut)
-	if err == nil || err.Error() != "path is required" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
 func TestTopLevelBootConfigIsRouted(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -106,41 +95,24 @@ func TestTopLevelBootConfigWizardIsRemoved(t *testing.T) {
 	}
 }
 
-func TestTopLevelBootConfigCLIIsRouted(t *testing.T) {
+func TestRemovedHiddenTopLevelCommandsAreUnavailable(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "boot-config-cli"), &out, &errOut)
-	if err == nil || err.Error() != "boot-config-cli requires subcommand" {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestHiddenTopLevelCommandHelpRemainsAvailable(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	cases := []struct {
-		args []string
-		want []string
-	}{
-		{args: []string{"help", "api"}, want: []string{"Usage:", "request"}},
-		{args: []string{"help", "tasks"}, want: []string{"Usage:", "list", "steps"}},
-		{args: []string{"help", "upgrade"}, want: []string{"Usage:", "host"}},
-	}
-
-	for _, tc := range cases {
-		var out, errOut bytes.Buffer
-		if err := Execute(tc.args, &out, &errOut); err != nil {
-			t.Fatalf("args=%v err=%v", tc.args, err)
-		}
-		text := out.String()
-		for _, want := range tc.want {
-			if !strings.Contains(text, want) {
-				t.Fatalf("args=%v help missing %q: %q", tc.args, want, text)
+	for _, args := range [][]string{
+		{"api"},
+		{"boot-config-cli"},
+		{"batch-boot-config"},
+		{"tasks"},
+		{"upgrade"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			err := Execute(withHost(t, "https://example.invalid", args...), &out, &errOut)
+			if err == nil || !strings.Contains(err.Error(), "unknown") || !strings.Contains(err.Error(), args[0]) {
+				t.Fatalf("err = %v", err)
 			}
-		}
+		})
 	}
 }
 
@@ -148,10 +120,14 @@ func TestRemovedTopLevelCommandHelpIsUnavailable(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	var out, errOut bytes.Buffer
-	err := Execute([]string{"help", "boot-config-wizard"}, &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), "unknown") || !strings.Contains(err.Error(), "boot-config-wizard") {
-		t.Fatalf("err = %v", err)
+	for _, name := range []string{"api", "boot-config-cli", "batch-boot-config", "tasks", "upgrade", "boot-config-wizard"} {
+		t.Run(name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			err := Execute([]string{"help", name}, &out, &errOut)
+			if err == nil || !strings.Contains(err.Error(), "unknown") || !strings.Contains(err.Error(), name) {
+				t.Fatalf("err = %v", err)
+			}
+		})
 	}
 }
 
@@ -217,20 +193,6 @@ func TestHostWaitHelpShowsCleanOperationChoice(t *testing.T) {
 		t.Fatalf("help should not mention legacy operation: %q", got)
 	}
 	assertNoHelpFooter(t, got)
-}
-
-func TestDeprecatedBootConfigCLIHelpShowsDeprecation(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	if err := Execute([]string{"help", "boot-config-cli"}, &out, &errOut); err != nil {
-		t.Fatal(err)
-	}
-	got := out.String()
-	if !strings.Contains(got, "Deprecated") || !strings.Contains(got, "boot-config apply") {
-		t.Fatalf("help = %q", got)
-	}
 }
 
 func TestFindListItemsFallback(t *testing.T) {

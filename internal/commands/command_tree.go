@@ -26,17 +26,12 @@ func newRootCommand(ctx *context) *cobra.Command {
 	addUsageNotes(root, ctx, "cmd.root.usage_notes")
 
 	root.AddCommand(
-		newAPICommand(ctx),
 		newConfigCommand(ctx),
 		newHostCommand(ctx),
 		newTopLevelBootConfigCommand(ctx),
-		newBootConfigCLIAliasCommand(ctx),
-		newBatchBootConfigCommand(ctx),
-		newTasksCommand(ctx),
 		newSourcesCommand(ctx),
 		newLicensesCommand(ctx),
 		newTargetCommand(ctx),
-		newUpgradeCommand(ctx),
 	)
 	configureBuiltinHelpArtifacts(root, ctx)
 	return root
@@ -126,22 +121,6 @@ func addNotes(cmd *cobra.Command, ctx *context, key string) {
 	cmd.Annotations[notesAnnotation] = notes
 }
 
-func newAPICommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "api", "cmd.api.short", "cmd.api.long", "cmd.api.examples", "cmd.api.notes", "api")
-	cmd.Hidden = true
-	cmd.AddCommand(newRawLeafCommand(ctx, "request", "cmd.api.request.short", "cmd.api.request.long", "cmd.api.request.examples", "cmd.api.request.notes", func(cmd *cobra.Command) {
-		addFlagString(cmd, ctx, "method")
-		addFlagString(cmd, ctx, "path")
-		addFlagString(cmd, ctx, "file")
-		addFlagString(cmd, ctx, "body")
-		addFlagString(cmd, ctx, "query")
-		addFlagString(cmd, ctx, "header")
-	}, func(args []string) error {
-		return runAPI(ctx, append([]string{"request"}, args...))
-	}))
-	return cmd
-}
-
 func newConfigCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "config", "cmd.config.short", "cmd.config.long", "cmd.config.examples", "cmd.config.notes", "config")
 	addHelpLayout(cmd, helpLayoutFourSection)
@@ -182,26 +161,6 @@ func newConfigCommand(ctx *context) *cobra.Command {
 	addRelatedCommands(setCmd, ctx, "cmd.config.set.related")
 	addNextSteps(setCmd, ctx, "cmd.config.set.next_steps")
 	cmd.AddCommand(setCmd)
-	return cmd
-}
-
-func newTasksCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "tasks", "cmd.tasks.short", "cmd.tasks.long", "cmd.tasks.examples", "cmd.tasks.notes", "tasks")
-	cmd.Hidden = true
-	cmd.AddCommand(
-		newRawLeafCommand(ctx, "list", "cmd.tasks.list.short", "cmd.tasks.list.long", "cmd.tasks.list.examples", "cmd.tasks.list.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "source-id")
-			addFlagInt(cmd, ctx, "page")
-			addFlagInt(cmd, ctx, "page-size")
-		}, func(args []string) error {
-			return runTasks(ctx, append([]string{"list"}, args...))
-		}),
-		newRawLeafCommand(ctx, "steps", "cmd.tasks.steps.short", "cmd.tasks.steps.long", "cmd.tasks.steps.examples", "cmd.tasks.steps.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "task-id")
-		}, func(args []string) error {
-			return runTasks(ctx, append([]string{"steps"}, args...))
-		}),
-	)
 	return cmd
 }
 
@@ -403,18 +362,6 @@ func newTargetCommand(ctx *context) *cobra.Command {
 		newTargetResourceCommand(ctx),
 		newTargetOSSCommand(ctx),
 	)
-	return cmd
-}
-
-func newUpgradeCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "upgrade", "cmd.upgrade.short", "cmd.upgrade.long", "cmd.upgrade.examples", "cmd.upgrade.notes", "upgrade")
-	cmd.Hidden = true
-	cmd.AddCommand(newRawLeafCommand(ctx, "host", "cmd.upgrade.host.short", "cmd.upgrade.host.long", "cmd.upgrade.host.examples", "cmd.upgrade.host.notes", func(cmd *cobra.Command) {
-		addFlagInt(cmd, ctx, "page")
-		addFlagInt(cmd, ctx, "page-size")
-	}, func(args []string) error {
-		return runUpgrade(ctx, append([]string{"host"}, args...))
-	}))
 	return cmd
 }
 

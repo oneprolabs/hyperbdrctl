@@ -176,7 +176,7 @@ func parseCloudAccountCreateRawArgs(args []string) (parsedCloudAccountCreateRawC
 		return parsedCloudAccountCreateRawCommand{}, err
 	}
 
-	body, err := apiRequestBody(*file, *inlineBody)
+	body, err := requestBodyFromInput(*file, *inlineBody)
 	if err != nil {
 		return parsedCloudAccountCreateRawCommand{}, err
 	}

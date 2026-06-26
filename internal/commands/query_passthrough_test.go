@@ -15,8 +15,6 @@ func TestGetCommandsPassUnknownFlagsAsQuery(t *testing.T) {
 		args []string
 		path string
 	}{
-		{name: "tasks list", args: []string{"tasks", "list", "--custom-step", "3"}, path: "/api/v2/getTasks"},
-		{name: "tasks steps", args: []string{"tasks", "steps", "--task-id", "task-1", "--custom-step", "3"}, path: "/hypermotion/v1/job/steps"},
 		{name: "source list", args: []string{"source", "list", "--type", "vmware", "--custom-step", "3"}, path: "/hypermotion/v1/sources"},
 		{name: "source detail", args: []string{"source", "detail", "--id", "conn-1", "--custom-step", "3"}, path: "/api/v2/getConnectionDetail"},
 		{name: "source vms", args: []string{"source", "vms", "--connection-type", "vmware", "--connection-uuid", "conn-1", "--custom-step", "3"}, path: "/hypermotion/v1/sources/vms"},
@@ -31,7 +29,6 @@ func TestGetCommandsPassUnknownFlagsAsQuery(t *testing.T) {
 		{name: "target oss detail", args: []string{"target", "oss", "detail", "--id", "storage-1", "--custom-step", "3"}, path: "/api/v2/getStorageDetailInfo"},
 		{name: "license list", args: []string{"license", "list", "--custom-step", "3"}, path: "/api/v2/getLicenses"},
 		{name: "license reg-code", args: []string{"license", "reg-code", "--custom-step", "3"}, path: "/api/v2/getLicenseRegCode"},
-		{name: "upgrade host", args: []string{"upgrade", "host", "--custom-step", "3"}, path: "/api/v2/getUpgradeHostList"},
 	}
 
 	for _, tt := range tests {

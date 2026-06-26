@@ -93,39 +93,3 @@ func newHostCommand(ctx *context) *cobra.Command {
 	}
 	return cmd
 }
-
-func newBootConfigCLIAliasCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "boot-config-cli", "cmd.boot_config_cli.short", "cmd.boot_config_cli.long", "cmd.boot_config_cli.examples", "cmd.boot_config_cli.notes", "boot-config-cli")
-	cmd.Deprecated = ctx.loc.T("cmd.boot_config_cli.deprecated")
-	cmd.Hidden = true
-	cmd.AddCommand(newRawLeafCommand(ctx, "apply", "cmd.boot_config.apply.short", "cmd.boot_config.apply.long", "cmd.boot_config.apply.examples", "cmd.boot_config.apply.notes", func(cmd *cobra.Command) {
-		addFlagString(cmd, ctx, "id")
-		addFlagString(cmd, ctx, "file")
-	}, func(args []string) error {
-		return runBootConfigCLI(ctx, append([]string{"apply"}, args...))
-	}))
-	return cmd
-}
-
-func newBatchBootConfigCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "batch-boot-config", "cmd.batch_boot_config.short", "cmd.batch_boot_config.long", "cmd.batch_boot_config.examples", "cmd.batch_boot_config.notes", "batch-boot-config")
-	cmd.Hidden = true
-	cmd.AddCommand(
-		newRawLeafCommand(ctx, "create", "cmd.batch_boot_config.create.short", "cmd.batch_boot_config.create.long", "cmd.batch_boot_config.create.examples", "cmd.batch_boot_config.create.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "file")
-		}, func(args []string) error {
-			return runBatchBootConfig(ctx, append([]string{"create"}, args...))
-		}),
-		newRawLeafCommand(ctx, "get", "cmd.batch_boot_config.get.short", "cmd.batch_boot_config.get.long", "cmd.batch_boot_config.get.examples", "cmd.batch_boot_config.get.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "ids")
-		}, func(args []string) error {
-			return runBatchBootConfig(ctx, append([]string{"get"}, args...))
-		}),
-		newRawLeafCommand(ctx, "update", "cmd.batch_boot_config.update.short", "cmd.batch_boot_config.update.long", "cmd.batch_boot_config.update.examples", "cmd.batch_boot_config.update.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "file")
-		}, func(args []string) error {
-			return runBatchBootConfig(ctx, append([]string{"update"}, args...))
-		}),
-	)
-	return cmd
-}
