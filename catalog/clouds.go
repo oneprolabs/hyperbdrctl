@@ -25,7 +25,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "阿里云(即将退役，不推荐)",
 		NameEn:       "Alibaba Cloud(Not Recommended)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "aliyun_bs_block",
@@ -43,7 +43,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "阿里云 专有云(v3.16.x)",
 		NameEn:       "Alibaba Cloud Apsara Stack(v3.16.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "apsara318_bs_block",
@@ -52,7 +52,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "阿里云 专有云(v3.18.x)",
 		NameEn:       "Alibaba Cloud Apsara Stack(v3.18.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "tencentcloud_block",
@@ -61,7 +61,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "腾讯云",
 		NameEn:       "Tencent Cloud",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "tce_bs_block",
@@ -70,7 +70,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "腾讯云 专有云企业版",
 		NameEn:       "Tencent Cloud Enterprise",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "tstackenterprise_block",
@@ -79,7 +79,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "腾讯云 TStack企业版",
 		NameEn:       "Tencent Cloud TStack Enterprise",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "tstack_block",
@@ -88,7 +88,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "腾讯云 TStack旗舰版",
 		NameEn:       "Tencent Cloud TStack Ultimate",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "huawei_bs_block",
@@ -115,7 +115,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "华为云 HCS Online(v23.3)",
 		NameEn:       "Huawei Cloud Stack Online(v23.3)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "hwfc80_block",
@@ -124,7 +124,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "华为云Stack(HCS)(v8.2.x / v8.3.x)",
 		NameEn:       "Huawei Cloud Stack(HCS)(v8.2.x / v8.3.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "hwfclegacy_block",
@@ -160,7 +160,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "AWS中国(SDK v1.34.93)",
 		NameEn:       "AWS China(SDK v1.34.93)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "aws_v2_bs_block",
@@ -169,7 +169,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "AWS(SDK v1.34.93)",
 		NameEn:       "AWS(SDK v1.34.93)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "azurecloud_block",
@@ -187,7 +187,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "Microsoft Azure(SDK v30.3)",
 		NameEn:       "Microsoft Azure(SDK v30.3)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "ucloudstack_bs_block",
@@ -196,7 +196,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "UCloudStack",
 		NameEn:       "UCloudStack",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "qcloud_block",
@@ -205,7 +205,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "青云",
 		NameEn:       "QingCloud",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "yidongecloud_block",
@@ -214,7 +214,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "移动云",
 		NameEn:       "ecloud",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "yidongjointcloud_block",
@@ -223,7 +223,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "移动和云",
 		NameEn:       "ecloud JC",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "esurfingcloud_bs_block",
@@ -232,7 +232,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "天翼云4.0",
 		NameEn:       "eSurfingCloud4.0",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "openstack_block",
@@ -250,7 +250,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "TM CAE",
 		NameEn:       "TM CAE",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "oracle_bs_block",
@@ -259,7 +259,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "甲骨文云(SDK v2.126.3)",
 		NameEn:       "Oracle Cloud(SDK v2.126.3)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "google_bs_block",
@@ -268,7 +268,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "Google Cloud(SDK v1.19.0)",
 		NameEn:       "Google Cloud(SDK v1.19.0)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "smartx_bs_block",
@@ -277,7 +277,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "SMTX OS(v6.x.x)",
 		NameEn:       "SMTX OS(v6.x.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "open_telekom_bs_block",
@@ -286,7 +286,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "Open Telekom Cloud(SDK v3.1.86)",
 		NameEn:       "Open Telekom Cloud(SDK v3.1.86)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "lvneng_bs_block",
@@ -295,7 +295,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "绿能云",
 		NameEn:       "GridCloud",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "zstack_block",
@@ -304,7 +304,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "ZStack(v4.x.x)",
 		NameEn:       "ZStack(v4.x.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "xhere_bs_block",
@@ -313,7 +313,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "XHERE(NeutonOS_3.x)",
 		NameEn:       "XHERE(NeutonOS_3.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "jinshancloud_block",
@@ -322,7 +322,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "金山云",
 		NameEn:       "Jinshan Cloud",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "fixo_bs_block",
@@ -331,7 +331,7 @@ var BlockClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "FiXo Cloud BS",
 		NameEn:       "FiXo Cloud BS",
-		Enabled:      true,
+		Enabled:      false,
 	},
 }
 
@@ -343,7 +343,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "阿里云(即将退役，不推荐)",
 		NameEn:       "Alibaba Cloud(Not Recommended)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "aliyun_obs_object",
@@ -361,7 +361,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "阿里云 专有云(v3.16.x)",
 		NameEn:       "Alibaba Cloud Apsara Stack(v3.16.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "apsara318_object",
@@ -370,7 +370,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "阿里云 专有云(v3.18.x)",
 		NameEn:       "Alibaba Cloud Apsara Stack(v3.18.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "tencent_obs_object",
@@ -379,7 +379,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "腾讯云",
 		NameEn:       "Tencent Cloud",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "tce_obs_object",
@@ -388,7 +388,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "腾讯云 专有云企业版",
 		NameEn:       "Tencent Cloud Enterprise",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "huawei_obs_object",
@@ -415,7 +415,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "华为云 HCS Online(v23.3)",
 		NameEn:       "Huawei Cloud Stack Online(v23.3)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "fusioncompute_obs_object",
@@ -424,7 +424,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "FusionCompute(v8.6.x)",
 		NameEn:       "FusionCompute(v8.6.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "volc_object",
@@ -433,7 +433,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "火山引擎",
 		NameEn:       "Volcengine",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "aws_cn_obs_object",
@@ -451,7 +451,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "AWS中国(SDK v1.34.93)",
 		NameEn:       "AWS China(SDK v1.34.93)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "aws_obs_object",
@@ -469,7 +469,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "AWS(SDK v1.34.93)",
 		NameEn:       "AWS(SDK v1.34.93)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "ucloud_object",
@@ -478,7 +478,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "UCloud",
 		NameEn:       "UCloud",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "yidongecloud_object",
@@ -487,7 +487,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "移动云",
 		NameEn:       "ecloud",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "ctyun_obs_object",
@@ -496,7 +496,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "天翼云合营云",
 		NameEn:       "ctyun JC",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "openstack_object",
@@ -514,7 +514,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "TM CAE",
 		NameEn:       "TM CAE",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "oracle_bs_object",
@@ -541,7 +541,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "Open Telekom Cloud(SDK v3.1.86)",
 		NameEn:       "Open Telekom Cloud(SDK v3.1.86)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "lvneng_obs_object",
@@ -559,7 +559,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: AtomyV2,
 		NameZhCN:     "VMware vCenter Server",
 		NameEn:       "VMware vCenter Server",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "xhere_object",
@@ -568,7 +568,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "XHERE(NeutonOS_3.x)",
 		NameEn:       "XHERE(NeutonOS_3.x)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "ens_object",
@@ -577,7 +577,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "GDS万国数据本地云",
 		NameEn:       "GDS",
-		Enabled:      true,
+		Enabled:      false,
 	},
 	{
 		Key:          "vmware_object",
@@ -586,7 +586,7 @@ var ObjectClouds = []CloudEntry{
 		Architecture: NotAtomy,
 		NameZhCN:     "VMware(即将退役，不推荐)",
 		NameEn:       "VMware(Not Recommended)",
-		Enabled:      true,
+		Enabled:      false,
 	},
 }
 
