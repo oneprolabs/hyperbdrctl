@@ -630,7 +630,12 @@ func findCloud(items []CloudEntry, value string) (CloudEntry, bool) {
 		return CloudEntry{}, false
 	}
 	for _, item := range items {
-		if matchesCloud(item, needle) {
+		if item.Enabled && normalizeValue(item.Provider) == needle {
+			return item, true
+		}
+	}
+	for _, item := range items {
+		if item.Enabled && matchesCloud(item, needle) {
 			return item, true
 		}
 	}

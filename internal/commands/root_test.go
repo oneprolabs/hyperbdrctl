@@ -441,8 +441,8 @@ func TestNonConfigHelpDoesNotShowFooter(t *testing.T) {
 	setUserDirs(t, dir)
 
 	cases := [][]string{
-		{"target", "account", "create", "--help"},
-		{"target", "account", "create-block", "aliyun", "--help"},
+		{"cloud-account", "create", "--help"},
+		{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block_storage", "--help"},
 	}
 
 	for _, args := range cases {

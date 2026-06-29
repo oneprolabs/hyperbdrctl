@@ -96,6 +96,9 @@ func rootFlagSpecs() []flagHelpSpec {
 
 func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	path := cmd.CommandPath()
+	if path == "hyperbdrctl cloud-account create" {
+		return cloudAccountCreateFlagSpecsForProfile(cmd.Annotations[cloudAccountCreateHelpProfileAnnotation])
+	}
 	switch {
 	case strings.HasPrefix(path, "hyperbdrctl boot-config fetch-block-resources "):
 		return bootConfigFetchProviderFlagSpecs()
@@ -626,6 +629,51 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl cloud-account":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl cloud-account list":
+		return []flagHelpSpec{
+			{name: "page", defaultValue: "1"},
+			{name: "page-size", defaultValue: "100"},
+			{name: "storage-type"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl cloud-account detail":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl cloud-account wait":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "interval-seconds", defaultValue: "60"},
+			{name: "timeout-seconds", defaultValue: "3600"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl cloud-account delete":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "storage-type"},
+			{name: "force", defaultValue: "false"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl target":
 		return []flagHelpSpec{
 			{name: "debug"},
@@ -979,6 +1027,163 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	default:
 		return nil
+	}
+}
+
+func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
+	switch profile {
+	case "block|aliyun":
+		return []flagHelpSpec{
+			{name: "cloud-type", required: true},
+			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "access-key-id", required: true},
+			{name: "access-key-secret", required: true},
+			{name: "region-id", required: true},
+			{name: "region-name"},
+			{name: "account-name"},
+			{name: "auth-region-id"},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "block|openstack":
+		return []flagHelpSpec{
+			{name: "cloud-type", required: true},
+			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "auth-url", required: true},
+			{name: "username", required: true},
+			{name: "password", required: true},
+			{name: "user-domain-id", required: true},
+			{name: "project-domain-id", required: true},
+			{name: "project-name", required: true},
+			{name: "region-name", required: true},
+			{name: "ssh-port", defaultValue: "22"},
+			{name: "ssh-pass"},
+			{name: "linux-hd-username"},
+			{name: "linux-hd-password"},
+			{name: "linux-hd-port", defaultValue: "10729"},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "objectstorage|aliyun":
+		return []flagHelpSpec{
+			{name: "cloud-type", required: true},
+			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "access-key-id", required: true},
+			{name: "access-key-secret", required: true},
+			{name: "region-id", required: true},
+			{name: "region-name"},
+			{name: "custom-name"},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
+			{name: "use-internal-ip"},
+			{name: "boot-loader-image-id"},
+			{name: "boot-loader-image-name"},
+			{name: "boot-loader-flavor-id"},
+			{name: "linux-boot-image-id"},
+			{name: "windows-boot-image-id"},
+			{name: "linux-uefi-boot-image-id"},
+			{name: "windows-uefi-boot-image-id"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "objectstorage|openstack":
+		return []flagHelpSpec{
+			{name: "cloud-type", required: true},
+			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "auth-url", required: true},
+			{name: "username", required: true},
+			{name: "password", required: true},
+			{name: "user-domain-id", required: true},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
+			{name: "project-domain-id"},
+			{name: "project-id"},
+			{name: "project-name"},
+			{name: "region-id"},
+			{name: "region-name"},
+			{name: "boot-loader-image-id"},
+			{name: "boot-loader-image-name"},
+			{name: "disk-bus-type-id"},
+			{name: "disk-bus-type-name"},
+			{name: "custom-name"},
+			{name: "use-internal-ip"},
+			{name: "linux-boot-image-id"},
+			{name: "windows-boot-image-id"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "block_storage", "object_storage":
+		return []flagHelpSpec{
+			{name: "cloud-type"},
+			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "generic", "":
+		return []flagHelpSpec{
+			{name: "cloud-type"},
+			{name: "storage-type", choices: []string{"block_storage", "object_storage"}},
+			{name: "file"},
+			{name: "body"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	default:
+		if strings.HasPrefix(profile, "block|") {
+			return []flagHelpSpec{
+				{name: "cloud-type", required: true},
+				{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+				{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
+				{name: "account-name"},
+				{name: "file"},
+				{name: "set"},
+				{name: "set-json"},
+				{name: "preview-request"},
+				{name: "debug"},
+				{name: "lang"},
+				{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+				{name: "help"},
+			}
+		}
+		return []flagHelpSpec{
+			{name: "cloud-type", required: true},
+			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
+			{name: "custom-name"},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	}
 }
 

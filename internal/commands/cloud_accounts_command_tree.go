@@ -10,27 +10,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newCloudAccountsCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "account", "cmd.target.account.short", "cmd.target.account.long", "cmd.target.account.examples", "cmd.target.account.notes", "target account")
+func newCloudAccountCommand(ctx *context) *cobra.Command {
+	cmd := newGroupCommand(ctx, "cloud-account", "cmd.cloud_account.short", "cmd.cloud_account.long", "cmd.cloud_account.examples", "cmd.cloud_account.notes", "cloud-account")
 	addHelpLayout(cmd, helpLayoutGroup)
-	addUsageLine(cmd, ctx, "cmd.target.account.usage_line")
-	addUsageNotes(cmd, ctx, "cmd.target.account.usage_notes")
+	addUsageLine(cmd, ctx, "cmd.cloud_account.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.cloud_account.usage_notes")
 
 	listCmd := newRawLeafCommand(ctx, "list", "cmd.cloud_accounts.list.short", "cmd.cloud_accounts.list.long", "cmd.cloud_accounts.list.examples", "cmd.cloud_accounts.list.notes", func(cmd *cobra.Command) {
 		addFlagInt(cmd, ctx, "page")
 		addFlagInt(cmd, ctx, "page-size")
 		addFlagString(cmd, ctx, "storage-type")
 	}, func(args []string) error {
-		return runTargetAccounts(ctx, append([]string{"list"}, args...))
+		return runCloudAccounts(ctx, append([]string{"list"}, args...))
 	})
-	configureTargetAccountLeafHelp(listCmd, ctx, "cmd.target.account.list.usage_line", "cmd.target.account.list.usage_notes")
+	configureTargetAccountLeafHelp(listCmd, ctx, "cmd.cloud_account.list.usage_line", "cmd.cloud_account.list.usage_notes")
 
 	detailCmd := newRawLeafCommand(ctx, "detail", "cmd.cloud_accounts.detail.short", "cmd.cloud_accounts.detail.long", "cmd.cloud_accounts.detail.examples", "cmd.cloud_accounts.detail.notes", func(cmd *cobra.Command) {
 		addFlagString(cmd, ctx, "id")
 	}, func(args []string) error {
-		return runTargetAccounts(ctx, append([]string{"detail"}, args...))
+		return runCloudAccounts(ctx, append([]string{"detail"}, args...))
 	})
-	configureTargetAccountLeafHelp(detailCmd, ctx, "cmd.target.account.detail.usage_line", "cmd.target.account.detail.usage_notes")
+	configureTargetAccountLeafHelp(detailCmd, ctx, "cmd.cloud_account.detail.usage_line", "cmd.cloud_account.detail.usage_notes")
 
 	waitCmd := newRawLeafCommand(ctx, "wait", "cmd.cloud_accounts.wait.short", "cmd.cloud_accounts.wait.long", "cmd.cloud_accounts.wait.examples", "cmd.cloud_accounts.wait.notes", func(cmd *cobra.Command) {
 		addFlagString(cmd, ctx, "id")
@@ -39,44 +39,31 @@ func newCloudAccountsCommand(ctx *context) *cobra.Command {
 	}, func(args []string) error {
 		return runTargetAccountWait(ctx, args)
 	})
-	configureTargetAccountLeafHelp(waitCmd, ctx, "cmd.target.account.wait.usage_line", "cmd.target.account.wait.usage_notes")
+	configureTargetAccountLeafHelp(waitCmd, ctx, "cmd.cloud_account.wait.usage_line", "cmd.cloud_account.wait.usage_notes")
 
-	createCmd := newCloudAccountsCreateCommand(ctx)
-	configureTargetAccountLeafHelp(createCmd, ctx, "cmd.target.account.create.usage_line", "cmd.target.account.create.usage_notes")
-
-	createBlockCmd := newCloudAccountsCreateBlockCommand(ctx)
-	addHelpLayout(createBlockCmd, helpLayoutGroup)
-	addUsageLine(createBlockCmd, ctx, "cmd.target.account.create_block.usage_line")
-	addUsageNotes(createBlockCmd, ctx, "cmd.target.account.create_block.usage_notes")
-
-	createOSSCmd := newCloudAccountsCreateOSSCommand(ctx)
-	addHelpLayout(createOSSCmd, helpLayoutGroup)
-	addUsageLine(createOSSCmd, ctx, "cmd.target.account.create_oss.usage_line")
-	addUsageNotes(createOSSCmd, ctx, "cmd.target.account.create_oss.usage_notes")
+	createCmd := newCloudAccountCreateCommand(ctx)
 
 	deleteCmd := newRawLeafCommand(ctx, "delete", "cmd.cloud_accounts.delete.short", "cmd.cloud_accounts.delete.long", "cmd.cloud_accounts.delete.examples", "cmd.cloud_accounts.delete.notes", func(cmd *cobra.Command) {
 		addFlagString(cmd, ctx, "id")
 		addFlagString(cmd, ctx, "storage-type")
 		addFlagBool(cmd, ctx, "force")
 	}, func(args []string) error {
-		return runTargetAccounts(ctx, append([]string{"delete"}, args...))
+		return runCloudAccounts(ctx, append([]string{"delete"}, args...))
 	})
-	configureTargetAccountLeafHelp(deleteCmd, ctx, "cmd.target.account.delete.usage_line", "cmd.target.account.delete.usage_notes")
+	configureTargetAccountLeafHelp(deleteCmd, ctx, "cmd.cloud_account.delete.usage_line", "cmd.cloud_account.delete.usage_notes")
 
 	cmd.AddCommand(
 		listCmd,
 		detailCmd,
 		waitCmd,
 		createCmd,
-		createBlockCmd,
-		createOSSCmd,
 		deleteCmd,
 	)
 	return cmd
 }
 
 func newTargetAccountCommand(ctx *context) *cobra.Command {
-	return newCloudAccountsCommand(ctx)
+	return newCloudAccountCommand(ctx)
 }
 
 func configureTargetAccountLeafHelp(cmd *cobra.Command, ctx *context, usageLineKey, usageNotesKey string) {
@@ -96,6 +83,32 @@ func newCloudAccountsCreateCommand(ctx *context) *cobra.Command {
 	addWorkflow(cmd, ctx, "cmd.cloud_accounts.create_group.workflow")
 	addRelatedCommands(cmd, ctx, "cmd.cloud_accounts.create_group.related")
 	addNextSteps(cmd, ctx, "cmd.cloud_accounts.create_group.next_steps")
+	return cmd
+}
+
+func newCloudAccountCreateCommand(ctx *context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:                "create",
+		Short:              ctx.loc.T("cmd.cloud_account.create.short"),
+		Long:               ctx.loc.T("cmd.cloud_account.create.long"),
+		Example:            strings.TrimSpace(ctx.loc.T("cmd.cloud_account.create.examples")),
+		DisableFlagParsing: true,
+		Args:               cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			selection, _, err := parseCloudAccountCreateSelection(args)
+			if err != nil {
+				return err
+			}
+			if rawArgsHelp(cmd, args) {
+				return renderCloudAccountCreateHelp(ctx, cmd, selection)
+			}
+			return runCreateCloudAccountBySelection(ctx, selection, args)
+		},
+	}
+	addCloudAccountCreateAllFlags(cmd, ctx)
+	addHelpLayout(cmd, helpLayoutFourSection)
+	addUsageLine(cmd, ctx, "cmd.cloud_account.create.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.cloud_account.create.usage_notes")
 	return cmd
 }
 

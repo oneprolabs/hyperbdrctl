@@ -146,12 +146,12 @@ func TestTargetSupportsHelpUsesFourSectionLayout(t *testing.T) {
 	assertNoHelpFooter(t, text)
 }
 
-func TestTargetAccountHelpUsesGroupLayout(t *testing.T) {
+func TestCloudAccountHelpUsesGroupLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "account", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-account", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -162,24 +162,27 @@ func TestTargetAccountHelpUsesGroupLayout(t *testing.T) {
 		"detail",
 		"wait",
 		"create",
-		"create-block",
-		"create-oss",
 		"delete",
 		"Usage Notes:",
 	} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("target account help missing %q: %q", want, text)
+			t.Fatalf("cloud-account help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"create-block", "create-oss"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("cloud-account help should not include %q: %q", unwanted, text)
 		}
 	}
 	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
-			t.Fatalf("target account help should not include %q: %q", unwanted, text)
+			t.Fatalf("cloud-account help should not include %q: %q", unwanted, text)
 		}
 	}
 	assertNoHelpFooter(t, text)
 }
 
-func TestTargetAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
+func TestCloudAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -188,24 +191,24 @@ func TestTargetAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 		want []string
 	}{
 		{
-			args: []string{"target", "account", "list", "--help"},
-			want: []string{"Usage Notes:", "--storage-type", "--vertical", "hyperbdrctl target account list", "hyperbdrctl target account detail --id <account_id>"},
+			args: []string{"cloud-account", "list", "--help"},
+			want: []string{"Usage Notes:", "--storage-type", "--vertical", "hyperbdrctl cloud-account list", "hyperbdrctl cloud-account detail --id <account_id>"},
 		},
 		{
-			args: []string{"target", "account", "detail", "--help"},
-			want: []string{"Usage Notes:", "--id", "hyperbdrctl target account detail --id <account_id>"},
+			args: []string{"cloud-account", "detail", "--help"},
+			want: []string{"Usage Notes:", "--id", "hyperbdrctl cloud-account detail --id <account_id>"},
 		},
 		{
-			args: []string{"target", "account", "wait", "--help"},
+			args: []string{"cloud-account", "wait", "--help"},
 			want: []string{"Usage Notes:", "--id", "--interval-seconds", "--timeout-seconds"},
 		},
 		{
-			args: []string{"target", "account", "create", "--help"},
-			want: []string{"Usage Notes:", "--preview-request", "target account create-block --help"},
+			args: []string{"cloud-account", "create", "--help"},
+			want: []string{"Usage Notes:", "--preview-request", "cloud-account create --storage-type block_storage --help"},
 		},
 		{
-			args: []string{"target", "account", "delete", "--help"},
-			want: []string{"Usage Notes:", "--force", "hyperbdrctl target account delete --id <account_id>"},
+			args: []string{"cloud-account", "delete", "--help"},
+			want: []string{"Usage Notes:", "--force", "hyperbdrctl cloud-account delete --id <account_id>"},
 		},
 	}
 
@@ -271,7 +274,7 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "target", "account", "list", "--storage-type", "objectstorage", "-G"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "cloud-account", "list", "--storage-type", "objectstorage", "-G"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,7 +322,7 @@ func TestTargetAccountListVerticalDoesNotOverrideJSON(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "target", "account", "list", "-G"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "cloud-account", "list", "-G"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,16 +358,16 @@ func TestUnifiedFlagDescriptionsInChineseHelp(t *testing.T) {
 
 	out.Reset()
 	errOut.Reset()
-	if err := Execute([]string{"--lang", "zh_cn", "target", "account", "create", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"--lang", "zh_cn", "cloud-account", "create", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
 	if !strings.Contains(out.String(), "输出请求体，但不发送请求") {
-		t.Fatalf("target account create help missing unified preview-request text: %q", out.String())
+		t.Fatalf("cloud-account create help missing unified preview-request text: %q", out.String())
 	}
 }
 
-func TestTargetAccountCreateProviderHelpUsesGroupLayout(t *testing.T) {
+func TestCloudAccountCreateStorageHelpShowsProviders(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -373,12 +376,12 @@ func TestTargetAccountCreateProviderHelpUsesGroupLayout(t *testing.T) {
 		want []string
 	}{
 		{
-			args: []string{"target", "account", "create-block", "--help"},
-			want: []string{"\nCommands:\n", "aliyun", "openstack", "Usage Notes:"},
+			args: []string{"cloud-account", "create", "--storage-type", "block_storage", "--help"},
+			want: []string{"Usage Notes:", "Providers:", "aliyun", "openstack"},
 		},
 		{
-			args: []string{"target", "account", "create-oss", "--help"},
-			want: []string{"\nCommands:\n", "aliyun", "openstack", "Usage Notes:"},
+			args: []string{"cloud-account", "create", "--storage-type", "object_storage", "--help"},
+			want: []string{"Usage Notes:", "Providers:", "aliyun", "openstack", "vmware"},
 		},
 	}
 
@@ -490,7 +493,7 @@ func TestTargetCloudSyncGatewayCreateHelpUsesGroupLayout(t *testing.T) {
 		"openstack",
 		"huawei",
 		"Usage Notes:",
-		"hyperbdrctl target account list",
+		"hyperbdrctl cloud-account list",
 		"hyperbdrctl target cloud-sync-gateway resources --cloud-account-id <account_id> --output json",
 	} {
 		if !strings.Contains(text, want) {
@@ -663,7 +666,7 @@ func TestLegacyObjectStoragesAndTargetInfoAreRemoved(t *testing.T) {
 		{args: []string{"cloud-accounts", "list"}, want: `unknown command "cloud-accounts"`},
 		{args: []string{"block-storages", "list"}, want: `unknown command "block-storages"`},
 		{args: []string{"target", "info"}, want: `unknown target command "info"`},
-		{args: []string{"target", "account", "fetch-regions"}, want: `unknown target account command "fetch-regions"`},
+		{args: []string{"target", "account", "fetch-regions"}, want: `unknown target command "account"`},
 		{args: []string{"target", "cloud-sync-gateway", "transition-images"}, want: `unknown target cloud-sync-gateway command "transition-images"`},
 	}
 
@@ -681,6 +684,16 @@ func TestRemovedTargetCommandsReturnUnknownCommand(t *testing.T) {
 	setUserDirs(t, dir)
 
 	cases := [][]string{
+		{"target", "account"},
+		{"target", "account", "list"},
+		{"target", "account", "detail"},
+		{"target", "account", "wait"},
+		{"target", "account", "create"},
+		{"target", "account", "delete"},
+		{"target", "account", "create-block"},
+		{"target", "account", "create-block", "aliyun"},
+		{"target", "account", "create-oss"},
+		{"target", "account", "create-oss", "aliyun"},
 		{"target", "account", "fetch-resources"},
 		{"target", "account", "fetch-block-resources"},
 		{"target", "account", "fetch-oss-resources"},

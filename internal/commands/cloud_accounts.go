@@ -14,14 +14,14 @@ import (
 
 type cloudAccountCreateSpec = appcloudaccount.CreateSpec
 
-func runTargetAccounts(ctx *context, args []string) error {
+func runCloudAccounts(ctx *context, args []string) error {
 	if len(args) == 0 {
-		return errUnknown("target account", "")
+		return errUnknown("cloud-account", "")
 	}
 	service := appcloudaccount.NewService(commandAPIAdapter{ctx: ctx})
 	switch args[0] {
 	case "list":
-		fs := newFlagSet("target account list")
+		fs := newFlagSet("cloud-account list")
 		page := fs.Int("page", 1, "")
 		pageSize := fs.Int("page-size", 100, "")
 		storageType := fs.String("storage-type", "", "")
@@ -40,7 +40,7 @@ func runTargetAccounts(ctx *context, args []string) error {
 		}
 		return writeResponse(ctx, resp, "cloud_accounts", cloudAccountColumns())
 	case "detail":
-		fs := newFlagSet("target account detail")
+		fs := newFlagSet("cloud-account detail")
 		id := fs.String("id", "", "")
 		q := queryFromPairs()
 		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
@@ -60,11 +60,11 @@ func runTargetAccounts(ctx *context, args []string) error {
 	case "wait":
 		return runTargetAccountWait(ctx, args[1:])
 	case "create":
-		return errDeprecatedCloudAccountCreateFlags()
+		return runCreateCloudAccountBySelection(ctx, cloudAccountCreateSelection{}, args[1:])
 	case "delete":
 		return runDeleteCloudAccount(ctx, args[1:])
 	default:
-		return errUnknown("target account", args[0])
+		return errUnknown("cloud-account", args[0])
 	}
 }
 
@@ -161,13 +161,13 @@ func runCreateCloudAccountRaw(ctx *context, args []string) error {
 		return err
 	}
 	if len(parsed.remainingArgs) > 0 {
-		return errUnknown("target account create", parsed.remainingArgs[0])
+		return errUnknown("cloud-account create", parsed.remainingArgs[0])
 	}
 	return executeCreateCloudAccountRaw(ctx, parsed.body, parsed.previewRequest)
 }
 
 func parseCloudAccountCreateRawArgs(args []string) (parsedCloudAccountCreateRawCommand, error) {
-	fs := newFlagSet("target account create")
+	fs := newFlagSet("cloud-account create")
 	file := fs.String("file", "", "")
 	inlineBody := fs.String("body", "", "")
 	previewRequest := fs.Bool("preview-request", false, "")
@@ -186,7 +186,7 @@ func parseCloudAccountCreateRawArgs(args []string) (parsedCloudAccountCreateRawC
 
 	bodyMap, ok := body.(map[string]interface{})
 	if !ok {
-		return parsedCloudAccountCreateRawCommand{}, fmt.Errorf("target account create body must be a JSON object")
+		return parsedCloudAccountCreateRawCommand{}, fmt.Errorf("cloud-account create body must be a JSON object")
 	}
 
 	return parsedCloudAccountCreateRawCommand{
@@ -841,7 +841,7 @@ func flagWasSet(fs *flag.FlagSet, name string) bool {
 }
 
 func runDeleteCloudAccount(ctx *context, args []string) error {
-	fs := newFlagSet("target account delete")
+	fs := newFlagSet("cloud-account delete")
 	id := fs.String("id", "", "")
 	storageType := fs.String("storage-type", "", "")
 	force := fs.Bool("force", false, "")

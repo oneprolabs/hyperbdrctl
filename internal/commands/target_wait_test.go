@@ -13,7 +13,7 @@ func TestTargetWaitCommandsRequireID(t *testing.T) {
 	tests := []struct {
 		args []string
 	}{
-		{args: []string{"target", "account", "wait"}},
+		{args: []string{"cloud-account", "wait"}},
 		{args: []string{"target", "cloud-sync-gateway", "wait"}},
 		{args: []string{"target", "oss", "wait"}},
 	}
@@ -32,7 +32,7 @@ func TestTargetWaitCommandsRequireID(t *testing.T) {
 	}
 }
 
-func TestTargetAccountWaitJSONOutput(t *testing.T) {
+func TestCloudAccountWaitJSONOutput(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -53,7 +53,7 @@ func TestTargetAccountWaitJSONOutput(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "account", "wait",
+		"cloud-account", "wait",
 		"--id", "account-1",
 		"--interval-seconds", "0",
 		"--timeout-seconds", "1",
@@ -74,7 +74,7 @@ func TestTargetAccountWaitJSONOutput(t *testing.T) {
 	}
 }
 
-func TestTargetAccountWaitJSONOutputFromTopLevelCloudAccount(t *testing.T) {
+func TestCloudAccountWaitJSONOutputFromTopLevelCloudAccount(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -94,7 +94,7 @@ func TestTargetAccountWaitJSONOutputFromTopLevelCloudAccount(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "account", "wait",
+		"cloud-account", "wait",
 		"--id", "account-1",
 		"--interval-seconds", "0",
 		"--timeout-seconds", "1",

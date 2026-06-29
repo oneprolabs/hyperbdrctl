@@ -12,7 +12,7 @@ import (
 )
 
 func runTargetAccountWait(ctx *context, args []string) error {
-	fs := newFlagSet("target account wait")
+	fs := newFlagSet("cloud-account wait")
 	id := fs.String("id", "", "")
 	intervalSeconds := fs.Int("interval-seconds", 60, "")
 	timeoutSeconds := fs.Int("timeout-seconds", 3600, "")
@@ -33,7 +33,7 @@ func runTargetAccountWait(ctx *context, args []string) error {
 		return err
 	}
 	if result.Failed {
-		return waitRowsError(result.Rows, "target account wait failed")
+		return waitRowsError(result.Rows, "cloud-account wait failed")
 	}
 	return nil
 }
