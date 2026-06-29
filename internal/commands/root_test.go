@@ -174,7 +174,33 @@ func TestHostCleanHelpUsesModernLayout(t *testing.T) {
 			t.Fatalf("help should not include %q: %q", unwanted, got)
 		}
 	}
+	if strings.Contains(got, "--file string") {
+		t.Fatalf("help should hide file flag from parameter block: %q", got)
+	}
 	assertNoHelpFooter(t, got)
+}
+
+func TestHostFileDrivenCommandHelpHidesFileFlag(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	for _, args := range [][]string{
+		{"help", "host", "sync"},
+		{"help", "host", "boot"},
+		{"help", "host", "deregister"},
+	} {
+		t.Run(strings.Join(args[1:], " "), func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute(args, &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+			got := out.String()
+			if strings.Contains(got, "--file string") {
+				t.Fatalf("help should hide file flag from parameter block: %q", got)
+			}
+			assertNoHelpFooter(t, got)
+		})
+	}
 }
 
 func TestHostWaitHelpShowsCleanOperationChoice(t *testing.T) {

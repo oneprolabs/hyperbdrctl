@@ -21,12 +21,12 @@ func TestCloudAccountsCreateHelpShowsRawBodyFlags(t *testing.T) {
 	}
 
 	text := out.String()
-	for _, want := range []string{"--file", "--body", "--preview-request"} {
+	for _, want := range []string{"--body", "--preview-request"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"aliyun_bs_block", "create block", "create oss", "--access-key-id", "--auth-url"} {
+	for _, unwanted := range []string{"aliyun_bs_block", "create block", "create oss", "--access-key-id", "--auth-url", "--file string"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
@@ -141,7 +141,6 @@ func TestCloudAccountsCreateBlockOpenStackHelpShowsRefinedFlagGuidance(t *testin
 		"OS_PROJECT_DOMAIN_ID",
 		"OS_REGION_NAME",
 		"最小创建命令如下",
-		"--file string",
 		"--set stringArray",
 		"--set-json stringArray",
 		"--foo-bar <value>",
@@ -152,8 +151,10 @@ func TestCloudAccountsCreateBlockOpenStackHelpShowsRefinedFlagGuidance(t *testin
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	if strings.Contains(text, "--only-verify") {
-		t.Fatalf("help should not include removed flag: %q", text)
+	for _, unwanted := range []string{"--only-verify", "--file string"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("help should not include removed flag %q: %q", unwanted, text)
+		}
 	}
 }
 
@@ -171,7 +172,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "block aliyun",
 			args: []string{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "cloud-resource fetch --cloud-type aliyun --storage-type block_storage", "--file string", "--set stringArray", "--set-json stringArray", "--foo-bar <value>"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "cloud-resource fetch --cloud-type aliyun --storage-type block_storage", "--set stringArray", "--set-json stringArray", "--foo-bar <value>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -181,26 +182,28 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				"\nRelated Commands:\n",
 				"\nNext Steps:\n",
 				"--only-verify",
+				"--file string",
 			},
 			orderWant: []string{"Usage:", "\nFlags:\n", "Usage Notes:"},
 		},
 		{
 			name: "block huawei generic",
 			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "--account-name string", "--file string", "--set stringArray", "--set-json stringArray", "cloud-account create --cloud-type huawei --storage-type block_storage", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "--account-name string", "--set stringArray", "--set-json stringArray", "cloud-account create --cloud-type huawei --storage-type block_storage", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
 				"\nWorkflow:\n",
 				"\nRelated Commands:\n",
 				"--only-verify",
+				"--file string",
 			},
 			orderWant: []string{"Usage:", "\nFlags:\n", "Usage Notes:"},
 		},
 		{
 			name: "oss aliyun",
 			args: []string{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "object_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "boot_loader_images", "cloud-resource fetch --cloud-type aliyun --storage-type object_storage", "--file string", "--set stringArray", "--set-json stringArray"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "boot_loader_images", "cloud-resource fetch --cloud-type aliyun --storage-type object_storage", "--set stringArray", "--set-json stringArray"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -211,13 +214,14 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				"\nCommon Optional Flags:\n",
 				"\nRelated Commands:\n",
 				"\nNext Steps:\n",
+				"--file string",
 			},
 			orderWant: []string{"Usage:", "\nFlags:\n", "Usage Notes:"},
 		},
 		{
 			name: "oss openstack",
 			args: []string{"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "Parameter sources:", "OpenStack RC file", "cloud-resource fetch --cloud-type openstack --storage-type object_storage", "--file string", "--set stringArray", "--set-json stringArray"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "Parameter sources:", "OpenStack RC file", "cloud-resource fetch --cloud-type openstack --storage-type object_storage", "--set stringArray", "--set-json stringArray"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -227,13 +231,14 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				"\nRelated Commands:\n",
 				"\nNext Steps:\n",
 				"--only-verify",
+				"--file string",
 			},
 			orderWant: []string{"Usage:", "\nFlags:\n", "Usage Notes:"},
 		},
 		{
 			name: "oss huawei generic",
 			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "cloud-account create --cloud-type huawei --storage-type object_storage", "--file string", "--set stringArray", "--set-json stringArray", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "cloud-account create --cloud-type huawei --storage-type object_storage", "--set stringArray", "--set-json stringArray", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -241,6 +246,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				"\nRelated Commands:\n",
 				"--auto-upload-images",
 				"--only-verify",
+				"--file string",
 			},
 			orderWant: []string{"Usage:", "\nFlags:\n", "Usage Notes:"},
 		},

@@ -1576,6 +1576,9 @@ func orderedFlagUsages(ctx *context, cmd *cobra.Command, specs []flagHelpSpec) s
 	tmp := pflag.NewFlagSet(cmd.Name(), pflag.ContinueOnError)
 	tmp.SortFlags = false
 	for _, spec := range specs {
+		if hideFlagFromPublicHelp(spec.name) {
+			continue
+		}
 		flag := lookupAnyFlag(cmd, spec.name)
 		if flag == nil {
 			continue
@@ -1612,7 +1615,7 @@ func decorateFlagUsage(ctx *context, usage string, spec flagHelpSpec) string {
 	if spec.requiredOnInit {
 		usage += ctx.loc.T("help.note_init_required")
 	}
-	if spec.noteKey != "" {
+	if spec.noteKey != "" && !hideHelpNoteInPublicFlags(spec.noteKey) {
 		usage += ctx.loc.T(spec.noteKey)
 	}
 	if len(spec.choices) > 0 && !containsInlineChoicesHint(ctx, usage) {
@@ -1621,7 +1624,36 @@ func decorateFlagUsage(ctx *context, usage string, spec flagHelpSpec) string {
 	if spec.defaultValue != "" && !containsInlineDefaultHint(ctx, usage) {
 		usage += ctx.loc.T("help.inline_separator") + ctx.loc.T("help.inline_default") + " " + spec.defaultValue
 	}
-	return usage
+	return stripHiddenHelpNotes(ctx, usage)
+}
+
+func hideFlagFromPublicHelp(name string) bool {
+	switch name {
+	case "file":
+		return true
+	default:
+		return false
+	}
+}
+
+func hideHelpNoteInPublicFlags(noteKey string) bool {
+	switch noteKey {
+	case "help.note_required_unless_file":
+		return true
+	default:
+		return false
+	}
+}
+
+func stripHiddenHelpNotes(ctx *context, usage string) string {
+	for _, noteKey := range []string{"help.note_required_unless_file"} {
+		note := ctx.loc.T(noteKey)
+		if note == "" {
+			continue
+		}
+		usage = strings.ReplaceAll(usage, note, "")
+	}
+	return strings.TrimSpace(usage)
 }
 
 func containsInlineChoicesHint(ctx *context, usage string) bool {

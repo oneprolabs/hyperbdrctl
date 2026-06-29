@@ -53,7 +53,6 @@ func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 		"Usage:",
 		"\nFlags:\n",
 		"--id",
-		"--file",
 		"--set",
 		"--set-json",
 		"--preview-request",
@@ -76,6 +75,9 @@ func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 		if strings.Contains(got, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, got)
 		}
+	}
+	if strings.Contains(got, "--file string") {
+		t.Fatalf("help should hide file flag from parameter block: %q", got)
 	}
 	for _, unwanted := range []string{"fetch-block-resources", "fetch-oss-resources"} {
 		if strings.Contains(got, unwanted) {
