@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"hyperbdr-client/catalog"
+	apptargetresource "hyperbdr-client/internal/app/targetresource"
+	"hyperbdr-client/internal/config"
 	workflowcreate "hyperbdr-client/internal/workflow/blockstoragecreate"
 
 	"github.com/spf13/cobra"
@@ -16,6 +18,11 @@ type cloudSyncGatewayCreateProfile struct {
 	Entry    catalog.CloudEntry
 	Provider string
 	Kind     string
+}
+
+type cloudSyncGatewayCreateHelpSelection struct {
+	CloudAccountID string
+	Provider       string
 }
 
 func newCloudSyncGatewayCommand(ctx *context) *cobra.Command {
@@ -78,12 +85,12 @@ func newCloudSyncGatewayCreateCommand(ctx *context) *cobra.Command {
 		DisableFlagParsing: true,
 		Args:               cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			provider, err := parseCloudSyncGatewayCreateHelpProvider(args)
+			selection, err := parseCloudSyncGatewayCreateHelpSelection(args)
 			if err != nil {
 				return err
 			}
 			if rawArgsHelp(cmd, args) {
-				return renderCloudSyncGatewayCreateHelp(ctx, cmd, provider)
+				return renderCloudSyncGatewayCreateHelp(ctx, cmd, selection)
 			}
 			return runCloudSyncGatewayCreate(ctx, args)
 		},
@@ -104,6 +111,14 @@ func runCloudSyncGatewayCreate(ctx *context, args []string) error {
 	if len(parsed.remainingArgs) > 0 {
 		return errUnknown("cloud-sync-gateway create", parsed.remainingArgs[0])
 	}
+	if strings.TrimSpace(parsed.spec.CloudAccountID) != "" {
+		accountProfile, err := resolveCloudSyncGatewayCreateAccountProfile(ctx, parsed.spec.CloudAccountID)
+		if err != nil {
+			return err
+		}
+		parsed.spec.CloudType = accountProfile.Entry.CloudType
+		return executeBlockStorageCreateSpec(ctx, parsed.spec, parsed.previewRequest)
+	}
 	provider := strings.TrimSpace(parsed.spec.CloudType)
 	if provider == "" {
 		return fmt.Errorf("cloud-type is required")
@@ -116,31 +131,39 @@ func runCloudSyncGatewayCreate(ctx *context, args []string) error {
 	return executeBlockStorageCreateSpec(ctx, parsed.spec, parsed.previewRequest)
 }
 
-func parseCloudSyncGatewayCreateHelpProvider(args []string) (string, error) {
-	var provider string
+func parseCloudSyncGatewayCreateHelpSelection(args []string) (cloudSyncGatewayCreateHelpSelection, error) {
+	selection := cloudSyncGatewayCreateHelpSelection{}
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		if arg == "--help" || arg == "-h" {
 			continue
 		}
 		if !strings.HasPrefix(arg, "--") {
-			return "", errUnknown("cloud-sync-gateway create", arg)
+			return selection, errUnknown("cloud-sync-gateway create", arg)
 		}
 		name, value, hasInline := splitFlag(arg)
-		if name != "--cloud-type" {
+		switch name {
+		case "--cloud-account-id":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return selection, err
+			}
+			selection.CloudAccountID = v
+			i = next
+		case "--cloud-type":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return selection, err
+			}
+			selection.Provider = v
+			i = next
+		default:
 			if !hasInline && flagConsumesValue(name) && i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
 				i++
 			}
-			continue
 		}
-		v, next, err := strictFlagValue(args, i, value, hasInline)
-		if err != nil {
-			return "", err
-		}
-		provider = v
-		i = next
 	}
-	return provider, nil
+	return selection, nil
 }
 
 func flagConsumesValue(name string) bool {
@@ -152,8 +175,19 @@ func flagConsumesValue(name string) bool {
 	}
 }
 
-func renderCloudSyncGatewayCreateHelp(ctx *context, cmd *cobra.Command, provider string) error {
-	provider = strings.TrimSpace(provider)
+func renderCloudSyncGatewayCreateHelp(ctx *context, cmd *cobra.Command, selection cloudSyncGatewayCreateHelpSelection) error {
+	if strings.TrimSpace(selection.CloudAccountID) != "" {
+		accountProfile, err := resolveCloudSyncGatewayCreateAccountProfile(ctx, selection.CloudAccountID)
+		if err != nil {
+			return err
+		}
+		addAnnotationValue(cmd, cloudSyncGatewayCreateHelpProfileAnnotation, accountProfile.Kind)
+		addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T("cmd.cloud_sync_gateway.create.provider.usage_line"), accountProfile.Provider))
+		addAnnotationValue(cmd, usageNotesAnnotation, cloudSyncGatewayCreateUsageNotes(ctx, accountProfile))
+		return renderHelp(cmd, ctx)
+	}
+
+	provider := strings.TrimSpace(selection.Provider)
 	if provider == "" {
 		addAnnotationValue(cmd, cloudSyncGatewayCreateHelpProfileAnnotation, "generic")
 		addAnnotationValue(cmd, usageNotesAnnotation, cloudSyncGatewayCreateGenericUsageNotes(ctx))
@@ -167,6 +201,52 @@ func renderCloudSyncGatewayCreateHelp(ctx *context, cmd *cobra.Command, provider
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T("cmd.cloud_sync_gateway.create.provider.usage_line"), profile.Provider))
 	addAnnotationValue(cmd, usageNotesAnnotation, cloudSyncGatewayCreateUsageNotes(ctx, profile))
 	return renderHelp(cmd, ctx)
+}
+
+func resolveCloudSyncGatewayCreateAccountProfile(ctx *context, accountID string) (cloudSyncGatewayCreateProfile, error) {
+	cfg, err := config.Resolve(ctx.flags)
+	if err != nil {
+		return cloudSyncGatewayCreateProfile{}, err
+	}
+	ctx.cfg = cfg
+
+	accountCtx, err := apptargetresource.NewService(commandAPIAdapter{ctx: ctx}).CloudAccountContext(accountID)
+	if err != nil {
+		return cloudSyncGatewayCreateProfile{}, err
+	}
+	if strings.TrimSpace(accountCtx.CloudType) == "" {
+		return cloudSyncGatewayCreateProfile{}, fmt.Errorf("cloud-type cannot be inferred from cloud-account-id")
+	}
+	if strings.TrimSpace(accountCtx.StorageType) == "" {
+		return cloudSyncGatewayCreateProfile{}, fmt.Errorf("storage-type cannot be inferred from cloud-account-id")
+	}
+	if !isCloudSyncGatewayStorageType(accountCtx.StorageType) {
+		return cloudSyncGatewayCreateProfile{}, fmt.Errorf("resource type mismatch: expected cloud-sync-gateway, got %s", strings.ToLower(strings.TrimSpace(accountCtx.StorageType)))
+	}
+
+	entry, ok := catalog.FindBlockCloud(accountCtx.CloudType)
+	if !ok {
+		return cloudSyncGatewayCreateProfile{}, fmt.Errorf("cloud-type %q does not support cloud-sync-gateway create", accountCtx.CloudType)
+	}
+	kind := "provider"
+	if workflowcreate.HasRegisteredAdapter(entry.CloudType) {
+		switch entry.Provider {
+		case "aliyun":
+			kind = "aliyun"
+		case "openstack":
+			kind = "openstack"
+		}
+	}
+	return cloudSyncGatewayCreateProfile{Entry: entry, Provider: entry.Provider, Kind: kind}, nil
+}
+
+func isCloudSyncGatewayStorageType(storageType string) bool {
+	switch strings.ToLower(strings.TrimSpace(storageType)) {
+	case "", "hypergate", "blockstorage", "block", "block_storage":
+		return true
+	default:
+		return false
+	}
 }
 
 func resolveCloudSyncGatewayCreateProfile(provider string) (cloudSyncGatewayCreateProfile, error) {

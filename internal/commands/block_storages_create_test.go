@@ -115,6 +115,96 @@ func TestBlockStoragesCreateGenericProviderHelpUsesFourSectionLayout(t *testing.
 	}
 }
 
+func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		name     string
+		args     []string
+		account  map[string]interface{}
+		want     []string
+		unwanted []string
+	}{
+		{
+			name: "aliyun account wins over explicit cloud-type",
+			args: []string{
+				"cloud-sync-gateway", "create",
+				"--cloud-account-id", "account-1",
+				"--cloud-type", "openstack",
+				"--help",
+			},
+			account: map[string]interface{}{
+				"cloud_type":   "aliyun_bs",
+				"storage_type": "HyperGate",
+			},
+			want: []string{
+				"--cloud-account-id",
+				"--region-id",
+				"--bandwidth-size",
+				"--hd-control-network",
+				"cloud-resource fetch",
+			},
+			unwanted: []string{
+				"--boot-loader-image-id string    引导加载器镜像 ID（必须）",
+			},
+		},
+		{
+			name: "openstack account shows openstack profile",
+			args: []string{
+				"cloud-sync-gateway", "create",
+				"--cloud-account-id", "account-1",
+				"--help",
+			},
+			account: map[string]interface{}{
+				"cloud_type":   "openstack",
+				"storage_type": "HyperGate",
+			},
+			want: []string{
+				"--cloud-account-id",
+				"Boot loader image ID (required)",
+				"System disk size in GiB, default 50",
+				"--boot-types-id string",
+				"cloud-sync-gateway wait --id <storage_id>",
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotPath string
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"code": "00000000",
+					"data": tt.account,
+				})
+			}))
+			defer srv.Close()
+
+			var out, errOut bytes.Buffer
+			if err := Execute(withHost(t, srv.URL, tt.args...), &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+			if gotPath != "/hypermotion/v1/cloud_accounts/account-1" {
+				t.Fatalf("path=%q", gotPath)
+			}
+
+			text := out.String()
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			for _, unwanted := range tt.unwanted {
+				if strings.Contains(text, unwanted) {
+					t.Fatalf("help should not include %q: %q", unwanted, text)
+				}
+			}
+		})
+	}
+}
+
 func TestBlockStoragesCreateRejectsBackendCloudType(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -122,7 +212,6 @@ func TestBlockStoragesCreateRejectsBackendCloudType(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute([]string{
 		"cloud-sync-gateway", "create",
-		"--cloud-account-id", "account-1",
 		"--cloud-type", "huawei_bs",
 	}, &out, &errOut)
 	if err == nil || err.Error() != `cloud-type "huawei_bs" does not support cloud-sync-gateway create` {
@@ -134,8 +223,19 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_type":   "huawei_bs",
+				"storage_type": "HyperGate",
+			},
+		})
+	}))
+	defer srv.Close()
+
 	var out, errOut bytes.Buffer
-	err := Execute([]string{
+	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
 		"cloud-sync-gateway", "create", "--cloud-type", "huawei",
 		"--cloud-account-id", "account-1",
@@ -143,7 +243,7 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 		"--network-id", "network-1",
 		"--boot-loader-image-id", "boot-image-1",
 		"--preview-request",
-	}, &out, &errOut)
+	), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,14 +276,97 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 	}
 }
 
-func TestBlockStoragesCreateRequiresCloudSubcommand(t *testing.T) {
+func TestBlockStoragesCreatePreviewRequestInfersCloudTypeFromCloudAccount(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_type":   "huawei_bs",
+				"storage_type": "HyperGate",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"cloud-sync-gateway", "create",
+		"--cloud-account-id", "account-1",
+		"--region-id", "cn-north-4",
+		"--network-id", "network-1",
+		"--boot-loader-image-id", "boot-image-1",
+		"--preview-request",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/hypermotion/v1/cloud_accounts/account-1" {
+		t.Fatalf("path=%q", gotPath)
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	createStorage := body["create_storage"].(map[string]interface{})
+	if createStorage["cloud_type"] != "huawei_bs" || createStorage["cloud_account_uuid"] != "account-1" || createStorage["type"] != "HyperGate" {
+		t.Fatalf("create_storage = %#v", createStorage)
+	}
+}
+
+func TestBlockStoragesCreatePreviewRequestPrefersCloudAccountOverExplicitCloudType(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_type":   "huawei_bs",
+				"storage_type": "HyperGate",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"--output", "json",
+		"cloud-sync-gateway", "create",
+		"--cloud-account-id", "account-1",
+		"--cloud-type", "openstack",
+		"--region-id", "cn-north-4",
+		"--network-id", "network-1",
+		"--boot-loader-image-id", "boot-image-1",
+		"--preview-request",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	createStorage := body["create_storage"].(map[string]interface{})
+	if createStorage["cloud_type"] != "huawei_bs" {
+		t.Fatalf("create_storage = %#v", createStorage)
+	}
+}
+
+func TestBlockStoragesCreateRequiresCloudTypeWithoutCloudAccount(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
 	err := Execute([]string{
 		"cloud-sync-gateway", "create",
-		"--cloud-account-id", "account-1",
 	}, &out, &errOut)
 	if err == nil || err.Error() != "cloud-type is required" {
 		t.Fatalf("err = %v", err)
@@ -470,6 +653,14 @@ func TestBlockStoragesCreateAliyunAcceptsRawCloudInfoResponses(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case r.URL.Path == "/hypermotion/v1/cloud_accounts/account-1":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"cloud_type":   "aliyun_bs",
+					"storage_type": "HyperGate",
+				},
+			})
 		case r.URL.Path == "/hypermotion/v1/cloud_accounts/account-1/action":
 			actionCalls++
 			switch actionCalls {
@@ -571,6 +762,14 @@ func TestBlockStoragesCreateAliyunPrefersNetworkThatHasReturnedSubnets(t *testin
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case r.URL.Path == "/hypermotion/v1/cloud_accounts/account-1":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"cloud_type":   "aliyun_bs",
+					"storage_type": "HyperGate",
+				},
+			})
 		case r.URL.Path == "/hypermotion/v1/cloud_accounts/account-1/action":
 			actionCalls++
 			switch actionCalls {
@@ -676,7 +875,8 @@ func TestBlockStoragesCreateAliyunPreviewRequestPrintsRequestBody(t *testing.T) 
 				"code": "00000000",
 				"data": map[string]interface{}{
 					"cloud_account": map[string]interface{}{
-						"cloud_type": "aliyun_bs",
+						"cloud_type":   "aliyun_bs",
+						"storage_type": "HyperGate",
 						"metadata": map[string]interface{}{
 							"region_type_list": "cn-beijing",
 						},
@@ -795,6 +995,14 @@ func TestBlockStoragesCreateOpenStackValidatedPayload(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case r.URL.Path == "/hypermotion/v1/cloud_accounts/account-1":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"cloud_type":   "openstack",
+					"storage_type": "HyperGate",
+				},
+			})
 		case r.URL.Path == "/hypermotion/v1/cloud_accounts/account-1/action":
 			gotCloudInfoPath = r.URL.Path
 			if err := json.NewDecoder(r.Body).Decode(&gotCloudInfoBody); err != nil {
@@ -928,6 +1136,14 @@ func TestBlockStoragesCreateOpenStackAcceptsRawCloudInfoResponse(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case r.URL.Path == "/hypermotion/v1/cloud_accounts/account-1":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"cloud_type":   "openstack",
+					"storage_type": "HyperGate",
+				},
+			})
 		case r.URL.Path == "/hypermotion/v1/cloud_accounts/account-1/action":
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"cloud_info": map[string]interface{}{
