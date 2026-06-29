@@ -1628,7 +1628,7 @@ func decorateFlagUsage(ctx *context, usage string, spec flagHelpSpec) string {
 
 func hideFlagFromPublicHelp(name string) bool {
 	switch name {
-	case "file":
+	case "file", "body":
 		return true
 	default:
 		return false

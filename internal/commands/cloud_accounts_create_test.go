@@ -21,15 +21,36 @@ func TestCloudAccountsCreateHelpShowsRawBodyFlags(t *testing.T) {
 	}
 
 	text := out.String()
-	for _, want := range []string{"--body", "--preview-request"} {
+	for _, want := range []string{"--preview-request"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"aliyun_bs_block", "create block", "create oss", "--access-key-id", "--auth-url", "--file string"} {
+	for _, unwanted := range []string{"aliyun_bs_block", "create block", "create oss", "--access-key-id", "--auth-url", "--file string", "--body string"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
+	}
+}
+
+func TestParseCloudAccountCreateRawArgsSupportsBody(t *testing.T) {
+	parsed, err := parseCloudAccountCreateRawArgs([]string{
+		"--body", `{"cloud_account":{"storage_type":"objectstorage","cloud_type":"openstack","metadata":{"account_name":"body-account"}}}`,
+		"--preview-request",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !parsed.previewRequest {
+		t.Fatalf("previewRequest = %v", parsed.previewRequest)
+	}
+	cloudAccount := parsed.body["cloud_account"].(map[string]interface{})
+	if cloudAccount["storage_type"] != "objectstorage" || cloudAccount["cloud_type"] != "openstack" {
+		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if metadata["account_name"] != "body-account" {
+		t.Fatalf("metadata = %+v", metadata)
 	}
 }
 
