@@ -88,7 +88,6 @@ func rootFlagSpecs() []flagHelpSpec {
 	return []flagHelpSpec{
 		{name: "lang"},
 		{name: "output"},
-		{name: "vertical"},
 		{name: "debug"},
 		{name: "help"},
 	}
@@ -1571,7 +1570,6 @@ func targetResourceOpenStackFlagSpecs() []flagHelpSpec {
 }
 
 func orderedFlagUsages(ctx *context, cmd *cobra.Command, specs []flagHelpSpec) string {
-	specs = withSharedVerticalFlagSpec(cmd, specs)
 	if len(specs) == 0 {
 		return ""
 	}
@@ -1587,30 +1585,6 @@ func orderedFlagUsages(ctx *context, cmd *cobra.Command, specs []flagHelpSpec) s
 		tmp.AddFlag(&copy)
 	}
 	return strings.TrimRight(tmp.FlagUsagesWrapped(88), "\n")
-}
-
-func withSharedVerticalFlagSpec(cmd *cobra.Command, specs []flagHelpSpec) []flagHelpSpec {
-	if lookupAnyFlag(cmd, "vertical") == nil {
-		return specs
-	}
-	for _, spec := range specs {
-		if spec.name == "vertical" {
-			return specs
-		}
-	}
-	out := make([]flagHelpSpec, 0, len(specs)+1)
-	inserted := false
-	for _, spec := range specs {
-		if spec.name == "help" && !inserted {
-			out = append(out, flagHelpSpec{name: "vertical"})
-			inserted = true
-		}
-		out = append(out, spec)
-	}
-	if !inserted {
-		out = append(out, flagHelpSpec{name: "vertical"})
-	}
-	return out
 }
 
 func lookupAnyFlag(cmd *cobra.Command, name string) *pflag.Flag {

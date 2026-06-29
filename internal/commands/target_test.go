@@ -187,7 +187,7 @@ func TestCloudAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 	}{
 		{
 			args: []string{"cloud-account", "list", "--help"},
-			want: []string{"Usage Notes:", "--storage-type", "--vertical", "hyperbdrctl cloud-account list", "hyperbdrctl cloud-account detail --id <account_id>"},
+			want: []string{"Usage Notes:", "--storage-type", "hyperbdrctl cloud-account list", "hyperbdrctl cloud-account detail --id <account_id>"},
 		},
 		{
 			args: []string{"cloud-account", "detail", "--help"},
@@ -218,6 +218,9 @@ func TestCloudAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 			if !strings.Contains(text, want) {
 				t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
 			}
+		}
+		if strings.Contains(text, "--vertical") {
+			t.Fatalf("args=%v help should hide --vertical: %q", tt.args, text)
 		}
 		if strings.Contains(text, "\nCommands:\n") {
 			t.Fatalf("leaf help should not include commands section args=%v: %q", tt.args, text)

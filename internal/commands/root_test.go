@@ -416,12 +416,14 @@ func TestRootHelpShowsModernGuidance(t *testing.T) {
 		"Generate shell completion scripts",
 		"hyperbdrctl config set \\",
 		"HYPERBDR_HOST",
-		"--vertical",
 		"command-line flags > environment variables > config file > defaults",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
+	}
+	if strings.Contains(text, "--vertical") {
+		t.Fatalf("help should hide --vertical from global flags: %q", text)
 	}
 	for _, hidden := range []string{"\n  api", "\n  batch-boot-config", "\n  boot-config-wizard", "\n  tasks", "\n  upgrade", "hyperbdrctl tasks list"} {
 		if strings.Contains(text, hidden) {
