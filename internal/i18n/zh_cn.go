@@ -823,7 +823,7 @@ var zhCN = map[string]string{
 	"cmd.target.examples":                                              "hyperbdrctl target supports",
 	"cmd.target.notes":                                                 "- `supports` 读取本地静态云目录。",
 	"cmd.target.usage_line":                                            "hyperbdrctl target <命令> [参数]",
-	"cmd.target.usage_notes":                                           "该命令组用于目标侧云平台目录能力。\n\n如果需要查看当前内置支持的云平台目录，可以执行：\n  hyperbdrctl target supports",
+	"cmd.target.usage_notes":                                           "该命令组保留用于目标侧兼容能力。\n\n这里不再展示公开子命令。",
 	"cmd.oss.short":                                                    "目标对象存储配置",
 	"cmd.oss.long":                                                     "查看、查询目录、创建或删除目标对象存储配置。",
 	"cmd.oss.examples":                                                 "hyperbdrctl oss list\nhyperbdrctl oss catalog\nhyperbdrctl oss create --help\nhyperbdrctl oss delete --id <storage_id> --force",

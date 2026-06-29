@@ -101,23 +101,20 @@ func TestTargetHelpUsesGroupLayout(t *testing.T) {
 	for _, want := range []string{
 		"Usage:",
 		"\nFlags:\n",
-		"\nCommands:\n",
-		"supports",
 		"Usage Notes:",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("target help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"cloud-sync-gateway", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n", "\n  oss"} {
+	for _, unwanted := range []string{"cloud-sync-gateway", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n", "\nCommands:\n", "supports", "\n  oss"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("target help should not include %q: %q", unwanted, text)
 		}
 	}
 	flags := strings.Index(text, "\nFlags:\n")
-	commands := strings.Index(text, "\nCommands:\n")
 	notes := strings.Index(text, "Usage Notes:")
-	if flags < 0 || commands < 0 || notes < 0 || !(flags < commands && commands < notes) {
+	if flags < 0 || notes < 0 || !(flags < notes) {
 		t.Fatalf("target help order mismatch: %q", text)
 	}
 	assertNoHelpFooter(t, text)

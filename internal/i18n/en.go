@@ -864,7 +864,7 @@ var en = map[string]string{
 	"cmd.target.examples":                                                     "hyperbdrctl target supports",
 	"cmd.target.notes":                                                        "- `supports` reads the local static cloud catalog.",
 	"cmd.target.usage_line":                                                   "hyperbdrctl target <command> [flags]",
-	"cmd.target.usage_notes":                                                  "Use this command group for target-side catalog workflows.\n\nTo inspect the built-in supported cloud catalog, run:\n  hyperbdrctl target supports",
+	"cmd.target.usage_notes":                                                  "Use this legacy command group for target-side compatibility workflows.\n\nNo public subcommands are listed here.",
 	"cmd.oss.short":                                                           "Target object storage commands",
 	"cmd.oss.long":                                                            "Inspect, catalog, create, or delete target object storage configuration.",
 	"cmd.oss.examples":                                                        "hyperbdrctl oss list\nhyperbdrctl oss catalog\nhyperbdrctl oss create --help\nhyperbdrctl oss delete --id <storage_id> --force",

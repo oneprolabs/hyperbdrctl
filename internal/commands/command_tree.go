@@ -375,6 +375,7 @@ func newTargetCommand(ctx *context) *cobra.Command {
 	supportsCmd := newRawLeafCommand(ctx, "supports", "cmd.target.supports.short", "cmd.target.supports.long", "cmd.target.supports.examples", "cmd.target.supports.notes", nil, func(args []string) error {
 		return runTargetSupports(ctx, args)
 	})
+	supportsCmd.Hidden = true
 	addHelpLayout(supportsCmd, helpLayoutFourSection)
 	addUsageLine(supportsCmd, ctx, "cmd.target.supports.usage_line")
 	addUsageNotes(supportsCmd, ctx, "cmd.target.supports.usage_notes")
