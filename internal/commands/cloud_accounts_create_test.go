@@ -210,7 +210,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "block huawei generic",
 			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "--account-name string", "--set stringArray", "--set-json stringArray", "cloud-account create --cloud-type huawei --storage-type block_storage", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--account-name string", "--set stringArray", "--set-json stringArray", "cloud-account create --cloud-type huawei --storage-type block_storage", "--foo-bar <value>", "--access-id <ak>", "--access-secret <sk>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -218,6 +218,11 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				"\nRelated Commands:\n",
 				"--only-verify",
 				"--file string",
+				"--cloud-auth-type <aksk|password>",
+				"--auth-url",
+				"--username <username>",
+				"--password <password>",
+				"If both AK/SK-style and username/password-style flags are present",
 			},
 			orderWant: []string{"Usage:", "\nFlags:\n", "Usage Notes:"},
 		},
@@ -469,6 +474,38 @@ func TestCloudAccountsCreateBlockRejectsLegacyCredentialFlags(t *testing.T) {
 	}
 }
 
+func TestCloudAccountsCreateHuaweiBlockRejectsCloudAuthType(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+		"--cloud-auth-type", "aksk",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "cloud-auth-type cannot be used") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCloudAccountsCreateHuaweiBlockRejectsPasswordStyleFlags(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+		"--auth-url", "https://iam.example.invalid/v3",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "unknown flag: --auth-url") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestCloudAccountsCreateBlockGenericFileSetAndFlagOverrides(t *testing.T) {
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "metadata.json")
@@ -478,14 +515,13 @@ func TestCloudAccountsCreateBlockGenericFileSetAndFlagOverrides(t *testing.T) {
 
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
-		"--cloud-auth-type", "password",
 		"--file", filePath,
 		"--set-json", `nested={"ssh_port":"2200","ssh_pass":"json-pass"}`,
 		"--set", "project_id=set-project",
 		"--account-name", "flag-name",
-		"--auth-url", "https://iam.example.invalid/v3",
-		"--username", "admin",
-		"--password", "secret",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-north-1",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -551,7 +587,6 @@ func TestCloudAccountsCreateBlockFileRejectsWrapperObject(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
 		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
-		"--cloud-auth-type", "aksk",
 		"--file", filePath,
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
@@ -655,10 +690,8 @@ func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetada
 			name: "block host",
 			args: []string{
 				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
-				"--cloud-auth-type", "password",
-				"--auth-url", "https://iam.example.invalid/v3",
-				"--username", "admin",
-				"--password", "secret",
+				"--access-key-id", "ak",
+				"--access-key-secret", "sk",
 				"--host", "https://legacy.invalid",
 			},
 			wantKey: "host",

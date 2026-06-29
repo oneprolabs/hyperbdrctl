@@ -15,6 +15,7 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 		MetadataOverrides: map[string]interface{}{},
 		RequestOverrides:  map[string]interface{}{},
 	}
+	fixedAKSK := fixedAKSKBlockCloudType(cloudType)
 	filePath := ""
 	sets := []string{}
 	setJSONs := []string{}
@@ -67,7 +68,7 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 		case "cloud-account-username", "cloud-account-password":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
 		case "cloud-auth-type":
-			if specialized {
+			if specialized || fixedAKSK {
 				return parsedCloudAccountCreateCommand{}, fmt.Errorf("cloud-auth-type cannot be used with %s", commandName)
 			}
 			v, next, err := strictFlagValue(args, i, value, hasInline)
@@ -87,6 +88,9 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 		case "only-verify":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
 		default:
+			if fixedAKSK && huaweiBlockRejectsPasswordStyleFlag(name) {
+				return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
+			}
 			if handled, err := parseSpecializedBlockFlag(name, args, i, value, hasInline, cloudType, &spec, &assignments); handled {
 				if err != nil {
 					return parsedCloudAccountCreateCommand{}, err
@@ -143,6 +147,9 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 
 	spec.MetadataOverrides = metadata
 	spec.CloudType = cloudType
+	if fixedAKSK {
+		spec.CloudAuthType = "aksk"
+	}
 	spec.StorageType = "HyperGate"
 	spec = workflowcreate.NormalizeSpec(spec)
 
@@ -150,6 +157,19 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 		spec:           spec,
 		previewRequest: previewRequest,
 	}, nil
+}
+
+func fixedAKSKBlockCloudType(cloudType string) bool {
+	return cloudType == "huawei_bs"
+}
+
+func huaweiBlockRejectsPasswordStyleFlag(name string) bool {
+	switch name {
+	case "auth-url", "username", "password":
+		return true
+	default:
+		return false
+	}
 }
 
 func parseSpecializedBlockFlag(name string, args []string, idx int, inline string, hasInline bool, cloudType string, spec *cloudAccountCreateSpec, assignments *[]metadataAssignment) (bool, error) {

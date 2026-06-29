@@ -1388,6 +1388,24 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "block|huawei":
+		return []flagHelpSpec{
+			{name: "cloud-type", required: true},
+			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "access-key-id", required: true},
+			{name: "access-key-secret", required: true},
+			{name: "region-id"},
+			{name: "region-name"},
+			{name: "account-name"},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "objectstorage|aliyun":
 		return []flagHelpSpec{
 			{name: "cloud-type", required: true},

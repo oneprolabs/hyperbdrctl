@@ -573,6 +573,8 @@ func cloudAccountCreateProviderUsageNotes(ctx *context, entry catalog.CloudEntry
 	switch {
 	case storageType == "block" && entry.Provider == "aliyun" && specialized:
 		return ctx.loc.T("cmd.target.account.create_block.aliyun.usage_notes")
+	case storageType == "block" && entry.Provider == "huawei":
+		return ctx.loc.T("cmd.target.account.create_block.huawei.usage_notes")
 	case storageType == "block" && entry.Provider == "openstack" && specialized:
 		return ctx.loc.T("cmd.target.account.create_block.openstack.usage_notes")
 	case storageType == "objectstorage" && entry.Provider == "aliyun" && specialized:
