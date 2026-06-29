@@ -7,9 +7,76 @@ import (
 
 	"hyperbdr-client/catalog"
 	apptargetresource "hyperbdr-client/internal/app/targetresource"
+	"hyperbdr-client/internal/config"
 
 	"github.com/spf13/cobra"
 )
+
+const cloudResourceFetchHelpProfileAnnotation = "cloud-resource-fetch-help-profile"
+
+type cloudResourceFetchSelection struct {
+	CloudAccountID    string
+	Provider          string
+	PublicStorageType string
+	BackendStorage    string
+	DirectFlagSet     bool
+	directArgs        []string
+	positionalArgs    []string
+}
+
+type cloudResourceFetchProfile struct {
+	Entry       catalog.CloudEntry
+	Provider    string
+	StorageType string
+	Kind        string
+}
+
+func newCloudResourceCommand(ctx *context) *cobra.Command {
+	cmd := newGroupCommand(ctx, "cloud-resource", "cmd.cloud_resource.short", "cmd.cloud_resource.long", "cmd.cloud_resource.examples", "cmd.cloud_resource.notes", "cloud-resource")
+	addHelpLayout(cmd, helpLayoutGroup)
+	addUsageLine(cmd, ctx, "cmd.cloud_resource.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.cloud_resource.usage_notes")
+	cmd.AddCommand(newCloudResourceFetchCommand(ctx))
+	return cmd
+}
+
+func newCloudResourceFetchCommand(ctx *context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:                "fetch",
+		Short:              ctx.loc.T("cmd.cloud_resource.fetch.short"),
+		Long:               ctx.loc.T("cmd.cloud_resource.fetch.long"),
+		Example:            strings.TrimSpace(ctx.loc.T("cmd.cloud_resource.fetch.examples")),
+		DisableFlagParsing: true,
+		Args:               cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			selection, err := parseCloudResourceFetchSelection(args)
+			if err != nil {
+				return err
+			}
+			if rawArgsHelp(cmd, args) {
+				return renderCloudResourceFetchHelp(ctx, cmd, selection)
+			}
+			return runCloudResourceFetchBySelection(ctx, selection, args)
+		},
+	}
+	addCloudResourceFetchAllFlags(cmd, ctx)
+	addHelpLayout(cmd, helpLayoutFourSection)
+	addUsageLine(cmd, ctx, "cmd.cloud_resource.fetch.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.cloud_resource.fetch.usage_notes")
+	return cmd
+}
+
+func addCloudResourceFetchAllFlags(cmd *cobra.Command, ctx *context) {
+	for _, name := range []string{
+		"cloud-account-id", "cloud-type", "storage-type", "cloud-auth-type",
+		"fetch-res", "region-id", "zone-id", "flavor-id", "flavor-vcpus", "flavor-ram", "boot-mode",
+		"access-key-id", "access-key-secret", "access-id", "access-secret",
+		"auth-url", "username", "password", "user-domain-id",
+		"project-id", "project-domain-id", "project-name", "compute-zone-id", "block-store-zone-id",
+	} {
+		addFlagString(cmd, ctx, name)
+	}
+}
 
 func newTargetResourceCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "resource", "cmd.target.resource.short", "cmd.target.resource.long", "cmd.target.resource.examples", "cmd.target.resource.notes", "target resource")
@@ -122,6 +189,297 @@ func runTargetResourceFetch(ctx *context, args []string) error {
 		return err
 	}
 	return writeTargetResourceResponse(ctx, result, parsed.meta)
+}
+
+func runCloudResourceFetchBySelection(ctx *context, selection cloudResourceFetchSelection, args []string) error {
+	if len(selection.positionalArgs) > 0 {
+		return fmt.Errorf("unexpected argument %q", selection.positionalArgs[0])
+	}
+	if selection.CloudAccountID != "" {
+		if selection.DirectFlagSet {
+			return fmt.Errorf("cloud-account-id cannot be used with cloud-type, storage-type, or credential flags")
+		}
+		return runTargetResourceFetch(ctx, args)
+	}
+
+	profile, err := resolveCloudResourceDirectProfile(selection)
+	if err != nil {
+		return err
+	}
+	return runTargetResourceDirectAuth(ctx, "cloud-resource fetch", profile.Entry.CloudType, profile.StorageType, selection.directArgs)
+}
+
+func parseCloudResourceFetchSelection(args []string) (cloudResourceFetchSelection, error) {
+	selection := cloudResourceFetchSelection{}
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--help" || arg == "-h" {
+			continue
+		}
+		if !strings.HasPrefix(arg, "--") {
+			selection.positionalArgs = append(selection.positionalArgs, arg)
+			continue
+		}
+		name, value, hasInline := splitFlag(arg)
+		name = strings.TrimPrefix(name, "--")
+		switch name {
+		case "cloud-account-id":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return selection, err
+			}
+			selection.CloudAccountID = v
+			i = next
+		case "cloud-type":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return selection, err
+			}
+			selection.Provider = v
+			selection.DirectFlagSet = true
+			i = next
+		case "storage-type":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return selection, err
+			}
+			public, backend, err := normalizeCloudResourcePublicStorageType(v)
+			if err != nil {
+				return selection, err
+			}
+			selection.PublicStorageType = public
+			selection.BackendStorage = backend
+			selection.DirectFlagSet = true
+			i = next
+		default:
+			if isCloudResourceCredentialFlag(name) {
+				selection.DirectFlagSet = true
+			}
+			selection.directArgs = append(selection.directArgs, arg)
+			if !hasInline && i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
+				selection.directArgs = append(selection.directArgs, args[i+1])
+				i++
+			}
+		}
+	}
+	return selection, nil
+}
+
+func isCloudResourceCredentialFlag(name string) bool {
+	switch name {
+	case "cloud-auth-type", "access-key-id", "access-key-secret", "access-id", "access-secret", "auth-url", "username", "password", "user-domain-id":
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeCloudResourcePublicStorageType(value string) (public, backend string, err error) {
+	switch strings.TrimSpace(value) {
+	case "block_storage":
+		return "block_storage", "HyperGate", nil
+	case "object_storage":
+		return "object_storage", "objectstorage", nil
+	case "":
+		return "", "", nil
+	default:
+		return "", "", fmt.Errorf("storage-type must be block_storage or object_storage")
+	}
+}
+
+func resolveCloudResourceDirectProfile(selection cloudResourceFetchSelection) (cloudResourceFetchProfile, error) {
+	if strings.TrimSpace(selection.PublicStorageType) == "" {
+		return cloudResourceFetchProfile{}, fmt.Errorf("storage-type is required")
+	}
+	if strings.TrimSpace(selection.Provider) == "" {
+		return cloudResourceFetchProfile{}, fmt.Errorf("cloud-type is required")
+	}
+
+	entry, ok := findCloudResourceProvider(selection.Provider, selection.BackendStorage)
+	if !ok {
+		return cloudResourceFetchProfile{}, fmt.Errorf("cloud-type %q does not support storage-type %s", selection.Provider, selection.PublicStorageType)
+	}
+	return cloudResourceFetchProfile{
+		Entry:       entry,
+		Provider:    entry.Provider,
+		StorageType: selection.BackendStorage,
+		Kind:        cloudResourceStorageKind(selection.BackendStorage),
+	}, nil
+}
+
+func findCloudResourceProvider(provider, storageType string) (catalog.CloudEntry, bool) {
+	var clouds []catalog.CloudEntry
+	if cloudResourceStorageKind(storageType) == "block" {
+		clouds = catalog.EnabledBlockClouds()
+	} else {
+		clouds = catalog.EnabledObjectClouds()
+	}
+	needle := strings.ToLower(strings.TrimSpace(provider))
+	for _, entry := range clouds {
+		if strings.ToLower(strings.TrimSpace(entry.Provider)) == needle {
+			return entry, true
+		}
+	}
+	return catalog.CloudEntry{}, false
+}
+
+func findCloudResourceBackendProfile(cloudType, storageType string) (cloudResourceFetchProfile, bool) {
+	var entry catalog.CloudEntry
+	var ok bool
+	if cloudResourceStorageKind(storageType) == "block" {
+		entry, ok = catalog.FindBlockCloud(cloudType)
+	} else {
+		entry, ok = catalog.FindObjectCloud(cloudType)
+	}
+	if !ok {
+		return cloudResourceFetchProfile{}, false
+	}
+	return cloudResourceFetchProfile{
+		Entry:       entry,
+		Provider:    entry.Provider,
+		StorageType: storageType,
+		Kind:        cloudResourceStorageKind(storageType),
+	}, true
+}
+
+func cloudResourceStorageKind(storageType string) string {
+	switch strings.ToLower(strings.TrimSpace(storageType)) {
+	case "hypergate", "blockstorage", "block", "block_storage":
+		return "block"
+	default:
+		return "objectstorage"
+	}
+}
+
+func renderCloudResourceFetchHelp(ctx *context, cmd *cobra.Command, selection cloudResourceFetchSelection) error {
+	profile := "generic"
+	switch {
+	case selection.CloudAccountID != "":
+		if selection.DirectFlagSet {
+			return fmt.Errorf("cloud-account-id cannot be used with cloud-type, storage-type, or credential flags")
+		}
+		cfg, err := config.Resolve(ctx.flags)
+		if err != nil {
+			return err
+		}
+		ctx.cfg = cfg
+		accountCtx, err := apptargetresource.NewService(commandAPIAdapter{ctx: ctx}).CloudAccountContext(selection.CloudAccountID)
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(accountCtx.CloudType) == "" {
+			return fmt.Errorf("cloud-type cannot be inferred from cloud-account-id")
+		}
+		if strings.TrimSpace(accountCtx.StorageType) == "" {
+			return fmt.Errorf("storage-type cannot be inferred from cloud-account-id")
+		}
+		backendProfile, _ := findCloudResourceBackendProfile(accountCtx.CloudType, accountCtx.StorageType)
+		profile = "account|" + cloudResourceStorageKind(accountCtx.StorageType)
+		if backendProfile.Provider == "openstack" {
+			profile = "account|openstack"
+		}
+		addUsageLine(cmd, ctx, "cmd.cloud_resource.fetch.account.usage_line")
+		addAnnotationValue(cmd, usageNotesAnnotation, cloudResourceAccountUsageNotes(ctx, accountCtx, backendProfile))
+		addHelpDescription(cmd, ctx, "cmd.cloud_resource.fetch.account.short")
+	case selection.PublicStorageType != "" && selection.Provider == "":
+		profile = selection.PublicStorageType
+		addUsageLine(cmd, ctx, cloudResourceStorageUsageLineKey(selection.PublicStorageType))
+		addAnnotationValue(cmd, usageNotesAnnotation, cloudResourceStorageUsageNotes(ctx, selection.BackendStorage))
+		addHelpDescription(cmd, ctx, cloudResourceStorageShortKey(selection.PublicStorageType))
+	case selection.PublicStorageType != "" && selection.Provider != "":
+		resolved, err := resolveCloudResourceDirectProfile(selection)
+		if err != nil {
+			return err
+		}
+		profile = "direct|" + resolved.Kind
+		if resolved.Provider == "openstack" {
+			profile = "direct|openstack"
+		}
+		applyCloudResourceDirectHelp(ctx, cmd, resolved)
+	}
+	addAnnotationValue(cmd, cloudResourceFetchHelpProfileAnnotation, profile)
+	return renderHelp(cmd, ctx)
+}
+
+func cloudResourceStorageUsageLineKey(publicStorageType string) string {
+	if publicStorageType == "block_storage" {
+		return "cmd.cloud_resource.fetch.block_storage.usage_line"
+	}
+	return "cmd.cloud_resource.fetch.object_storage.usage_line"
+}
+
+func cloudResourceStorageShortKey(publicStorageType string) string {
+	if publicStorageType == "block_storage" {
+		return "cmd.cloud_resource.fetch.block_storage.short"
+	}
+	return "cmd.cloud_resource.fetch.object_storage.short"
+}
+
+func cloudResourceStorageUsageNotes(ctx *context, storageType string) string {
+	var notes string
+	var providers []catalog.CloudEntry
+	if cloudResourceStorageKind(storageType) == "block" {
+		notes = ctx.loc.T("cmd.cloud_resource.fetch.block_storage.usage_notes")
+		providers = catalog.EnabledBlockClouds()
+	} else {
+		notes = ctx.loc.T("cmd.cloud_resource.fetch.object_storage.usage_notes")
+		providers = catalog.EnabledObjectClouds()
+	}
+	if len(providers) == 0 {
+		return notes
+	}
+	label := "Providers:"
+	if ctx.loc.Lang() == "zh_cn" {
+		label = "云厂商:"
+	}
+	var b strings.Builder
+	b.WriteString(strings.TrimSpace(notes))
+	b.WriteString("\n\n")
+	b.WriteString(label)
+	for _, entry := range providers {
+		b.WriteString("\n  ")
+		b.WriteString(entry.Provider)
+	}
+	return b.String()
+}
+
+func applyCloudResourceDirectHelp(ctx *context, cmd *cobra.Command, profile cloudResourceFetchProfile) {
+	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(cloudResourceDirectUsageLineKey(profile.Kind)), profile.Provider))
+	if profile.Provider == "openstack" {
+		addAnnotationValue(cmd, usageNotesAnnotation, fmt.Sprintf(ctx.loc.T("cmd.cloud_resource.fetch.openstack.usage_notes"), profile.Provider, cloudResourcePublicStorageType(profile.Kind), profile.Provider, cloudResourcePublicStorageType(profile.Kind)))
+	} else {
+		addAnnotationValue(cmd, usageNotesAnnotation, fmt.Sprintf(ctx.loc.T("cmd.cloud_resource.fetch.provider.usage_notes"), localizedCloudEntryName(ctx, profile.Entry), profile.Provider, cloudResourcePublicStorageType(profile.Kind), profile.Provider, cloudResourcePublicStorageType(profile.Kind)))
+	}
+	addHelpDescription(cmd, ctx, cloudResourceDirectShortKey(profile.Kind))
+}
+
+func cloudResourceDirectUsageLineKey(kind string) string {
+	if kind == "block" {
+		return "cmd.cloud_resource.fetch.provider.block.usage_line"
+	}
+	return "cmd.cloud_resource.fetch.provider.object.usage_line"
+}
+
+func cloudResourceDirectShortKey(kind string) string {
+	if kind == "block" {
+		return "cmd.cloud_resource.fetch.provider.block.short"
+	}
+	return "cmd.cloud_resource.fetch.provider.object.short"
+}
+
+func cloudResourcePublicStorageType(kind string) string {
+	if kind == "block" {
+		return "block_storage"
+	}
+	return "object_storage"
+}
+
+func cloudResourceAccountUsageNotes(ctx *context, accountCtx apptargetresource.CloudAccountContext, profile cloudResourceFetchProfile) string {
+	provider := profile.Provider
+	if provider == "" {
+		provider = accountCtx.CloudType
+	}
+	return fmt.Sprintf(ctx.loc.T("cmd.cloud_resource.fetch.account.usage_notes"), accountCtx.CloudAccountID, accountCtx.CloudType, accountCtx.StorageType, provider)
 }
 
 func parseTargetResourceDirectAuthArgs(commandName, cloudType, storageType string, args []string) (apptargetresource.DirectAuthSpec, error) {

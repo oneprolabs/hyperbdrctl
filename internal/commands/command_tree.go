@@ -34,6 +34,7 @@ func newRootCommand(ctx *context) *cobra.Command {
 		newSyncProxyCommand(ctx),
 		newLicensesCommand(ctx),
 		newCloudAccountCommand(ctx),
+		newCloudResourceCommand(ctx),
 		newTargetCommand(ctx),
 	)
 	configureBuiltinHelpArtifacts(root, ctx)
@@ -49,9 +50,12 @@ func newHelpCommand(ctx *context) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			target := cmd.Root()
 			if len(args) > 0 {
-				found, _, err := cmd.Root().Find(args)
+				found, remaining, err := cmd.Root().Find(args)
 				if err != nil {
 					return err
+				}
+				if len(remaining) > 0 {
+					return errUnknown(found.CommandPath(), remaining[0])
 				}
 				target = found
 			}
@@ -392,7 +396,6 @@ func newTargetCommand(ctx *context) *cobra.Command {
 	cmd.AddCommand(
 		supportsCmd,
 		newTargetCloudSyncGatewayCommand(ctx),
-		newTargetResourceCommand(ctx),
 		newTargetOSSCommand(ctx),
 	)
 	return cmd

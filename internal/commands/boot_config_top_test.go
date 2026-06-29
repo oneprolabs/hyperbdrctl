@@ -62,7 +62,7 @@ func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 		"hyperbdrctl cloud-account list",
 		"hyperbdrctl target cloud-sync-gateway list",
 		"hyperbdrctl target oss list",
-		"hyperbdrctl target resource fetch --help",
+		"hyperbdrctl cloud-resource fetch --help",
 		"hyperbdrctl boot-config apply \\",
 		"Using a file:",
 		"--region-id cn-shanghai",
@@ -102,7 +102,7 @@ func TestTopLevelBootConfigHelpShowsGetSubcommand(t *testing.T) {
 		"hyperbdrctl host list",
 		"hyperbdrctl boot-config get --id <host_id>",
 		"hyperbdrctl target cloud-sync-gateway list",
-		"hyperbdrctl target resource fetch --help",
+		"hyperbdrctl cloud-resource fetch --help",
 		"hyperbdrctl boot-config apply --help",
 	} {
 		if !strings.Contains(got, want) {
@@ -169,7 +169,7 @@ func TestTopLevelBootConfigHelpZhCNMatchesArchiveGuidance(t *testing.T) {
 		"hyperbdrctl cloud-account list",
 		"hyperbdrctl target cloud-sync-gateway list",
 		"hyperbdrctl target oss list",
-		"hyperbdrctl target resource fetch --help",
+		"hyperbdrctl cloud-resource fetch --help",
 		"hyperbdrctl boot-config apply --help",
 	} {
 		if !strings.Contains(got, want) {

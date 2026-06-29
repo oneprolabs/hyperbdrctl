@@ -214,13 +214,13 @@ func cloudAccountCreateStorageUsageNotes(ctx *context, storageType string) strin
 
 func rewriteCloudAccountCreateDirectCommandRefs(notes, provider, cloudType, storageType string) string {
 	publicStorageType := "object_storage"
-	resourcePath := "target resource oss"
 	if storageType == "block" {
 		publicStorageType = "block_storage"
-		resourcePath = "target resource block"
 	}
 	createPath := fmt.Sprintf("hyperbdrctl cloud-account create --cloud-type %s --storage-type %s", provider, publicStorageType)
 	createFragment := fmt.Sprintf("cloud-account create --cloud-type %s --storage-type %s", provider, publicStorageType)
+	resourcePath := fmt.Sprintf("hyperbdrctl cloud-resource fetch --cloud-type %s --storage-type %s", provider, publicStorageType)
+	resourceFragment := fmt.Sprintf("cloud-resource fetch --cloud-type %s --storage-type %s", provider, publicStorageType)
 	replacements := []struct {
 		old string
 		new string
@@ -233,10 +233,10 @@ func rewriteCloudAccountCreateDirectCommandRefs(notes, provider, cloudType, stor
 		{fmt.Sprintf("hyperbdrctl target account create-oss %s", provider), createPath},
 		{fmt.Sprintf("target account create-block %s", provider), createFragment},
 		{fmt.Sprintf("target account create-oss %s", provider), createFragment},
-		{fmt.Sprintf("hyperbdrctl target account fetch-block-resources %s", provider), fmt.Sprintf("hyperbdrctl %s %s", resourcePath, provider)},
-		{fmt.Sprintf("hyperbdrctl target account fetch-oss-resources %s", provider), fmt.Sprintf("hyperbdrctl %s %s", resourcePath, provider)},
-		{fmt.Sprintf("target account fetch-block-resources %s", provider), fmt.Sprintf("%s %s", resourcePath, provider)},
-		{fmt.Sprintf("target account fetch-oss-resources %s", provider), fmt.Sprintf("%s %s", resourcePath, provider)},
+		{fmt.Sprintf("hyperbdrctl target account fetch-block-resources %s", provider), resourcePath},
+		{fmt.Sprintf("hyperbdrctl target account fetch-oss-resources %s", provider), resourcePath},
+		{fmt.Sprintf("target account fetch-block-resources %s", provider), resourceFragment},
+		{fmt.Sprintf("target account fetch-oss-resources %s", provider), resourceFragment},
 	}
 	for _, replacement := range replacements {
 		notes = strings.ReplaceAll(notes, replacement.old, replacement.new)

@@ -9,31 +9,36 @@ import (
 	"testing"
 )
 
-func TestTargetResourceHelpUsesGroupLayout(t *testing.T) {
+func TestCloudResourceHelpUsesGroupLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "resource", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-resource", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
 	text := out.String()
-	for _, want := range []string{"Usage:", "\nFlags:\n", "\nCommands:\n", "block", "oss", "fetch", "Usage Notes:"} {
+	for _, want := range []string{"Usage:", "\nFlags:\n", "\nCommands:\n", "fetch", "Usage Notes:"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"\n  block", "\n  oss"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
 	}
 	assertNoHelpFooter(t, text)
 }
 
-func TestTargetResourceProviderGroupsShowProviders(t *testing.T) {
+func TestCloudResourceStorageHelpShowsProviders(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	cases := [][]string{
-		{"target", "resource", "block", "--help"},
-		{"target", "resource", "oss", "--help"},
+		{"cloud-resource", "fetch", "--storage-type", "block_storage", "--help"},
+		{"cloud-resource", "fetch", "--storage-type", "object_storage", "--help"},
 	}
 
 	for _, args := range cases {
@@ -42,7 +47,7 @@ func TestTargetResourceProviderGroupsShowProviders(t *testing.T) {
 			t.Fatalf("args=%v err=%v", args, err)
 		}
 		text := out.String()
-		for _, want := range []string{"aliyun", "openstack", "Usage Notes:"} {
+		for _, want := range []string{"--cloud-type", "--storage-type", "aliyun", "openstack", "Usage Notes:"} {
 			if !strings.Contains(text, want) {
 				t.Fatalf("args=%v missing %q: %q", args, want, text)
 			}
@@ -51,39 +56,110 @@ func TestTargetResourceProviderGroupsShowProviders(t *testing.T) {
 	}
 }
 
-func TestTargetResourceFetchHelpRequiresCloudAccountID(t *testing.T) {
+func TestCloudResourceFetchHelpShowsGenericModes(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "resource", "fetch", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-resource", "fetch", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 	text := out.String()
-	for _, want := range []string{"--cloud-account-id", "--fetch-res", "Usage Notes:"} {
+	for _, want := range []string{"--cloud-account-id", "--cloud-type", "--storage-type", "--fetch-res", "Usage Notes:"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
 }
 
-func TestTargetResourceDirectAuthRejectsCloudAccountID(t *testing.T) {
+func TestCloudResourceDirectHelpShowsProviderProfile(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		args []string
+		want []string
+	}{
+		{
+			args: []string{"cloud-resource", "fetch", "--cloud-type", "aliyun", "--storage-type", "block_storage", "--help"},
+			want: []string{"--access-key-id", "--access-key-secret", "block_storage", "Usage Notes:"},
+		},
+		{
+			args: []string{"cloud-resource", "fetch", "--cloud-type", "openstack", "--storage-type", "object_storage", "--help"},
+			want: []string{"--auth-url", "--username", "--password", "--user-domain-id", "object_storage", "Usage Notes:"},
+		},
+	}
+	for _, tt := range cases {
+		var out, errOut bytes.Buffer
+		if err := Execute(tt.args, &out, &errOut); err != nil {
+			t.Fatalf("args=%v err=%v", tt.args, err)
+		}
+		text := out.String()
+		for _, want := range tt.want {
+			if !strings.Contains(text, want) {
+				t.Fatalf("args=%v missing %q: %q", tt.args, want, text)
+			}
+		}
+		assertNoHelpFooter(t, text)
+	}
+}
+
+func TestCloudResourceAccountHelpReadsAccountDetail(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_type":   "aliyun_bs",
+				"storage_type": "HyperGate",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"cloud-resource", "fetch",
+		"--cloud-account-id", "account-1",
+		"--help",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/hypermotion/v1/cloud_accounts/account-1" {
+		t.Fatalf("path=%q", gotPath)
+	}
+	text := out.String()
+	for _, want := range []string{"--cloud-account-id", "aliyun_bs", "HyperGate", "Usage Notes:"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+}
+
+func TestCloudResourceRejectsCloudAccountIDWithDirectFlags(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"target", "resource", "block", "aliyun",
+		"cloud-resource", "fetch",
+		"--cloud-type", "aliyun",
+		"--storage-type", "block_storage",
 		"--cloud-account-id", "account-1",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 	), &out, &errOut)
-	if err == nil || err.Error() != "cloud-account-id cannot be used with target resource block aliyun" {
+	if err == nil || err.Error() != "cloud-account-id cannot be used with cloud-type, storage-type, or credential flags" {
 		t.Fatalf("err=%v", err)
 	}
 }
 
-func TestTargetResourceBlockUsesDirectAuthEndpoint(t *testing.T) {
+func TestCloudResourceBlockUsesDirectAuthEndpoint(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -109,7 +185,9 @@ func TestTargetResourceBlockUsesDirectAuthEndpoint(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "resource", "block", "aliyun",
+		"cloud-resource", "fetch",
+		"--cloud-type", "aliyun",
+		"--storage-type", "block_storage",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--fetch-res", "regions",
@@ -129,13 +207,17 @@ func TestTargetResourceBlockUsesDirectAuthEndpoint(t *testing.T) {
 	}
 }
 
-func TestTargetResourceOpenStackUsesTargetAuthEndpoint(t *testing.T) {
+func TestCloudResourceOpenStackUsesTargetAuthEndpoint(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var gotPath string
+	var gotBody map[string]interface{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"code": "00000000",
 			"data": map[string]interface{}{
@@ -151,7 +233,9 @@ func TestTargetResourceOpenStackUsesTargetAuthEndpoint(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "resource", "oss", "openstack",
+		"cloud-resource", "fetch",
+		"--cloud-type", "openstack",
+		"--storage-type", "object_storage",
 		"--auth-url", "http://identity:5000/v3",
 		"--username", "demo",
 		"--password", "secret",
@@ -163,9 +247,13 @@ func TestTargetResourceOpenStackUsesTargetAuthEndpoint(t *testing.T) {
 	if gotPath != "/api/v2/postTargetCloudInfoForAuth" {
 		t.Fatalf("path=%q", gotPath)
 	}
+	cloudAccount := gotBody["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_type"] != "openstack" || cloudAccount["storage_type"] != "objectstorage" {
+		t.Fatalf("cloud_account=%#v", cloudAccount)
+	}
 }
 
-func TestTargetResourceFetchUsesGetCloudInfoByDefault(t *testing.T) {
+func TestCloudResourceFetchUsesGetCloudInfoByDefault(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -203,7 +291,7 @@ func TestTargetResourceFetchUsesGetCloudInfoByDefault(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "resource", "fetch",
+		"cloud-resource", "fetch",
 		"--cloud-account-id", "account-1",
 		"--fetch-res", "regions",
 	), &out, &errOut)
@@ -218,7 +306,7 @@ func TestTargetResourceFetchUsesGetCloudInfoByDefault(t *testing.T) {
 	}
 }
 
-func TestTargetResourceFetchActionRuleUsesCloudAccountAction(t *testing.T) {
+func TestCloudResourceFetchActionRuleUsesCloudAccountAction(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -251,7 +339,7 @@ func TestTargetResourceFetchActionRuleUsesCloudAccountAction(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "resource", "fetch",
+		"cloud-resource", "fetch",
 		"--cloud-account-id", "account-1",
 		"--fetch-res", "abilities",
 	), &out, &errOut)
@@ -263,7 +351,7 @@ func TestTargetResourceFetchActionRuleUsesCloudAccountAction(t *testing.T) {
 	}
 }
 
-func TestTargetResourceFetchFlavorFiltersRenderTable(t *testing.T) {
+func TestCloudResourceFetchFlavorFiltersRenderTable(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -312,7 +400,7 @@ func TestTargetResourceFetchFlavorFiltersRenderTable(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "resource", "fetch",
+		"cloud-resource", "fetch",
 		"--cloud-account-id", "account-1",
 		"--zone-id", "cn-beijing-h",
 		"--fetch-res", "flavors",
@@ -334,7 +422,7 @@ func TestTargetResourceFetchFlavorFiltersRenderTable(t *testing.T) {
 	}
 }
 
-func TestTargetResourceFetchFlavorFiltersDoNotAffectJSONOutput(t *testing.T) {
+func TestCloudResourceFetchFlavorFiltersDoNotAffectJSONOutput(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -382,7 +470,7 @@ func TestTargetResourceFetchFlavorFiltersDoNotAffectJSONOutput(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "resource", "fetch",
+		"cloud-resource", "fetch",
 		"--cloud-account-id", "account-1",
 		"--zone-id", "cn-beijing-h",
 		"--fetch-res", "flavors",
@@ -396,6 +484,54 @@ func TestTargetResourceFetchFlavorFiltersDoNotAffectJSONOutput(t *testing.T) {
 	for _, want := range []string{"ecs.u1-c1m2.large", "ecs.g6.xlarge"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("json output=%q, missing %q", text, want)
+		}
+	}
+}
+
+func TestRemovedTargetResourceCommandsReturnUnknown(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := [][]string{
+		{"target", "resource"},
+		{"target", "resource", "block"},
+		{"target", "resource", "block", "aliyun"},
+		{"target", "resource", "oss"},
+		{"target", "resource", "oss", "openstack"},
+		{"target", "resource", "fetch"},
+		{"help", "target", "resource"},
+		{"help", "target", "resource", "block"},
+		{"help", "target", "resource", "oss"},
+		{"help", "target", "resource", "fetch"},
+	}
+	for _, args := range cases {
+		var out, errOut bytes.Buffer
+		err := Execute(withHost(t, "https://example.invalid", args...), &out, &errOut)
+		if err == nil || !strings.Contains(err.Error(), "unknown") {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
+	}
+}
+
+func TestCloudResourceFetchValidation(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		args []string
+		want string
+	}{
+		{args: []string{"cloud-resource", "fetch"}, want: "storage-type is required"},
+		{args: []string{"cloud-resource", "fetch", "aliyun"}, want: `unexpected argument "aliyun"`},
+		{args: []string{"cloud-resource", "fetch", "--cloud-type", "aliyun"}, want: "storage-type is required"},
+		{args: []string{"cloud-resource", "fetch", "--storage-type", "archive"}, want: "storage-type must be block_storage or object_storage"},
+		{args: []string{"cloud-resource", "fetch", "--cloud-type", "vmware", "--storage-type", "block_storage"}, want: `cloud-type "vmware" does not support storage-type block_storage`},
+	}
+	for _, tt := range cases {
+		var out, errOut bytes.Buffer
+		err := Execute(withHost(t, "https://example.invalid", tt.args...), &out, &errOut)
+		if err == nil || !strings.Contains(err.Error(), tt.want) {
+			t.Fatalf("args=%v err=%v, want %q", tt.args, err, tt.want)
 		}
 	}
 }

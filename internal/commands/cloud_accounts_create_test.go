@@ -171,7 +171,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "block aliyun",
 			args: []string{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "target resource block aliyun", "--file string", "--set stringArray", "--set-json stringArray", "--foo-bar <value>"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "cloud-resource fetch --cloud-type aliyun --storage-type block_storage", "--file string", "--set stringArray", "--set-json stringArray", "--foo-bar <value>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -200,7 +200,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "oss aliyun",
 			args: []string{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "object_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "boot_loader_images", "target resource oss aliyun", "--file string", "--set stringArray", "--set-json stringArray"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "boot_loader_images", "cloud-resource fetch --cloud-type aliyun --storage-type object_storage", "--file string", "--set stringArray", "--set-json stringArray"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -217,7 +217,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "oss openstack",
 			args: []string{"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "Parameter sources:", "OpenStack RC file", "target resource oss openstack", "--file string", "--set stringArray", "--set-json stringArray"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "Parameter sources:", "OpenStack RC file", "cloud-resource fetch --cloud-type openstack --storage-type object_storage", "--file string", "--set stringArray", "--set-json stringArray"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",

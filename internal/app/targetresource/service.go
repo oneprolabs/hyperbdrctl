@@ -58,6 +58,10 @@ type CloudAccountContext struct {
 	RegionID       string
 }
 
+func (s Service) CloudAccountContext(accountID string) (CloudAccountContext, error) {
+	return s.loadCloudAccountContext(accountID)
+}
+
 type accountFetchRoute string
 
 const (

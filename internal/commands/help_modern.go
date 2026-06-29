@@ -99,6 +99,9 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	if path == "hyperbdrctl cloud-account create" {
 		return cloudAccountCreateFlagSpecsForProfile(cmd.Annotations[cloudAccountCreateHelpProfileAnnotation])
 	}
+	if path == "hyperbdrctl cloud-resource fetch" {
+		return cloudResourceFetchFlagSpecsForProfile(cmd.Annotations[cloudResourceFetchHelpProfileAnnotation])
+	}
 	switch {
 	case strings.HasPrefix(path, "hyperbdrctl boot-config fetch-block-resources "):
 		return bootConfigFetchProviderFlagSpecs()
@@ -674,6 +677,13 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl cloud-resource":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl target":
 		return []flagHelpSpec{
 			{name: "debug"},
@@ -1027,6 +1037,94 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	default:
 		return nil
+	}
+}
+
+func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
+	commonGlobal := []flagHelpSpec{
+		{name: "debug"},
+		{name: "lang"},
+		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+		{name: "help"},
+	}
+	accountFlags := []flagHelpSpec{
+		{name: "cloud-account-id", required: true},
+		{name: "fetch-res"},
+		{name: "region-id"},
+		{name: "zone-id"},
+		{name: "flavor-id"},
+		{name: "flavor-vcpus"},
+		{name: "flavor-ram"},
+	}
+	openStackContext := []flagHelpSpec{
+		{name: "project-id"},
+		{name: "project-domain-id"},
+		{name: "project-name"},
+		{name: "compute-zone-id"},
+		{name: "block-store-zone-id"},
+	}
+	directCommon := []flagHelpSpec{
+		{name: "cloud-type", required: true},
+		{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+		{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
+		{name: "fetch-res"},
+		{name: "region-id"},
+		{name: "zone-id"},
+		{name: "boot-mode"},
+	}
+	directOpenStack := []flagHelpSpec{
+		{name: "cloud-type", required: true},
+		{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+		{name: "auth-url", required: true},
+		{name: "username", required: true},
+		{name: "password", required: true},
+		{name: "user-domain-id", required: true},
+		{name: "fetch-res"},
+		{name: "region-id"},
+		{name: "zone-id"},
+		{name: "project-id"},
+		{name: "project-domain-id"},
+		{name: "project-name"},
+		{name: "compute-zone-id"},
+		{name: "block-store-zone-id"},
+	}
+	switch profile {
+	case "account|openstack":
+		return append(append(accountFlags, openStackContext...), commonGlobal...)
+	case "account|block", "account|objectstorage":
+		return append(accountFlags, commonGlobal...)
+	case "block_storage", "object_storage":
+		return append([]flagHelpSpec{
+			{name: "cloud-type"},
+			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
+			{name: "fetch-res"},
+			{name: "region-id"},
+			{name: "zone-id"},
+			{name: "boot-mode"},
+		}, commonGlobal...)
+	case "direct|openstack":
+		return append(directOpenStack, commonGlobal...)
+	case "direct|block", "direct|objectstorage":
+		return append(directCommon, commonGlobal...)
+	default:
+		return append([]flagHelpSpec{
+			{name: "cloud-account-id"},
+			{name: "cloud-type"},
+			{name: "storage-type", choices: []string{"block_storage", "object_storage"}},
+			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
+			{name: "fetch-res"},
+			{name: "region-id"},
+			{name: "zone-id"},
+			{name: "flavor-id"},
+			{name: "flavor-vcpus"},
+			{name: "flavor-ram"},
+			{name: "boot-mode"},
+			{name: "auth-url"},
+			{name: "username"},
+			{name: "password"},
+			{name: "user-domain-id"},
+		}, commonGlobal...)
 	}
 }
 
