@@ -87,6 +87,127 @@ func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 	assertNoHelpFooter(t, got)
 }
 
+func TestTopLevelBootConfigApplyAccountHelpReadsAccountDetailForBlockProfile(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_type":   "aliyun_bs",
+				"storage_type": "HyperGate",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"boot-config", "apply",
+		"--cloud-account-id", "account-1",
+		"--help",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/hypermotion/v1/cloud_accounts/account-1" {
+		t.Fatalf("path=%q", gotPath)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"--id",
+		"--cloud-account-id",
+		"--storage-id",
+		"--volume-type-id",
+		"--security-group-id",
+		"hyperbdrctl cloud-sync-gateway list",
+		"hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help",
+		"cloud_type `aliyun_bs`",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"--boot-loader-image-id", "--system-volume-type-id", "--file string"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("help should not include %q: %q", unwanted, text)
+		}
+	}
+	assertNoHelpFooter(t, text)
+}
+
+func TestTopLevelBootConfigApplyAccountHelpShowsOpenStackObjectProfile(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_type":   "openstack",
+				"storage_type": "objectstorage",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"boot-config", "apply",
+		"--cloud-account-id", "account-1",
+		"--help",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"--project-id",
+		"--project-domain-id",
+		"--compute-zone-id",
+		"--system-volume-type-id",
+		"--boot-loader-image-id",
+		"--boot-loader-flavor-id",
+		"hyperbdrctl oss list",
+		"cloud_type `openstack`",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	assertNoHelpFooter(t, text)
+}
+
+func TestTopLevelBootConfigApplyAccountHelpRequiresResolvableContext(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"storage_type": "HyperGate",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"boot-config", "apply",
+		"--cloud-account-id", "account-1",
+		"--help",
+	), &out, &errOut)
+	if err == nil || err.Error() != "cloud-type cannot be inferred from cloud-account-id" {
+		t.Fatalf("err=%v", err)
+	}
+}
+
 func TestTopLevelBootConfigHelpShowsGetSubcommand(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

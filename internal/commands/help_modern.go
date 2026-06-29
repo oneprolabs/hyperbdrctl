@@ -104,6 +104,9 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	if path == "hyperbdrctl cloud-sync-gateway create" {
 		return cloudSyncGatewayCreateFlagSpecsForProfile(cmd.Annotations[cloudSyncGatewayCreateHelpProfileAnnotation])
 	}
+	if path == "hyperbdrctl boot-config apply" {
+		return bootConfigApplyFlagSpecsForProfile(cmd.Annotations[bootConfigApplyHelpProfileAnnotation])
+	}
 	if path == "hyperbdrctl oss buckets" || path == "hyperbdrctl oss create" {
 		return objectStorageFlagSpecsForProfile(path, cmd.Annotations[objectStorageHelpProfileAnnotation])
 	}
@@ -354,17 +357,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "help"},
 		}
 	case "hyperbdrctl boot-config apply":
-		return []flagHelpSpec{
-			{name: "id", required: true},
-			{name: "file"},
-			{name: "set"},
-			{name: "set-json"},
-			{name: "preview-request"},
-			{name: "debug"},
-			{name: "lang"},
-			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
-			{name: "help"},
-		}
+		return bootConfigApplyFlagSpecsForProfile("generic")
 	case "hyperbdrctl boot-config fetch-block-resources":
 		return []flagHelpSpec{
 			{name: "debug"},
@@ -1338,6 +1331,72 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "username"},
 			{name: "password"},
 			{name: "user-domain-id"},
+		}, commonGlobal...)
+	}
+}
+
+func bootConfigApplyFlagSpecsForProfile(profile string) []flagHelpSpec {
+	commonGlobal := []flagHelpSpec{
+		{name: "debug"},
+		{name: "lang"},
+		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+		{name: "help"},
+	}
+	commonOverrides := []flagHelpSpec{
+		{name: "file"},
+		{name: "set"},
+		{name: "set-json"},
+		{name: "preview-request"},
+	}
+	accountBase := []flagHelpSpec{
+		{name: "id", required: true},
+		{name: "cloud-account-id", required: true},
+		{name: "storage-id"},
+		{name: "region-id"},
+		{name: "zone-id"},
+		{name: "flavor-id"},
+		{name: "network-id"},
+		{name: "subnet-id"},
+		{name: "security-group-id"},
+	}
+	switch profile {
+	case "account|block":
+		return append(append(append(accountBase, []flagHelpSpec{
+			{name: "volume-type-id"},
+		}...), commonOverrides...), commonGlobal...)
+	case "account|object":
+		return append(append(append(accountBase, []flagHelpSpec{
+			{name: "system-volume-type-id"},
+			{name: "volume-type-id"},
+			{name: "boot-loader-image-id"},
+			{name: "boot-loader-flavor-id"},
+		}...), commonOverrides...), commonGlobal...)
+	case "account|openstack|block":
+		return append(append(append(accountBase, []flagHelpSpec{
+			{name: "project-id"},
+			{name: "project-domain-id"},
+			{name: "compute-zone-id"},
+			{name: "image-id"},
+			{name: "volume-type-id"},
+		}...), commonOverrides...), commonGlobal...)
+	case "account|openstack|object":
+		return append(append(append(accountBase, []flagHelpSpec{
+			{name: "project-id"},
+			{name: "project-domain-id"},
+			{name: "compute-zone-id"},
+			{name: "image-id"},
+			{name: "system-volume-type-id"},
+			{name: "volume-type-id"},
+			{name: "boot-loader-image-id"},
+			{name: "boot-loader-flavor-id"},
+		}...), commonOverrides...), commonGlobal...)
+	default:
+		return append([]flagHelpSpec{
+			{name: "id", required: true},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
+			{name: "preview-request"},
 		}, commonGlobal...)
 	}
 }
