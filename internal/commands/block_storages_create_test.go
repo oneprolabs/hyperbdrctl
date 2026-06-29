@@ -17,7 +17,7 @@ func TestBlockStoragesHelpShowsGuidedSections(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "cloud-sync-gateway", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-sync-gateway", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -40,12 +40,12 @@ func TestBlockStoragesHelpShowsGuidedSections(t *testing.T) {
 	}
 }
 
-func TestBlockStoragesCreateHelpShowsVendorSubcommands(t *testing.T) {
+func TestBlockStoragesCreateHelpShowsProviders(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute([]string{"target", "cloud-sync-gateway", "create", "--help"}, &out, &errOut)
+	err := Execute([]string{"cloud-sync-gateway", "create", "--help"}, &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,14 +61,15 @@ func TestBlockStoragesCreateHelpShowsVendorSubcommands(t *testing.T) {
 	for _, want := range []string{
 		"Usage:",
 		"\nFlags:\n",
-		"\nCommands:\n",
+		"--cloud-type",
+		"--cloud-account-id",
 		"Usage Notes:",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+	for _, unwanted := range []string{"\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
@@ -80,7 +81,7 @@ func TestBlockStoragesCreateGenericProviderHelpUsesFourSectionLayout(t *testing.
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "cloud-sync-gateway", "create", "huawei", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-sync-gateway", "create", "--cloud-type", "huawei", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -93,35 +94,38 @@ func TestBlockStoragesCreateGenericProviderHelpUsesFourSectionLayout(t *testing.
 		"--cloud-account-id",
 		"--boot-types-id string",
 		"--preview-request",
-		"target cloud-sync-gateway create huawei",
-		"target cloud-sync-gateway detail --id <storage_id>",
-		"target cloud-sync-gateway wait --id <storage_id>",
+		"--cloud-type",
+		"cloud-sync-gateway create --cloud-type huawei",
+		"cloud-sync-gateway detail --id <storage_id>",
+		"cloud-sync-gateway wait --id <storage_id>",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
-	}
-	if strings.Contains(text, "--cloud-type string") {
-		t.Fatalf("generic provider help should not expose --cloud-type flag: %q", text)
 	}
 	for _, unwanted := range []string{"\nCommands:\n", "\nWorkflow:\n", "\nMinimum Flags:\n", "\nCommon Optional Flags:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("generic provider help should not include %q: %q", unwanted, text)
 		}
 	}
+	for _, unwanted := range []string{"target cloud-sync-gateway", "cloud-sync-gateway create huawei"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("generic provider help should not include legacy command %q: %q", unwanted, text)
+		}
+	}
 }
 
-func TestBlockStoragesCreateGenericProviderRejectsCloudTypeFlag(t *testing.T) {
+func TestBlockStoragesCreateRejectsBackendCloudType(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
 	err := Execute([]string{
-		"target", "cloud-sync-gateway", "create", "huawei",
+		"cloud-sync-gateway", "create",
 		"--cloud-account-id", "account-1",
 		"--cloud-type", "huawei_bs",
 	}, &out, &errOut)
-	if err == nil || err.Error() != "cloud-type cannot be used with target cloud-sync-gateway create huawei" {
+	if err == nil || err.Error() != `cloud-type "huawei_bs" does not support cloud-sync-gateway create` {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -133,7 +137,7 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 	var out, errOut bytes.Buffer
 	err := Execute([]string{
 		"--output", "json",
-		"target", "cloud-sync-gateway", "create", "huawei",
+		"cloud-sync-gateway", "create", "--cloud-type", "huawei",
 		"--cloud-account-id", "account-1",
 		"--region-id", "cn-north-4",
 		"--network-id", "network-1",
@@ -178,10 +182,10 @@ func TestBlockStoragesCreateRequiresCloudSubcommand(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute([]string{
-		"target", "cloud-sync-gateway", "create",
+		"cloud-sync-gateway", "create",
 		"--cloud-account-id", "account-1",
 	}, &out, &errOut)
-	if err == nil || err.Error() != "target cloud-sync-gateway create requires subcommand" {
+	if err == nil || err.Error() != "cloud-type is required" {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -191,7 +195,7 @@ func TestBlockStoragesCreateAliyunHelpUsesFourSectionLayout(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "cloud-sync-gateway", "create", "aliyun", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-sync-gateway", "create", "--cloud-type", "aliyun", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -204,9 +208,9 @@ func TestBlockStoragesCreateAliyunHelpUsesFourSectionLayout(t *testing.T) {
 		"--cloud-account-id",
 		"--region-id",
 		"--boot-loader-image-id",
-		"target cloud-sync-gateway resources",
-		"target cloud-sync-gateway subnet-config --help",
-		"target cloud-sync-gateway wait --id <storage_id>",
+		"cloud-resource fetch",
+		"cloud-resource fetch --help",
+		"cloud-sync-gateway wait --id <storage_id>",
 		"floating_ip_without_proxy",
 		"floating_ip_with_hg_proxy",
 	} {
@@ -219,6 +223,11 @@ func TestBlockStoragesCreateAliyunHelpUsesFourSectionLayout(t *testing.T) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
 	}
+	for _, unwanted := range []string{"target cloud-sync-gateway", "cloud-sync-gateway create aliyun"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("aliyun create help should not include legacy command %q: %q", unwanted, text)
+		}
+	}
 }
 
 func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) {
@@ -226,7 +235,7 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "cloud-sync-gateway", "create", "openstack", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-sync-gateway", "create", "--cloud-type", "openstack", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -242,17 +251,22 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 		"boot_from_volume",
 		"default s3",
 		"floating_ip_without_proxy",
-		"target cloud-sync-gateway resources",
+		"cloud-resource fetch",
 		"--preview-request",
-		"target cloud-sync-gateway detail --id <storage_id> --output json",
-		"target cloud-sync-gateway wait --id <storage_id>",
+		"cloud-sync-gateway detail --id <storage_id> --output json",
+		"cloud-sync-gateway wait --id <storage_id>",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	if strings.Contains(text, "target cloud-sync-gateway subnet-config") {
+	if strings.Contains(text, "cloud-sync-gateway subnet-config") {
 		t.Fatalf("help should not advertise subnet-config for openstack: %q", text)
+	}
+	for _, unwanted := range []string{"target cloud-sync-gateway", "cloud-sync-gateway create openstack"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("openstack create help should not include legacy command %q: %q", unwanted, text)
+		}
 	}
 	for _, unwanted := range []string{"\nWorkflow:\n", "\nMinimum Flags:\n", "\nCommon Optional Flags:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
@@ -383,7 +397,7 @@ func TestBlockStoragesCreateAliyunValidatedPayloadWithAccountDefaults(t *testing
 	var out, errOut bytes.Buffer
 	args := withHost(t, srv.URL,
 		"--output", "json",
-		"target", "cloud-sync-gateway", "create", "aliyun",
+		"cloud-sync-gateway", "create", "--cloud-type", "aliyun",
 		"--cloud-account-id", "account-1",
 	)
 	if err := Execute(args, &out, &errOut); err != nil {
@@ -529,7 +543,7 @@ func TestBlockStoragesCreateAliyunAcceptsRawCloudInfoResponses(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "cloud-sync-gateway", "create", "aliyun",
+		"cloud-sync-gateway", "create", "--cloud-type", "aliyun",
 		"--cloud-account-id", "account-1",
 		"--region-id", "cn-beijing",
 		"--boot-loader-image-id", "win2016_1607_x64_dtc_zh-cn_40G_alibase_20260513.vhd",
@@ -631,7 +645,7 @@ func TestBlockStoragesCreateAliyunPrefersNetworkThatHasReturnedSubnets(t *testin
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "cloud-sync-gateway", "create", "aliyun",
+		"cloud-sync-gateway", "create", "--cloud-type", "aliyun",
 		"--cloud-account-id", "account-1",
 		"--region-id", "cn-beijing",
 		"--zone-id", "cn-beijing-h",
@@ -742,7 +756,7 @@ func TestBlockStoragesCreateAliyunPreviewRequestPrintsRequestBody(t *testing.T) 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "cloud-sync-gateway", "create", "aliyun",
+		"cloud-sync-gateway", "create", "--cloud-type", "aliyun",
 		"--cloud-account-id", "account-1",
 		"--preview-request",
 	), &out, &errOut)
@@ -850,7 +864,7 @@ func TestBlockStoragesCreateOpenStackValidatedPayload(t *testing.T) {
 	var out, errOut bytes.Buffer
 	args := withHost(t, srv.URL,
 		"--output", "json",
-		"target", "cloud-sync-gateway", "create", "openstack",
+		"cloud-sync-gateway", "create", "--cloud-type", "openstack",
 		"--cloud-account-id", "account-1",
 		"--boot-loader-image-id", "e85c097f-8a11-4218-98ea-3039282cbee2",
 	)
@@ -972,7 +986,7 @@ func TestBlockStoragesCreateOpenStackAcceptsRawCloudInfoResponse(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "cloud-sync-gateway", "create", "openstack",
+		"cloud-sync-gateway", "create", "--cloud-type", "openstack",
 		"--cloud-account-id", "account-1",
 		"--boot-loader-image-id", "boot-img-1",
 	), &out, &errOut)

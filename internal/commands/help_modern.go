@@ -102,6 +102,9 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	if path == "hyperbdrctl cloud-resource fetch" {
 		return cloudResourceFetchFlagSpecsForProfile(cmd.Annotations[cloudResourceFetchHelpProfileAnnotation])
 	}
+	if path == "hyperbdrctl cloud-sync-gateway create" {
+		return cloudSyncGatewayCreateFlagSpecsForProfile(cmd.Annotations[cloudSyncGatewayCreateHelpProfileAnnotation])
+	}
 	switch {
 	case strings.HasPrefix(path, "hyperbdrctl boot-config fetch-block-resources "):
 		return bootConfigFetchProviderFlagSpecs()
@@ -684,6 +687,52 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl cloud-sync-gateway":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl cloud-sync-gateway list":
+		return []flagHelpSpec{
+			{name: "page", defaultValue: "1"},
+			{name: "page-size", defaultValue: "100"},
+			{name: "type", defaultValue: "HyperGate"},
+			{name: "cloud-account-id"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl cloud-sync-gateway detail":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl cloud-sync-gateway delete":
+		return []flagHelpSpec{
+			{name: "id"},
+			{name: "ids"},
+			{name: "force", defaultValue: "false"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "hyperbdrctl cloud-sync-gateway wait":
+		return []flagHelpSpec{
+			{name: "id", required: true},
+			{name: "interval-seconds", defaultValue: "60"},
+			{name: "timeout-seconds", defaultValue: "3600"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl target":
 		return []flagHelpSpec{
 			{name: "debug"},
@@ -1037,6 +1086,107 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	default:
 		return nil
+	}
+}
+
+func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
+	commonGlobal := []flagHelpSpec{
+		{name: "preview-request"},
+		{name: "debug"},
+		{name: "lang"},
+		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+		{name: "help"},
+	}
+	genericProvider := []flagHelpSpec{
+		{name: "cloud-type", required: true},
+		{name: "cloud-account-id", required: true},
+		{name: "project-id"},
+		{name: "region-id"},
+		{name: "zone-id"},
+		{name: "compute-zone-id"},
+		{name: "image-id"},
+		{name: "flavor-id"},
+		{name: "network-id"},
+		{name: "subnet-id"},
+		{name: "fixed-ip"},
+		{name: "system-disk-type-id"},
+		{name: "volume-type-id"},
+		{name: "system-disk-size"},
+		{name: "block-store-zone-id"},
+		{name: "boot-loader-image-id"},
+		{name: "boot-loader-flavor-id"},
+		{name: "project-domain-id"},
+		{name: "boot-types-id", choices: []string{"boot_from_volume", "boot_from_image"}, defaultValue: "boot_from_volume"},
+		{name: "volume-proxy-type", defaultValue: "s3"},
+		{name: "hg-control-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
+		{name: "control-nat-ip"},
+		{name: "hg-data-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
+		{name: "data-nat-ip"},
+		{name: "bandwidth-size"},
+		{name: "hd-control-network", defaultValue: "floating_ip_with_hg_proxy"},
+	}
+	aliyun := []flagHelpSpec{
+		{name: "cloud-type", required: true},
+		{name: "cloud-account-id", required: true},
+		{name: "region-id"},
+		{name: "zone-id"},
+		{name: "image-id"},
+		{name: "flavor-id"},
+		{name: "network-id"},
+		{name: "subnet-id"},
+		{name: "fixed-ip"},
+		{name: "system-disk-type-id"},
+		{name: "system-disk-size"},
+		{name: "boot-loader-image-id"},
+		{name: "volume-proxy-type", defaultValue: "s3"},
+		{name: "hg-control-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
+		{name: "control-nat-ip"},
+		{name: "hg-data-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
+		{name: "data-nat-ip"},
+		{name: "bandwidth-size"},
+		{name: "hd-control-network", defaultValue: "floating_ip_with_hg_proxy"},
+	}
+	openstack := []flagHelpSpec{
+		{name: "cloud-type", required: true},
+		{name: "cloud-account-id", required: true},
+		{name: "boot-loader-image-id", required: true},
+		{name: "project-id"},
+		{name: "region-id"},
+		{name: "compute-zone-id"},
+		{name: "image-id"},
+		{name: "flavor-id"},
+		{name: "network-id"},
+		{name: "subnet-id"},
+		{name: "fixed-ip"},
+		{name: "volume-type-id"},
+		{name: "system-disk-size", defaultValue: "50"},
+		{name: "block-store-zone-id"},
+		{name: "boot-loader-flavor-id"},
+		{name: "project-domain-id"},
+		{name: "boot-types-id", choices: []string{"boot_from_volume", "boot_from_image"}, defaultValue: "boot_from_volume"},
+		{name: "volume-proxy-type", defaultValue: "s3"},
+		{name: "hg-control-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
+		{name: "control-nat-ip"},
+		{name: "hg-data-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
+		{name: "data-nat-ip"},
+	}
+	switch profile {
+	case "aliyun":
+		return append(aliyun, commonGlobal...)
+	case "openstack":
+		return append(openstack, commonGlobal...)
+	case "generic":
+		return []flagHelpSpec{
+			{name: "cloud-type"},
+			{name: "cloud-account-id"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	default:
+		return append(genericProvider, commonGlobal...)
 	}
 }
 

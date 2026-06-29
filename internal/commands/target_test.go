@@ -103,7 +103,6 @@ func TestTargetHelpUsesGroupLayout(t *testing.T) {
 		"\nFlags:\n",
 		"\nCommands:\n",
 		"supports",
-		"cloud-sync-gateway",
 		"oss",
 		"Usage Notes:",
 	} {
@@ -111,7 +110,7 @@ func TestTargetHelpUsesGroupLayout(t *testing.T) {
 			t.Fatalf("target help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+	for _, unwanted := range []string{"cloud-sync-gateway", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("target help should not include %q: %q", unwanted, text)
 		}
@@ -406,7 +405,7 @@ func TestTargetCloudSyncGatewayHelpUsesGroupLayout(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "cloud-sync-gateway", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-sync-gateway", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -420,12 +419,12 @@ func TestTargetCloudSyncGatewayHelpUsesGroupLayout(t *testing.T) {
 		"Usage Notes:",
 	} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("target cloud-sync-gateway help missing %q: %q", want, text)
+			t.Fatalf("cloud-sync-gateway help missing %q: %q", want, text)
 		}
 	}
 	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
-			t.Fatalf("target cloud-sync-gateway help should not include %q: %q", unwanted, text)
+			t.Fatalf("cloud-sync-gateway help should not include %q: %q", unwanted, text)
 		}
 	}
 	assertNoHelpFooter(t, text)
@@ -440,15 +439,15 @@ func TestTargetCloudSyncGatewayLeafHelpUsesFourSectionLayout(t *testing.T) {
 		want []string
 	}{
 		{
-			args: []string{"target", "cloud-sync-gateway", "list", "--help"},
-			want: []string{"Usage Notes:", "default `HyperGate`", "--cloud-account-id", "hyperbdrctl target cloud-sync-gateway detail --id <storage_id>"},
+			args: []string{"cloud-sync-gateway", "list", "--help"},
+			want: []string{"Usage Notes:", "default `HyperGate`", "--cloud-account-id", "hyperbdrctl cloud-sync-gateway detail --id <storage_id>"},
 		},
 		{
-			args: []string{"target", "cloud-sync-gateway", "detail", "--help"},
-			want: []string{"Usage Notes:", "--id", "hyperbdrctl target cloud-sync-gateway detail --id <storage_id>"},
+			args: []string{"cloud-sync-gateway", "detail", "--help"},
+			want: []string{"Usage Notes:", "--id", "hyperbdrctl cloud-sync-gateway detail --id <storage_id>"},
 		},
 		{
-			args: []string{"target", "cloud-sync-gateway", "wait", "--help"},
+			args: []string{"cloud-sync-gateway", "wait", "--help"},
 			want: []string{"Usage Notes:", "--id", "--interval-seconds", "--timeout-seconds"},
 		},
 	}
@@ -482,27 +481,27 @@ func TestTargetCloudSyncGatewayCreateHelpUsesGroupLayout(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "cloud-sync-gateway", "create", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-sync-gateway", "create", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
 	text := out.String()
 	for _, want := range []string{
-		"\nCommands:\n",
+		"--cloud-type",
+		"--cloud-account-id",
 		"aliyun",
 		"openstack",
 		"huawei",
 		"Usage Notes:",
-		"hyperbdrctl cloud-account list",
-		"hyperbdrctl target cloud-sync-gateway resources --cloud-account-id <account_id> --output json",
+		"hyperbdrctl cloud-sync-gateway create --cloud-type aliyun --help",
 	} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("target cloud-sync-gateway create help missing %q: %q", want, text)
+			t.Fatalf("cloud-sync-gateway create help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+	for _, unwanted := range []string{"\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
-			t.Fatalf("target cloud-sync-gateway create help should not include %q: %q", unwanted, text)
+			t.Fatalf("cloud-sync-gateway create help should not include %q: %q", unwanted, text)
 		}
 	}
 	assertNoHelpFooter(t, text)
@@ -513,7 +512,7 @@ func TestTargetCloudSyncGatewayCreateOpenStackHelpUsesResourceCommandFlow(t *tes
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "cloud-sync-gateway", "create", "openstack", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-sync-gateway", "create", "--cloud-type", "openstack", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -521,11 +520,11 @@ func TestTargetCloudSyncGatewayCreateOpenStackHelpUsesResourceCommandFlow(t *tes
 	for _, want := range []string{
 		"Usage Notes:",
 		"Parameter Sources:",
-		"target cloud-sync-gateway resources",
+		"cloud-resource fetch",
 		"--cloud-account-id <account_id>",
 		"--output json",
 		"--boot-loader-image-id <windows_image_id>",
-		"target cloud-sync-gateway wait --id <storage_id>",
+		"cloud-sync-gateway wait --id <storage_id>",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("openstack create help missing %q: %q", want, text)
@@ -667,7 +666,7 @@ func TestLegacyObjectStoragesAndTargetInfoAreRemoved(t *testing.T) {
 		{args: []string{"block-storages", "list"}, want: `unknown command "block-storages"`},
 		{args: []string{"target", "info"}, want: `unknown target command "info"`},
 		{args: []string{"target", "account", "fetch-regions"}, want: `unknown target command "account"`},
-		{args: []string{"target", "cloud-sync-gateway", "transition-images"}, want: `unknown target cloud-sync-gateway command "transition-images"`},
+		{args: []string{"target", "cloud-sync-gateway", "transition-images"}, want: `unknown target command "cloud-sync-gateway"`},
 	}
 
 	for _, tt := range cases {
@@ -697,6 +696,13 @@ func TestRemovedTargetCommandsReturnUnknownCommand(t *testing.T) {
 		{"target", "account", "fetch-resources"},
 		{"target", "account", "fetch-block-resources"},
 		{"target", "account", "fetch-oss-resources"},
+		{"target", "cloud-sync-gateway"},
+		{"target", "cloud-sync-gateway", "list"},
+		{"target", "cloud-sync-gateway", "detail"},
+		{"target", "cloud-sync-gateway", "delete"},
+		{"target", "cloud-sync-gateway", "wait"},
+		{"target", "cloud-sync-gateway", "create"},
+		{"target", "cloud-sync-gateway", "create", "aliyun"},
 		{"target", "cloud-sync-gateway", "resources"},
 		{"target", "cloud-sync-gateway", "subnet-config"},
 	}

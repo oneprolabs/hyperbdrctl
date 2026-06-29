@@ -14,7 +14,7 @@ func TestTargetWaitCommandsRequireID(t *testing.T) {
 		args []string
 	}{
 		{args: []string{"cloud-account", "wait"}},
-		{args: []string{"target", "cloud-sync-gateway", "wait"}},
+		{args: []string{"cloud-sync-gateway", "wait"}},
 		{args: []string{"target", "oss", "wait"}},
 	}
 
@@ -138,7 +138,7 @@ func TestTargetCloudSyncGatewayWaitTypeMismatchReturnsError(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "cloud-sync-gateway", "wait",
+		"cloud-sync-gateway", "wait",
 		"--id", "storage-1",
 		"--interval-seconds", "0",
 		"--timeout-seconds", "1",

@@ -35,6 +35,7 @@ func newRootCommand(ctx *context) *cobra.Command {
 		newLicensesCommand(ctx),
 		newCloudAccountCommand(ctx),
 		newCloudResourceCommand(ctx),
+		newCloudSyncGatewayCommand(ctx),
 		newTargetCommand(ctx),
 	)
 	configureBuiltinHelpArtifacts(root, ctx)
@@ -395,7 +396,6 @@ func newTargetCommand(ctx *context) *cobra.Command {
 
 	cmd.AddCommand(
 		supportsCmd,
-		newTargetCloudSyncGatewayCommand(ctx),
 		newTargetOSSCommand(ctx),
 	)
 	return cmd

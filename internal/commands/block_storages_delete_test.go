@@ -14,7 +14,7 @@ func TestBlockStoragesHelpShowsDeleteCommand(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "cloud-sync-gateway", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-sync-gateway", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -35,7 +35,7 @@ func TestBlockStoragesDeleteHelpUsesFourSectionLayout(t *testing.T) {
 		want []string
 	}{
 		{
-			args: []string{"target", "cloud-sync-gateway", "delete", "--help"},
+			args: []string{"cloud-sync-gateway", "delete", "--help"},
 			want: []string{
 				"Usage:",
 				"\nFlags:\n",
@@ -43,12 +43,12 @@ func TestBlockStoragesDeleteHelpUsesFourSectionLayout(t *testing.T) {
 				"--id string",
 				"--ids string",
 				"--force",
-				"target cloud-sync-gateway delete --id <storage_id>",
-				"target cloud-sync-gateway delete --ids <storage_id_1,storage_id_2>",
+				"cloud-sync-gateway delete --id <storage_id>",
+				"cloud-sync-gateway delete --ids <storage_id_1,storage_id_2>",
 			},
 		},
 		{
-			args: []string{"--lang", "zh_cn", "target", "cloud-sync-gateway", "delete", "--help"},
+			args: []string{"--lang", "zh_cn", "cloud-sync-gateway", "delete", "--help"},
 			want: []string{
 				"用法:",
 				"\n参数:\n",
@@ -56,8 +56,8 @@ func TestBlockStoragesDeleteHelpUsesFourSectionLayout(t *testing.T) {
 				"--id string",
 				"--ids string",
 				"--force",
-				"target cloud-sync-gateway delete --id <storage_id>",
-				"target cloud-sync-gateway delete --ids <storage_id_1,storage_id_2>",
+				"cloud-sync-gateway delete --id <storage_id>",
+				"cloud-sync-gateway delete --ids <storage_id_1,storage_id_2>",
 			},
 		},
 	}
@@ -105,7 +105,7 @@ func TestBlockStoragesDeleteByIDCallsStorageAction(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	if err := Execute(withHost(t, srv.URL, "--output", "json", "target", "cloud-sync-gateway", "delete", "--id", "storage-1"), &out, &errOut); err != nil {
+	if err := Execute(withHost(t, srv.URL, "--output", "json", "cloud-sync-gateway", "delete", "--id", "storage-1"), &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -139,7 +139,7 @@ func TestBlockStoragesDeleteByIDsCallsStorageAction(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	if err := Execute(withHost(t, srv.URL, "target", "cloud-sync-gateway", "delete", "--ids", "storage-1,storage-2", "--force"), &out, &errOut); err != nil {
+	if err := Execute(withHost(t, srv.URL, "cloud-sync-gateway", "delete", "--ids", "storage-1,storage-2", "--force"), &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -176,7 +176,7 @@ func TestBlockStoragesDeleteCombinesIDAndIDsInOrder(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	if err := Execute(withHost(t, srv.URL, "target", "cloud-sync-gateway", "delete", "--id", "storage-1", "--ids", "storage-2, storage-3"), &out, &errOut); err != nil {
+	if err := Execute(withHost(t, srv.URL, "cloud-sync-gateway", "delete", "--id", "storage-1", "--ids", "storage-2, storage-3"), &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -198,7 +198,7 @@ func TestBlockStoragesDeleteRequiresIDOrIDs(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "target", "cloud-sync-gateway", "delete"), &out, &errOut)
+	err := Execute(withHost(t, "https://example.invalid", "cloud-sync-gateway", "delete"), &out, &errOut)
 	if err == nil || err.Error() != "id or ids is required" {
 		t.Fatalf("err = %v", err)
 	}
