@@ -473,9 +473,8 @@ func TestServiceDeleteBuildsPathAndBody(t *testing.T) {
 	service := NewService(api)
 
 	_, err := service.Delete(DeleteSpec{
-		ID:          "account-1",
-		StorageType: "HyperGate",
-		Force:       true,
+		ID:    "account-1",
+		Force: true,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -484,8 +483,11 @@ func TestServiceDeleteBuildsPathAndBody(t *testing.T) {
 		t.Fatalf("path = %q", api.deletePath)
 	}
 	body := api.deleteBody.(map[string]interface{})
-	if body["id"] != "account-1" || body["storage_type"] != "HyperGate" {
+	if body["id"] != "account-1" {
 		t.Fatalf("body = %+v", body)
+	}
+	if _, ok := body["storage_type"]; ok {
+		t.Fatalf("body should omit storage_type: %+v", body)
 	}
 }
 

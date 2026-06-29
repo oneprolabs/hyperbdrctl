@@ -675,7 +675,6 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	case "hyperbdrctl cloud-account delete":
 		return []flagHelpSpec{
 			{name: "id", required: true},
-			{name: "storage-type"},
 			{name: "force", defaultValue: "false"},
 			{name: "debug"},
 			{name: "lang"},

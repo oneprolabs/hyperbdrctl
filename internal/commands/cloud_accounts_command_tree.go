@@ -45,7 +45,6 @@ func newCloudAccountCommand(ctx *context) *cobra.Command {
 
 	deleteCmd := newRawLeafCommand(ctx, "delete", "cmd.cloud_accounts.delete.short", "cmd.cloud_accounts.delete.long", "cmd.cloud_accounts.delete.examples", "cmd.cloud_accounts.delete.notes", func(cmd *cobra.Command) {
 		addFlagString(cmd, ctx, "id")
-		addFlagString(cmd, ctx, "storage-type")
 		addFlagBool(cmd, ctx, "force")
 	}, func(args []string) error {
 		return runCloudAccounts(ctx, append([]string{"delete"}, args...))

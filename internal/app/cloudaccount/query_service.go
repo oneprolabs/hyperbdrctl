@@ -21,9 +21,8 @@ type DetailSpec struct {
 }
 
 type DeleteSpec struct {
-	ID          string
-	StorageType string
-	Force       bool
+	ID    string
+	Force bool
 }
 
 func (s Service) List(spec ListSpec) (client.APIResponse, error) {
@@ -54,8 +53,7 @@ func (s Service) Delete(spec DeleteSpec) (client.APIResponse, error) {
 		path += "?force=false"
 	}
 	return s.api.Delete(path, map[string]interface{}{
-		"id":           spec.ID,
-		"storage_type": normalizeCloudAccountStorageType(spec.StorageType),
+		"id": spec.ID,
 	})
 }
 

@@ -843,7 +843,6 @@ func flagWasSet(fs *flag.FlagSet, name string) bool {
 func runDeleteCloudAccount(ctx *context, args []string) error {
 	fs := newFlagSet("cloud-account delete")
 	id := fs.String("id", "", "")
-	storageType := fs.String("storage-type", "", "")
 	force := fs.Bool("force", false, "")
 
 	if err := fs.Parse(args); err != nil {
@@ -856,9 +855,8 @@ func runDeleteCloudAccount(ctx *context, args []string) error {
 
 	service := appcloudaccount.NewService(commandAPIAdapter{ctx: ctx})
 	resp, err := service.Delete(appcloudaccount.DeleteSpec{
-		ID:          *id,
-		StorageType: *storageType,
-		Force:       *force,
+		ID:    *id,
+		Force: *force,
 	})
 	if err != nil {
 		return err

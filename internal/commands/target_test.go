@@ -234,6 +234,67 @@ func TestCloudAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 	}
 }
 
+func TestCloudAccountDeleteHelpOmitsStorageType(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"cloud-account", "delete", "--help"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	if strings.Contains(text, "--storage-type") {
+		t.Fatalf("cloud-account delete help should not include --storage-type: %q", text)
+	}
+	assertNoHelpFooter(t, text)
+}
+
+func TestCloudAccountDeleteDoesNotAcceptStorageType(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute([]string{"cloud-account", "delete", "--id", "account-1", "--storage-type", "objectstorage"}, &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCloudAccountDeleteOmitsStorageTypeFromRequestBody(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotPath string
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.RequestURI()
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"deleted": true},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "cloud-account", "delete", "--id", "account-1", "--force"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/hypermotion/v1/cloud_accounts/account-1?force=true" {
+		t.Fatalf("path = %q", gotPath)
+	}
+	if gotBody["id"] != "account-1" {
+		t.Fatalf("body = %+v", gotBody)
+	}
+	if _, ok := gotBody["storage_type"]; ok {
+		t.Fatalf("body should omit storage_type: %+v", gotBody)
+	}
+}
+
 func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
