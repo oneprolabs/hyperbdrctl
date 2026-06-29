@@ -105,6 +105,9 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	if path == "hyperbdrctl cloud-sync-gateway create" {
 		return cloudSyncGatewayCreateFlagSpecsForProfile(cmd.Annotations[cloudSyncGatewayCreateHelpProfileAnnotation])
 	}
+	if path == "hyperbdrctl oss buckets" || path == "hyperbdrctl oss create" {
+		return objectStorageFlagSpecsForProfile(path, cmd.Annotations[objectStorageHelpProfileAnnotation])
+	}
 	switch {
 	case strings.HasPrefix(path, "hyperbdrctl boot-config fetch-block-resources "):
 		return bootConfigFetchProviderFlagSpecs()
@@ -863,24 +866,23 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl target oss":
+	case "hyperbdrctl oss":
 		return []flagHelpSpec{
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl target oss list":
+	case "hyperbdrctl oss list":
 		return []flagHelpSpec{
 			{name: "page", defaultValue: "1"},
 			{name: "page-size", defaultValue: "100"},
-			{name: "type", defaultValue: "objectstorage"},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl target oss detail":
+	case "hyperbdrctl oss detail":
 		return []flagHelpSpec{
 			{name: "id", required: true},
 			{name: "debug"},
@@ -888,7 +890,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl target oss wait":
+	case "hyperbdrctl oss wait":
 		return []flagHelpSpec{
 			{name: "id", required: true},
 			{name: "interval-seconds", defaultValue: "60"},
@@ -898,22 +900,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl target oss buckets":
-		return []flagHelpSpec{
-			{name: "provider"},
-			{name: "auth-url"},
-			{name: "region-id"},
-			{name: "access-key-id", required: true},
-			{name: "access-key-secret", required: true},
-			{name: "protocol", defaultValue: "s3"},
-			{name: "bucket-lookup", defaultValue: "dns"},
-			{name: "use-tls", defaultValue: "true"},
-			{name: "debug"},
-			{name: "lang"},
-			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
-			{name: "help"},
-		}
-	case "hyperbdrctl target oss catalog":
+	case "hyperbdrctl oss catalog":
 		return []flagHelpSpec{
 			{name: "provider"},
 			{name: "debug"},
@@ -921,30 +908,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
-	case "hyperbdrctl target oss create":
-		return []flagHelpSpec{
-			{name: "display-name"},
-			{name: "provider"},
-			{name: "auth-url"},
-			{name: "region-id"},
-			{name: "access-key-id", required: true},
-			{name: "access-key-secret", required: true},
-			{name: "protocol"},
-			{name: "bucket-lookup"},
-			{name: "use-tls", defaultValue: "true"},
-			{name: "bucket-mode", choices: []string{"existing", "new"}, defaultValue: "existing"},
-			{name: "bucket-name", required: true},
-			{name: "public-endpoint"},
-			{name: "internal-endpoint"},
-			{name: "cloud-type-select"},
-			{name: "app-id"},
-			{name: "preview-request"},
-			{name: "debug"},
-			{name: "lang"},
-			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
-			{name: "help"},
-		}
-	case "hyperbdrctl target oss delete":
+	case "hyperbdrctl oss delete":
 		return []flagHelpSpec{
 			{name: "id", required: true},
 			{name: "force", defaultValue: "false"},
@@ -1086,6 +1050,108 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	default:
 		return nil
+	}
+}
+
+func objectStorageFlagSpecsForProfile(path, profile string) []flagHelpSpec {
+	common := []flagHelpSpec{
+		{name: "debug"},
+		{name: "lang"},
+		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+		{name: "help"},
+	}
+	if path == "hyperbdrctl oss buckets" {
+		switch profile {
+		case "provider":
+			return append([]flagHelpSpec{
+				{name: "provider", required: true},
+				{name: "region-id", required: true},
+				{name: "access-key-id", required: true},
+				{name: "access-key-secret", required: true},
+				{name: "auth-url"},
+				{name: "protocol", defaultValue: "s3"},
+				{name: "bucket-lookup", defaultValue: "dns"},
+				{name: "use-tls", defaultValue: "true"},
+			}, common...)
+		case "custom":
+			return append([]flagHelpSpec{
+				{name: "provider"},
+				{name: "auth-url", required: true},
+				{name: "region-id"},
+				{name: "access-key-id", required: true},
+				{name: "access-key-secret", required: true},
+				{name: "protocol", defaultValue: "s3"},
+				{name: "bucket-lookup", defaultValue: "dns"},
+				{name: "use-tls", defaultValue: "true"},
+			}, common...)
+		default:
+			return append([]flagHelpSpec{
+				{name: "provider"},
+				{name: "auth-url"},
+				{name: "region-id"},
+				{name: "access-key-id", required: true},
+				{name: "access-key-secret", required: true},
+				{name: "protocol", defaultValue: "s3"},
+				{name: "bucket-lookup", defaultValue: "dns"},
+				{name: "use-tls", defaultValue: "true"},
+			}, common...)
+		}
+	}
+	switch profile {
+	case "provider":
+		return append([]flagHelpSpec{
+			{name: "display-name"},
+			{name: "provider", required: true},
+			{name: "region-id", required: true},
+			{name: "access-key-id", required: true},
+			{name: "access-key-secret", required: true},
+			{name: "auth-url"},
+			{name: "protocol"},
+			{name: "bucket-lookup"},
+			{name: "use-tls", defaultValue: "true"},
+			{name: "bucket-mode", choices: []string{"existing", "new"}, defaultValue: "existing"},
+			{name: "bucket-name", required: true},
+			{name: "public-endpoint"},
+			{name: "internal-endpoint"},
+			{name: "app-id"},
+			{name: "preview-request"},
+		}, common...)
+	case "custom":
+		return append([]flagHelpSpec{
+			{name: "display-name"},
+			{name: "provider"},
+			{name: "auth-url", required: true},
+			{name: "region-id"},
+			{name: "access-key-id", required: true},
+			{name: "access-key-secret", required: true},
+			{name: "protocol"},
+			{name: "bucket-lookup"},
+			{name: "use-tls", defaultValue: "true"},
+			{name: "bucket-mode", choices: []string{"existing", "new"}, defaultValue: "existing"},
+			{name: "bucket-name", required: true},
+			{name: "public-endpoint"},
+			{name: "internal-endpoint"},
+			{name: "app-id"},
+			{name: "preview-request"},
+		}, common...)
+	default:
+		return append([]flagHelpSpec{
+			{name: "display-name"},
+			{name: "provider"},
+			{name: "auth-url"},
+			{name: "region-id"},
+			{name: "access-key-id", required: true},
+			{name: "access-key-secret", required: true},
+			{name: "protocol"},
+			{name: "bucket-lookup"},
+			{name: "use-tls", defaultValue: "true"},
+			{name: "bucket-mode", choices: []string{"existing", "new"}, defaultValue: "existing"},
+			{name: "bucket-name", required: true},
+			{name: "public-endpoint"},
+			{name: "internal-endpoint"},
+			{name: "app-id"},
+			{name: "preview-request"},
+		}, common...)
 	}
 }
 

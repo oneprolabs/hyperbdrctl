@@ -36,6 +36,7 @@ func newRootCommand(ctx *context) *cobra.Command {
 		newCloudAccountCommand(ctx),
 		newCloudResourceCommand(ctx),
 		newCloudSyncGatewayCommand(ctx),
+		newOSSCommand(ctx),
 		newTargetCommand(ctx),
 	)
 	configureBuiltinHelpArtifacts(root, ctx)
@@ -283,64 +284,48 @@ func newSyncProxyCommand(ctx *context) *cobra.Command {
 	return cmd
 }
 
-func newTargetOSSCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "oss", "cmd.target.oss.short", "cmd.target.oss.long", "cmd.target.oss.examples", "cmd.target.oss.notes", "target oss")
+func newOSSCommand(ctx *context) *cobra.Command {
+	cmd := newGroupCommand(ctx, "oss", "cmd.oss.short", "cmd.oss.long", "cmd.oss.examples", "cmd.oss.notes", "oss")
 	addHelpLayout(cmd, helpLayoutGroup)
-	addUsageLine(cmd, ctx, "cmd.target.oss.usage_line")
-	addUsageNotes(cmd, ctx, "cmd.target.oss.usage_notes")
+	addUsageLine(cmd, ctx, "cmd.oss.usage_line")
+	addUsageNotes(cmd, ctx, "cmd.oss.usage_notes")
 	cmd.AddCommand(
-		newRawLeafCommand(ctx, "list", "cmd.target.oss.list.short", "cmd.target.oss.list.long", "cmd.target.oss.list.examples", "cmd.target.oss.list.notes", func(cmd *cobra.Command) {
+		newRawLeafCommand(ctx, "list", "cmd.oss.list.short", "cmd.oss.list.long", "cmd.oss.list.examples", "cmd.oss.list.notes", func(cmd *cobra.Command) {
 			addFlagInt(cmd, ctx, "page")
 			addFlagInt(cmd, ctx, "page-size")
-			addFlagString(cmd, ctx, "type")
 		}, func(args []string) error {
-			return runTargetOSS(ctx, append([]string{"list"}, args...))
+			return runObjectStorages(ctx, append([]string{"list"}, args...))
 		}),
-		newRawLeafCommand(ctx, "detail", "cmd.target.oss.detail.short", "cmd.target.oss.detail.long", "cmd.target.oss.detail.examples", "cmd.target.oss.detail.notes", func(cmd *cobra.Command) {
+		newRawLeafCommand(ctx, "detail", "cmd.oss.detail.short", "cmd.oss.detail.long", "cmd.oss.detail.examples", "cmd.oss.detail.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "id")
 		}, func(args []string) error {
-			return runTargetOSS(ctx, append([]string{"detail"}, args...))
+			return runObjectStorages(ctx, append([]string{"detail"}, args...))
 		}),
-		newRawLeafCommand(ctx, "wait", "cmd.target.oss.wait.short", "cmd.target.oss.wait.long", "cmd.target.oss.wait.examples", "cmd.target.oss.wait.notes", func(cmd *cobra.Command) {
+		newRawLeafCommand(ctx, "wait", "cmd.oss.wait.short", "cmd.oss.wait.long", "cmd.oss.wait.examples", "cmd.oss.wait.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "id")
 			addFlagInt(cmd, ctx, "interval-seconds")
 			addFlagInt(cmd, ctx, "timeout-seconds")
 		}, func(args []string) error {
-			return runTargetOSSWait(ctx, args)
+			return runObjectStorageWait(ctx, args)
 		}),
-		newRawLeafCommand(ctx, "buckets", "cmd.target.oss.buckets.short", "cmd.target.oss.buckets.long", "cmd.target.oss.buckets.examples", "cmd.target.oss.buckets.notes", func(cmd *cobra.Command) {
-			for _, name := range []string{"provider", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup"} {
-				addFlagString(cmd, ctx, name)
-			}
-			addFlagBool(cmd, ctx, "use-tls")
-		}, func(args []string) error {
-			return runTargetOSS(ctx, append([]string{"buckets"}, args...))
-		}),
-		newRawLeafCommand(ctx, "catalog", "cmd.target.oss.catalog.short", "cmd.target.oss.catalog.long", "cmd.target.oss.catalog.examples", "cmd.target.oss.catalog.notes", func(cmd *cobra.Command) {
+		newObjectStorageBucketsCommand(ctx),
+		newRawLeafCommand(ctx, "catalog", "cmd.oss.catalog.short", "cmd.oss.catalog.long", "cmd.oss.catalog.examples", "cmd.oss.catalog.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "provider")
 		}, func(args []string) error {
-			return runTargetOSS(ctx, append([]string{"catalog"}, args...))
+			return runObjectStorages(ctx, append([]string{"catalog"}, args...))
 		}),
-		newRawLeafCommand(ctx, "create", "cmd.target.oss.create.short", "cmd.target.oss.create.long", "cmd.target.oss.create.examples", "cmd.target.oss.create.notes", func(cmd *cobra.Command) {
-			for _, name := range []string{"display-name", "provider", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup", "bucket-mode", "bucket-name", "public-endpoint", "internal-endpoint", "cloud-type-select", "app-id"} {
-				addFlagString(cmd, ctx, name)
-			}
-			addFlagBool(cmd, ctx, "use-tls")
-			addFlagBool(cmd, ctx, "preview-request")
-		}, func(args []string) error {
-			return runTargetOSS(ctx, append([]string{"create"}, args...))
-		}),
-		newRawLeafCommand(ctx, "delete", "cmd.target.oss.delete.short", "cmd.target.oss.delete.long", "cmd.target.oss.delete.examples", "cmd.target.oss.delete.notes", func(cmd *cobra.Command) {
+		newObjectStorageCreateCommand(ctx),
+		newRawLeafCommand(ctx, "delete", "cmd.oss.delete.short", "cmd.oss.delete.long", "cmd.oss.delete.examples", "cmd.oss.delete.notes", func(cmd *cobra.Command) {
 			addFlagString(cmd, ctx, "id")
 			addFlagBool(cmd, ctx, "force")
 		}, func(args []string) error {
-			return runTargetOSS(ctx, append([]string{"delete"}, args...))
+			return runObjectStorages(ctx, append([]string{"delete"}, args...))
 		}),
 	)
 	for _, child := range cmd.Commands() {
 		addHelpLayout(child, helpLayoutFourSection)
-		addUsageLine(child, ctx, "cmd.target.oss."+child.Name()+".usage_line")
-		addUsageNotes(child, ctx, "cmd.target.oss."+child.Name()+".usage_notes")
+		addUsageLine(child, ctx, "cmd.oss."+child.Name()+".usage_line")
+		addUsageNotes(child, ctx, "cmd.oss."+child.Name()+".usage_notes")
 	}
 	return cmd
 }
@@ -396,7 +381,6 @@ func newTargetCommand(ctx *context) *cobra.Command {
 
 	cmd.AddCommand(
 		supportsCmd,
-		newTargetOSSCommand(ctx),
 	)
 	return cmd
 }

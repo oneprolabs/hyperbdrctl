@@ -25,8 +25,8 @@ func TestGetCommandsPassUnknownFlagsAsQuery(t *testing.T) {
 		{name: "cloud-account detail", args: []string{"cloud-account", "detail", "--id", "account-1", "--custom-step", "3"}, path: "/hypermotion/v1/cloud_accounts/account-1"},
 		{name: "cloud-sync-gateway list", args: []string{"cloud-sync-gateway", "list", "--custom-step", "3"}, path: "/api/v2/getStorages"},
 		{name: "cloud-sync-gateway detail", args: []string{"cloud-sync-gateway", "detail", "--id", "storage-1", "--custom-step", "3"}, path: "/api/v2/getStorageDetailInfo"},
-		{name: "target oss list", args: []string{"target", "oss", "list", "--custom-step", "3"}, path: "/api/v2/getStorages"},
-		{name: "target oss detail", args: []string{"target", "oss", "detail", "--id", "storage-1", "--custom-step", "3"}, path: "/api/v2/getStorageDetailInfo"},
+		{name: "oss list", args: []string{"oss", "list", "--custom-step", "3"}, path: "/api/v2/getStorages"},
+		{name: "oss detail", args: []string{"oss", "detail", "--id", "storage-1", "--custom-step", "3"}, path: "/api/v2/getStorageDetailInfo"},
 		{name: "license list", args: []string{"license", "list", "--custom-step", "3"}, path: "/api/v2/getLicenses"},
 		{name: "license reg-code", args: []string{"license", "reg-code", "--custom-step", "3"}, path: "/api/v2/getLicenseRegCode"},
 	}

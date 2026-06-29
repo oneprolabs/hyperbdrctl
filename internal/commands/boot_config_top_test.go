@@ -61,7 +61,7 @@ func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 		"hyperbdrctl host list",
 		"hyperbdrctl cloud-account list",
 		"hyperbdrctl cloud-sync-gateway list",
-		"hyperbdrctl target oss list",
+		"hyperbdrctl oss list",
 		"hyperbdrctl cloud-resource fetch --help",
 		"hyperbdrctl boot-config apply \\",
 		"Using a file:",
@@ -168,7 +168,7 @@ func TestTopLevelBootConfigHelpZhCNMatchesArchiveGuidance(t *testing.T) {
 		"hyperbdrctl host list",
 		"hyperbdrctl cloud-account list",
 		"hyperbdrctl cloud-sync-gateway list",
-		"hyperbdrctl target oss list",
+		"hyperbdrctl oss list",
 		"hyperbdrctl cloud-resource fetch --help",
 		"hyperbdrctl boot-config apply --help",
 	} {

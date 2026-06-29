@@ -65,8 +65,8 @@ func runTargetCloudSyncGatewayWait(ctx *context, args []string) error {
 	return nil
 }
 
-func runTargetOSSWait(ctx *context, args []string) error {
-	fs := newFlagSet("target oss wait")
+func runObjectStorageWait(ctx *context, args []string) error {
+	fs := newFlagSet("oss wait")
 	id := fs.String("id", "", "")
 	intervalSeconds := fs.Int("interval-seconds", 60, "")
 	timeoutSeconds := fs.Int("timeout-seconds", 3600, "")
@@ -87,7 +87,7 @@ func runTargetOSSWait(ctx *context, args []string) error {
 		return err
 	}
 	if result.Failed {
-		return waitRowsError(result.Rows, "target oss wait failed")
+		return waitRowsError(result.Rows, "oss wait failed")
 	}
 	return nil
 }

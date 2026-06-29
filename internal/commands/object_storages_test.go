@@ -86,7 +86,7 @@ func TestObjectStoragesBucketsBuildsValidatedAliyunRequest(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "oss", "buckets",
+		"oss", "buckets",
 		"--auth-url", "oss-cn-beijing.aliyuncs.com",
 		"--region-id", "oss-cn-beijing",
 		"--access-key-id", "ak",
@@ -143,7 +143,7 @@ func TestObjectStoragesBucketsWithProviderUsesCatalogDefaults(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "oss", "buckets",
+		"oss", "buckets",
 		"--provider", "aliyun",
 		"--region-id", "oss-cn-beijing",
 		"--access-key-id", "ak",
@@ -169,7 +169,7 @@ func TestObjectStoragesBucketsWithProviderRequiresRegion(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"target", "oss", "buckets",
+		"oss", "buckets",
 		"--provider", "aliyun",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
@@ -205,7 +205,7 @@ func TestObjectStoragesCreateBuildsValidatedAliyunNewBucketPayload(t *testing.T)
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "oss", "create",
+		"oss", "create",
 		"--display-name", "aliyun-beijing",
 		"--auth-url", "oss-cn-beijing.aliyuncs.com",
 		"--region-id", "oss-cn-beijing",
@@ -250,7 +250,7 @@ func TestObjectStoragesCreatePreviewRequestPrintsRequestBody(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
 		"--output", "json",
-		"target", "oss", "create",
+		"oss", "create",
 		"--display-name", "aliyun-beijing",
 		"--auth-url", "oss-cn-beijing.aliyuncs.com",
 		"--region-id", "oss-cn-beijing",
@@ -310,7 +310,7 @@ func TestObjectStoragesCreateAutoGeneratesDisplayNameWithoutFlag(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "oss", "create",
+		"oss", "create",
 		"--auth-url", "oss-cn-beijing.aliyuncs.com",
 		"--region-id", "oss-cn-beijing",
 		"--access-key-id", "ak",
@@ -348,7 +348,7 @@ func TestObjectStoragesCreateAutoGeneratesZhCNCustomDisplayNameWithoutFlag(t *te
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--lang", "zh_cn",
-		"target", "oss", "create",
+		"oss", "create",
 		"--auth-url", "192.168.8.171:9000",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
@@ -368,10 +368,24 @@ func TestObjectStoragesCreateRejectsRemovedCloudTypeFlag(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"target", "oss", "create",
+		"oss", "create",
 		"--cloud-type", "huawei",
 	), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined: -cloud-type") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestObjectStoragesCreateRejectsRemovedCloudTypeSelectFlag(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"oss", "create",
+		"--cloud-type-select", "aliyun,oss-cn-beijing",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined: -cloud-type-select") {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -382,7 +396,7 @@ func TestObjectStoragesCreateRejectsFileFlag(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"target", "oss", "create",
+		"oss", "create",
 		"--file", "./tmp/object-storage-create.json",
 	), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined: -file") {
@@ -426,7 +440,7 @@ func TestObjectStoragesDeleteRequiresForceWhenAssociatedHostsExist(t *testing.T)
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "target", "oss", "delete", "--id", "storage-1"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "oss", "delete", "--id", "storage-1"), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "--force") || !strings.Contains(err.Error(), "DESKTOP-QD7LPO1-856c") {
 		t.Fatalf("err = %v", err)
 	}
@@ -459,7 +473,7 @@ func TestObjectStoragesDeleteForcePostsDeleteRequest(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "target", "oss", "delete", "--id", "storage-1", "--force"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "oss", "delete", "--id", "storage-1", "--force"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -486,12 +500,26 @@ func TestObjectStoragesListDefaultsToObjectStorage(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "target", "oss", "list"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "oss", "list"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(gotQuery, "type=objectstorage") {
 		t.Fatalf("query = %q", gotQuery)
+	}
+}
+
+func TestObjectStoragesListRejectsRemovedTypeFlag(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"oss", "list",
+		"--type", "objectstorage",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined: -type") {
+		t.Fatalf("err = %v", err)
 	}
 }
 
@@ -522,7 +550,7 @@ func TestObjectStoragesListRendersFlattenedTableColumns(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "target", "oss", "list"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "oss", "list"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -577,7 +605,7 @@ func TestObjectStoragesListJSONKeepsRawFields(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "target", "oss", "list"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "oss", "list"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -595,7 +623,7 @@ func TestObjectStoragesDetailRequiresID(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid", "target", "oss", "detail"), &out, &errOut)
+	err := Execute(withHost(t, "https://example.invalid", "oss", "detail"), &out, &errOut)
 	if err == nil || err.Error() != "id is required" {
 		t.Fatalf("err = %v", err)
 	}
@@ -615,7 +643,7 @@ func TestObjectStoragesCatalogListsProviders(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "target", "oss", "catalog"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "oss", "catalog"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -647,7 +675,7 @@ func TestObjectStoragesCatalogListsRegionsForProvider(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "target", "oss", "catalog", "--provider", "aliyun"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "oss", "catalog", "--provider", "aliyun"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -679,7 +707,7 @@ func TestObjectStoragesCatalogUsesLocalizedNameForZhCN(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--lang", "zh_cn", "target", "oss", "catalog", "--provider", "aliyun"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--lang", "zh_cn", "oss", "catalog", "--provider", "aliyun"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -711,7 +739,7 @@ func TestObjectStoragesCatalogJSONOutputPreservesRawProvider(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "target", "oss", "catalog", "--provider", "ens"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "oss", "catalog", "--provider", "ens"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -750,7 +778,7 @@ func TestObjectStoragesCatalogJSONOutputListsFullProviderArray(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "--output", "json", "target", "oss", "catalog"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "--output", "json", "oss", "catalog"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -778,7 +806,7 @@ func TestObjectStoragesCatalogProviderNotFound(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "target", "oss", "catalog", "--provider", "missing"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "oss", "catalog", "--provider", "missing"), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "provider") || !strings.Contains(err.Error(), "missing") {
 		t.Fatalf("err = %v", err)
 	}
@@ -798,7 +826,7 @@ func TestObjectStoragesCatalogRejectsInvalidJSON(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "target", "oss", "catalog"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "oss", "catalog"), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "JSON") && !strings.Contains(err.Error(), "unexpected end") {
 		t.Fatalf("err = %v", err)
 	}
@@ -833,7 +861,7 @@ func TestObjectStoragesCreateWithProviderUsesCatalogDefaults(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "oss", "create",
+		"oss", "create",
 		"--provider", "aliyun",
 		"--region-id", "oss-cn-beijing",
 		"--access-key-id", "ak",
@@ -878,7 +906,7 @@ func TestObjectStoragesCreateWithProviderPreviewAllowsOverrides(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
 		"--output", "json",
-		"target", "oss", "create",
+		"oss", "create",
 		"--provider", "huaweicloud",
 		"--region-id", "cn-north-4",
 		"--access-key-id", "ak",
@@ -934,7 +962,7 @@ func TestObjectStoragesCreateWithoutProviderAllowsEmptyRegion(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "oss", "create",
+		"oss", "create",
 		"--auth-url", "192.168.8.171:9000",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
@@ -967,7 +995,7 @@ func TestObjectStoragesCreateWithProviderCustomMatchesDirectMode(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "oss", "create",
+		"oss", "create",
 		"--provider", "custom",
 		"--auth-url", "192.168.8.171:9000",
 		"--access-key-id", "ak",
@@ -992,7 +1020,7 @@ func TestObjectStoragesCreateWithProviderRequiresRegion(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"target", "oss", "create",
+		"oss", "create",
 		"--provider", "aliyun",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
@@ -1018,7 +1046,7 @@ func TestObjectStoragesCreateWithProviderRejectsUnknownProviderOrRegion(t *testi
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, srv.URL,
-		"target", "oss", "create",
+		"oss", "create",
 		"--provider", "missing",
 		"--region-id", "oss-cn-beijing",
 		"--access-key-id", "ak",
@@ -1032,7 +1060,7 @@ func TestObjectStoragesCreateWithProviderRejectsUnknownProviderOrRegion(t *testi
 	out.Reset()
 	errOut.Reset()
 	err = Execute(withHost(t, srv.URL,
-		"target", "oss", "create",
+		"oss", "create",
 		"--provider", "aliyun",
 		"--region-id", "missing-region",
 		"--access-key-id", "ak",

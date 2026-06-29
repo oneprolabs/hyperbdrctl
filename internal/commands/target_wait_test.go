@@ -15,7 +15,7 @@ func TestTargetWaitCommandsRequireID(t *testing.T) {
 	}{
 		{args: []string{"cloud-account", "wait"}},
 		{args: []string{"cloud-sync-gateway", "wait"}},
-		{args: []string{"target", "oss", "wait"}},
+		{args: []string{"oss", "wait"}},
 	}
 
 	for _, tt := range tests {

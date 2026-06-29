@@ -103,14 +103,13 @@ func TestTargetHelpUsesGroupLayout(t *testing.T) {
 		"\nFlags:\n",
 		"\nCommands:\n",
 		"supports",
-		"oss",
 		"Usage Notes:",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("target help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"cloud-sync-gateway", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+	for _, unwanted := range []string{"cloud-sync-gateway", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n", "\n  oss"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("target help should not include %q: %q", unwanted, text)
 		}
@@ -221,13 +220,6 @@ func TestCloudAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 		for _, want := range tt.want {
 			if !strings.Contains(text, want) {
 				t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
-			}
-		}
-		if len(tt.args) >= 3 && tt.args[0] == "target" && tt.args[1] == "oss" && tt.args[2] == "create" {
-			for _, unwanted := range []string{"--cloud-type", "--file", "required unless --file is used"} {
-				if strings.Contains(text, unwanted) {
-					t.Fatalf("target oss create help should not expose %q: %q", unwanted, text)
-				}
 			}
 		}
 		if strings.Contains(text, "\nCommands:\n") {
@@ -536,12 +528,12 @@ func TestTargetCloudSyncGatewayCreateOpenStackHelpUsesResourceCommandFlow(t *tes
 	assertNoHelpFooter(t, text)
 }
 
-func TestTargetOSSHelpUsesGroupLayout(t *testing.T) {
+func TestOSSHelpUsesGroupLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "oss", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"oss", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -558,52 +550,46 @@ func TestTargetOSSHelpUsesGroupLayout(t *testing.T) {
 		"Usage Notes:",
 	} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("target oss help missing %q: %q", want, text)
+			t.Fatalf("oss help missing %q: %q", want, text)
 		}
 	}
 	for _, unwanted := range []string{"\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
-			t.Fatalf("target oss help should not include %q: %q", unwanted, text)
+			t.Fatalf("oss help should not include %q: %q", unwanted, text)
 		}
 	}
 	assertNoHelpFooter(t, text)
 }
 
-func TestTargetOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
+func TestOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	cases := []struct {
 		args []string
 		want []string
+		omit []string
 	}{
 		{
-			args: []string{"target", "oss", "list", "--help"},
-			want: []string{"Usage Notes:", "hyperbdrctl target oss list", "default objectstorage"},
+			args: []string{"oss", "list", "--help"},
+			want: []string{"Usage Notes:", "hyperbdrctl oss list", "objectstorage"},
+			omit: []string{"--type"},
 		},
 		{
-			args: []string{"target", "oss", "detail", "--help"},
-			want: []string{"Usage Notes:", "--id", "hyperbdrctl target oss detail --id <storage_id>"},
+			args: []string{"oss", "detail", "--help"},
+			want: []string{"Usage Notes:", "--id", "hyperbdrctl oss detail --id <storage_id>"},
 		},
 		{
-			args: []string{"target", "oss", "wait", "--help"},
+			args: []string{"oss", "wait", "--help"},
 			want: []string{"Usage Notes:", "--id", "--interval-seconds", "--timeout-seconds"},
 		},
 		{
-			args: []string{"target", "oss", "buckets", "--help"},
-			want: []string{"Usage Notes:", "--provider", "--auth-url", "--bucket-lookup"},
+			args: []string{"oss", "catalog", "--help"},
+			want: []string{"Usage Notes:", "--provider", "hyperbdrctl oss catalog --provider aliyun"},
 		},
 		{
-			args: []string{"target", "oss", "catalog", "--help"},
-			want: []string{"Usage Notes:", "--provider", "hyperbdrctl target oss catalog --provider aliyun"},
-		},
-		{
-			args: []string{"target", "oss", "create", "--help"},
-			want: []string{"Usage Notes:", "--provider", "Custom", "target oss catalog --provider aliyun", "existing / new", "--bucket-name string"},
-		},
-		{
-			args: []string{"target", "oss", "delete", "--help"},
-			want: []string{"Usage Notes:", "--force", "hyperbdrctl target oss delete --id <storage_id>"},
+			args: []string{"oss", "delete", "--help"},
+			want: []string{"Usage Notes:", "--force", "hyperbdrctl oss delete --id <storage_id>"},
 		},
 	}
 
@@ -619,6 +605,11 @@ func TestTargetOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 				t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
 			}
 		}
+		for _, unwanted := range tt.omit {
+			if strings.Contains(text, unwanted) {
+				t.Fatalf("args=%v help should not expose %q: %q", tt.args, unwanted, text)
+			}
+		}
 		if strings.Contains(text, "\nCommands:\n") {
 			t.Fatalf("leaf help should not include commands section args=%v: %q", tt.args, text)
 		}
@@ -631,24 +622,124 @@ func TestTargetOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 	}
 }
 
-func TestTargetOSSCreateHelpUsesCustomModeInChinese(t *testing.T) {
+func TestOSSCreateHelpProfiles(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		name string
+		args []string
+		want []string
+		omit []string
+	}{
+		{
+			name: "default custom",
+			args: []string{"oss", "create", "--help"},
+			want: []string{"Usage Notes:", "direct custom object storage", "--auth-url", "--bucket-mode", "--bucket-name"},
+			omit: []string{"--cloud-type-select"},
+		},
+		{
+			name: "provider catalog",
+			args: []string{"oss", "create", "--provider", "aliyun", "--help"},
+			want: []string{"Usage Notes:", "hyperbdrctl oss catalog --provider aliyun", "--region-id", "--public-endpoint", "--internal-endpoint"},
+			omit: []string{"--cloud-type-select"},
+		},
+		{
+			name: "custom provider alias",
+			args: []string{"oss", "create", "--provider", "custom", "--help"},
+			want: []string{"Usage Notes:", "direct custom object storage", "--auth-url", "--region-id"},
+			omit: []string{"--cloud-type-select", "localized provider name and region name"},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute(tt.args, &out, &errOut); err != nil {
+				t.Fatalf("args=%v err=%v", tt.args, err)
+			}
+
+			text := out.String()
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
+				}
+			}
+			for _, unwanted := range tt.omit {
+				if strings.Contains(text, unwanted) {
+					t.Fatalf("args=%v help should not expose %q: %q", tt.args, unwanted, text)
+				}
+			}
+			assertNoHelpFooter(t, text)
+		})
+	}
+}
+
+func TestOSSBucketsHelpProfiles(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "default custom",
+			args: []string{"oss", "buckets", "--help"},
+			want: []string{"Usage Notes:", "--auth-url", "--bucket-lookup", "explicit auth URL"},
+		},
+		{
+			name: "provider catalog",
+			args: []string{"oss", "buckets", "--provider", "aliyun", "--help"},
+			want: []string{"Usage Notes:", "hyperbdrctl oss catalog --provider aliyun", "--region-id", "--auth-url"},
+		},
+		{
+			name: "custom provider alias",
+			args: []string{"oss", "buckets", "--provider", "custom", "--help"},
+			want: []string{"Usage Notes:", "--auth-url", "explicit auth URL"},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute(tt.args, &out, &errOut); err != nil {
+				t.Fatalf("args=%v err=%v", tt.args, err)
+			}
+
+			text := out.String()
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
+				}
+			}
+			if strings.Contains(text, "\nCommands:\n") {
+				t.Fatalf("leaf help should not include commands section args=%v: %q", tt.args, text)
+			}
+			assertNoHelpFooter(t, text)
+		})
+	}
+}
+
+func TestOSSCreateHelpUsesCustomModeInChinese(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"--lang", "zh_cn", "target", "oss", "create", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"--lang", "zh_cn", "oss", "create", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
 	text := out.String()
 	for _, want := range []string{"使用说明", "其它平台", "--provider custom", "--region-id string"} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("target oss create zh help missing %q: %q", want, text)
+			t.Fatalf("oss create zh help missing %q: %q", want, text)
 		}
 	}
 	for _, unwanted := range []string{"<cloud-type>-<region-id>", "基于 `--auth-url` 的兼容回退行为", "区域 ID（必须）"} {
 		if strings.Contains(text, unwanted) {
-			t.Fatalf("target oss create zh help should not expose %q: %q", unwanted, text)
+			t.Fatalf("oss create zh help should not expose %q: %q", unwanted, text)
 		}
 	}
 }
@@ -696,6 +787,14 @@ func TestRemovedTargetCommandsReturnUnknownCommand(t *testing.T) {
 		{"target", "account", "fetch-resources"},
 		{"target", "account", "fetch-block-resources"},
 		{"target", "account", "fetch-oss-resources"},
+		{"target", "oss"},
+		{"target", "oss", "list"},
+		{"target", "oss", "detail"},
+		{"target", "oss", "wait"},
+		{"target", "oss", "buckets"},
+		{"target", "oss", "catalog"},
+		{"target", "oss", "create"},
+		{"target", "oss", "delete"},
 		{"target", "cloud-sync-gateway"},
 		{"target", "cloud-sync-gateway", "list"},
 		{"target", "cloud-sync-gateway", "detail"},
@@ -713,5 +812,16 @@ func TestRemovedTargetCommandsReturnUnknownCommand(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), "unknown") {
 			t.Fatalf("args=%v err=%v", args, err)
 		}
+	}
+}
+
+func TestRemovedTargetOSSHelpReturnsUnknownCommand(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute([]string{"help", "target", "oss"}, &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "unknown") || !strings.Contains(err.Error(), "oss") {
+		t.Fatalf("err = %v", err)
 	}
 }

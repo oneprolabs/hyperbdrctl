@@ -9,27 +9,185 @@ import (
 	appobjectstorage "hyperbdr-client/internal/app/objectstorage"
 	"hyperbdr-client/internal/client"
 	"hyperbdr-client/internal/output"
+
+	"github.com/spf13/cobra"
 )
+
+const objectStorageHelpProfileAnnotation = "object-storage-help-profile"
+
+type objectStorageHelpSelection struct {
+	Provider string
+}
+
+func newObjectStorageBucketsCommand(ctx *context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:                "buckets",
+		Short:              ctx.loc.T("cmd.oss.buckets.short"),
+		Long:               ctx.loc.T("cmd.oss.buckets.long"),
+		Example:            strings.TrimSpace(ctx.loc.T("cmd.oss.buckets.examples")),
+		DisableFlagParsing: true,
+		Args:               cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			selection, err := parseObjectStorageHelpSelection(args)
+			if err != nil {
+				return err
+			}
+			if rawArgsHelp(cmd, args) {
+				return renderObjectStorageBucketsHelp(ctx, cmd, selection)
+			}
+			return runObjectStorageBuckets(ctx, args)
+		},
+	}
+	addObjectStorageBucketsFlags(cmd, ctx)
+	return cmd
+}
+
+func newObjectStorageCreateCommand(ctx *context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:                "create",
+		Short:              ctx.loc.T("cmd.oss.create.short"),
+		Long:               ctx.loc.T("cmd.oss.create.long"),
+		Example:            strings.TrimSpace(ctx.loc.T("cmd.oss.create.examples")),
+		DisableFlagParsing: true,
+		Args:               cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			selection, err := parseObjectStorageHelpSelection(args)
+			if err != nil {
+				return err
+			}
+			if rawArgsHelp(cmd, args) {
+				return renderObjectStorageCreateHelp(ctx, cmd, selection)
+			}
+			return runObjectStorageCreate(ctx, args)
+		},
+	}
+	addObjectStorageCreateFlags(cmd, ctx)
+	return cmd
+}
+
+func addObjectStorageBucketsFlags(cmd *cobra.Command, ctx *context) {
+	for _, name := range []string{"provider", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup"} {
+		addFlagString(cmd, ctx, name)
+	}
+	addFlagBool(cmd, ctx, "use-tls")
+}
+
+func addObjectStorageCreateFlags(cmd *cobra.Command, ctx *context) {
+	for _, name := range []string{"display-name", "provider", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup", "bucket-mode", "bucket-name", "public-endpoint", "internal-endpoint", "app-id"} {
+		addFlagString(cmd, ctx, name)
+	}
+	addFlagBool(cmd, ctx, "use-tls")
+	addFlagBool(cmd, ctx, "preview-request")
+}
+
+func parseObjectStorageHelpSelection(args []string) (objectStorageHelpSelection, error) {
+	selection := objectStorageHelpSelection{}
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--help" || arg == "-h" || !strings.HasPrefix(arg, "--") {
+			continue
+		}
+		name, value, hasInline := splitFlag(arg)
+		if strings.TrimPrefix(name, "--") != "provider" {
+			continue
+		}
+		v, next, err := strictFlagValue(args, i, value, hasInline)
+		if err != nil {
+			return selection, err
+		}
+		selection.Provider = strings.TrimSpace(v)
+		i = next
+	}
+	return selection, nil
+}
+
+func renderObjectStorageBucketsHelp(ctx *context, cmd *cobra.Command, selection objectStorageHelpSelection) error {
+	profile := objectStorageHelpProfile(selection.Provider)
+	addAnnotationValue(cmd, objectStorageHelpProfileAnnotation, profile)
+	addHelpDescription(cmd, ctx, objectStorageBucketsHelpTitleKey(profile))
+	addAnnotationValue(cmd, usageNotesAnnotation, objectStorageBucketsUsageNotes(ctx, profile))
+	return renderHelp(cmd, ctx)
+}
+
+func renderObjectStorageCreateHelp(ctx *context, cmd *cobra.Command, selection objectStorageHelpSelection) error {
+	profile := objectStorageHelpProfile(selection.Provider)
+	addAnnotationValue(cmd, objectStorageHelpProfileAnnotation, profile)
+	addHelpDescription(cmd, ctx, objectStorageCreateHelpTitleKey(profile))
+	addAnnotationValue(cmd, usageNotesAnnotation, objectStorageCreateUsageNotes(ctx, profile))
+	return renderHelp(cmd, ctx)
+}
+
+func objectStorageHelpProfile(provider string) string {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "", "custom":
+		return "custom"
+	default:
+		return "provider"
+	}
+}
+
+func objectStorageBucketsHelpTitleKey(profile string) string {
+	if profile == "provider" {
+		return "cmd.oss.buckets.provider.short"
+	}
+	return "cmd.oss.buckets.custom.short"
+}
+
+func objectStorageCreateHelpTitleKey(profile string) string {
+	if profile == "provider" {
+		return "cmd.oss.create.provider.short"
+	}
+	return "cmd.oss.create.custom.short"
+}
+
+func objectStorageBucketsUsageNotes(ctx *context, profile string) string {
+	if profile == "provider" {
+		return ctx.loc.T("cmd.oss.buckets.provider.usage_notes")
+	}
+	return ctx.loc.T("cmd.oss.buckets.custom.usage_notes")
+}
+
+func objectStorageCreateUsageNotes(ctx *context, profile string) string {
+	if profile == "provider" {
+		return ctx.loc.T("cmd.oss.create.provider.usage_notes")
+	}
+	return ctx.loc.T("cmd.oss.create.custom.usage_notes")
+}
+
+func rejectObjectStorageListTypeFlag(args []string) error {
+	for _, arg := range args {
+		if !strings.HasPrefix(arg, "--") {
+			continue
+		}
+		name, _, _ := splitFlag(arg)
+		if strings.TrimPrefix(name, "--") == "type" {
+			return fmt.Errorf("flag provided but not defined: -type")
+		}
+	}
+	return nil
+}
 
 func runObjectStorages(ctx *context, args []string) error {
 	if len(args) == 0 {
-		return errUnknown("target oss", "")
+		return errUnknown("oss", "")
 	}
 	service := appobjectstorage.NewService(commandAPIAdapter{ctx: ctx})
 	switch args[0] {
 	case "list":
-		fs := newFlagSet("target oss list")
+		fs := newFlagSet("oss list")
 		page := fs.Int("page", 1, "")
 		pageSize := fs.Int("page-size", 100, "")
-		storageType := fs.String("type", "objectstorage", "")
 		q := queryFromPairs()
+		if err := rejectObjectStorageListTypeFlag(args[1:]); err != nil {
+			return err
+		}
 		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
 			return err
 		}
 		resp, err := service.List(appobjectstorage.ListSpec{
 			Page:        *page,
 			PageSize:    *pageSize,
-			StorageType: *storageType,
+			StorageType: "objectstorage",
 			Query:       q,
 		})
 		if err != nil {
@@ -37,7 +195,7 @@ func runObjectStorages(ctx *context, args []string) error {
 		}
 		return writeObjectStorageListResponse(ctx, resp)
 	case "detail":
-		fs := newFlagSet("target oss detail")
+		fs := newFlagSet("oss detail")
 		id := fs.String("id", "", "")
 		q := queryFromPairs()
 		if err := parseQueryFlagsIntoPassthrough(fs, args[1:], q); err != nil {
@@ -55,7 +213,7 @@ func runObjectStorages(ctx *context, args []string) error {
 		}
 		return writeResponse(ctx, resp, "", nil)
 	case "wait":
-		return runTargetOSSWait(ctx, args[1:])
+		return runObjectStorageWait(ctx, args[1:])
 	case "buckets":
 		return runObjectStorageBuckets(ctx, args[1:])
 	case "catalog":
@@ -65,12 +223,12 @@ func runObjectStorages(ctx *context, args []string) error {
 	case "delete":
 		return runObjectStorageDelete(ctx, args[1:])
 	default:
-		return errUnknown("target oss", args[0])
+		return errUnknown("oss", args[0])
 	}
 }
 
 func runObjectStorageBuckets(ctx *context, args []string) error {
-	fs := newFlagSet("target oss buckets")
+	fs := newFlagSet("oss buckets")
 	provider := fs.String("provider", "", "")
 	authURL := fs.String("auth-url", "", "")
 	regionID := fs.String("region-id", "", "")
@@ -104,7 +262,7 @@ func runObjectStorageBuckets(ctx *context, args []string) error {
 }
 
 func runObjectStorageCreate(ctx *context, args []string) error {
-	fs := newFlagSet("target oss create")
+	fs := newFlagSet("oss create")
 	displayName := fs.String("display-name", "", "")
 	provider := fs.String("provider", "", "")
 	authURL := fs.String("auth-url", "", "")
@@ -118,7 +276,6 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 	bucketName := fs.String("bucket-name", "", "")
 	publicEndpoint := fs.String("public-endpoint", "", "")
 	internalEndpoint := fs.String("internal-endpoint", "", "")
-	cloudTypeSelect := fs.String("cloud-type-select", "", "")
 	appID := fs.String("app-id", "", "")
 	previewRequest := fs.Bool("preview-request", false, "")
 
@@ -139,7 +296,6 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 		BucketName:       *bucketName,
 		PublicEndpoint:   *publicEndpoint,
 		InternalEndpoint: *internalEndpoint,
-		CloudTypeSelect:  *cloudTypeSelect,
 		AppID:            *appID,
 	}
 	if err := applyObjectStorageCreateDefaults(ctx, fs, *provider, &spec); err != nil {
@@ -162,7 +318,7 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 }
 
 func runObjectStorageCatalog(ctx *context, args []string) error {
-	fs := newFlagSet("target oss catalog")
+	fs := newFlagSet("oss catalog")
 	provider := fs.String("provider", "", "")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -200,9 +356,6 @@ func applyObjectStorageCreateDefaults(ctx *context, fs *flag.FlagSet, provider s
 	normalizedProvider := normalizeObjectStorageCreateProvider(provider)
 	if normalizedProvider == "" || normalizedProvider == "custom" {
 		spec.CloudType = "custom"
-		if !flagWasSet(fs, "cloud-type-select") && strings.TrimSpace(spec.CloudTypeSelect) == "" {
-			spec.CloudTypeSelect = "custom"
-		}
 		if !flagWasSet(fs, "display-name") && strings.TrimSpace(spec.DisplayName) == "" {
 			spec.DisplayName = ctx.loc.T("value.object_storage.display_name.custom")
 		}
@@ -230,9 +383,6 @@ func applyObjectStorageCreateDefaults(ctx *context, fs *flag.FlagSet, provider s
 	}
 	if !flagWasSet(fs, "bucket-lookup") {
 		spec.BucketLookup = matchedRegion.BucketLookup
-	}
-	if !flagWasSet(fs, "cloud-type-select") {
-		spec.CloudTypeSelect = matchedProvider.ID + "," + spec.RegionID
 	}
 	if !flagWasSet(fs, "display-name") && strings.TrimSpace(spec.DisplayName) == "" {
 		spec.DisplayName = defaultObjectStorageCatalogDisplayName(matchedProvider, matchedRegion, ctx.loc.Lang())
@@ -269,7 +419,7 @@ func normalizeObjectStorageCreateProvider(provider string) string {
 }
 
 func runObjectStorageDelete(ctx *context, args []string) error {
-	fs := newFlagSet("target oss delete")
+	fs := newFlagSet("oss delete")
 	id := fs.String("id", "", "")
 	force := fs.Bool("force", false, "")
 
@@ -299,10 +449,6 @@ func runObjectStorageDelete(ctx *context, args []string) error {
 		return err
 	}
 	return writeResponse(ctx, resp, "", nil)
-}
-
-func runTargetOSS(ctx *context, args []string) error {
-	return runObjectStorages(ctx, args)
 }
 
 func objectStorageDeleteForceMessage(ctx *context, storageID string, data interface{}) string {
