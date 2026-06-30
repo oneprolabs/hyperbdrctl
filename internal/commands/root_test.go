@@ -470,7 +470,7 @@ func TestNonConfigHelpDoesNotShowFooter(t *testing.T) {
 
 	cases := [][]string{
 		{"cloud-account", "create", "--help"},
-		{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block_storage", "--help"},
+		{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block", "--help"},
 	}
 
 	for _, args := range cases {

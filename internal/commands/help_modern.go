@@ -641,7 +641,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		return []flagHelpSpec{
 			{name: "page", defaultValue: "1"},
 			{name: "page-size", defaultValue: "100"},
-			{name: "storage-type"},
+			{name: "storage-type", choices: []string{"block", "object"}},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
@@ -778,7 +778,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		return []flagHelpSpec{
 			{name: "page", defaultValue: "1"},
 			{name: "page-size", defaultValue: "100"},
-			{name: "storage-type"},
+			{name: "storage-type", choices: []string{"block", "object"}},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
@@ -1272,7 +1272,7 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 	}
 	directCommon := []flagHelpSpec{
 		{name: "cloud-type", required: true},
-		{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+		{name: "storage-type", required: true, choices: []string{"block", "object"}},
 		{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 		{name: "fetch-res"},
 		{name: "region-id"},
@@ -1281,7 +1281,7 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 	}
 	directOpenStack := []flagHelpSpec{
 		{name: "cloud-type", required: true},
-		{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+		{name: "storage-type", required: true, choices: []string{"block", "object"}},
 		{name: "auth-url", required: true},
 		{name: "username", required: true},
 		{name: "password", required: true},
@@ -1303,7 +1303,7 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 	case "block_storage", "object_storage":
 		return append([]flagHelpSpec{
 			{name: "cloud-type"},
-			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", required: true, choices: []string{"block", "object"}},
 			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 			{name: "fetch-res"},
 			{name: "region-id"},
@@ -1318,7 +1318,7 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 		return append([]flagHelpSpec{
 			{name: "cloud-account-id"},
 			{name: "cloud-type"},
-			{name: "storage-type", choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", choices: []string{"block", "object"}},
 			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 			{name: "fetch-res"},
 			{name: "region-id"},
@@ -1406,7 +1406,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	case "block|aliyun":
 		return []flagHelpSpec{
 			{name: "cloud-type", required: true},
-			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", required: true, choices: []string{"block", "object"}},
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},
 			{name: "region-id", required: true},
@@ -1425,7 +1425,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	case "block|openstack":
 		return []flagHelpSpec{
 			{name: "cloud-type", required: true},
-			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", required: true, choices: []string{"block", "object"}},
 			{name: "auth-url", required: true},
 			{name: "username", required: true},
 			{name: "password", required: true},
@@ -1450,7 +1450,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	case "block|huawei":
 		return []flagHelpSpec{
 			{name: "cloud-type", required: true},
-			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", required: true, choices: []string{"block", "object"}},
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},
 			{name: "region-id"},
@@ -1468,7 +1468,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	case "objectstorage|aliyun":
 		return []flagHelpSpec{
 			{name: "cloud-type", required: true},
-			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", required: true, choices: []string{"block", "object"}},
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},
 			{name: "region-id", required: true},
@@ -1494,7 +1494,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	case "objectstorage|openstack":
 		return []flagHelpSpec{
 			{name: "cloud-type", required: true},
-			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", required: true, choices: []string{"block", "object"}},
 			{name: "auth-url", required: true},
 			{name: "username", required: true},
 			{name: "password", required: true},
@@ -1524,7 +1524,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	case "block_storage", "object_storage":
 		return []flagHelpSpec{
 			{name: "cloud-type"},
-			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", required: true, choices: []string{"block", "object"}},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
@@ -1533,7 +1533,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	case "generic", "":
 		return []flagHelpSpec{
 			{name: "cloud-type"},
-			{name: "storage-type", choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", choices: []string{"block", "object"}},
 			{name: "file"},
 			{name: "body"},
 			{name: "preview-request"},
@@ -1546,7 +1546,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 		if strings.HasPrefix(profile, "block|") {
 			return []flagHelpSpec{
 				{name: "cloud-type", required: true},
-				{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+				{name: "storage-type", required: true, choices: []string{"block", "object"}},
 				{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 				{name: "account-name"},
 				{name: "file"},
@@ -1561,7 +1561,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 		}
 		return []flagHelpSpec{
 			{name: "cloud-type", required: true},
-			{name: "storage-type", required: true, choices: []string{"block_storage", "object_storage"}},
+			{name: "storage-type", required: true, choices: []string{"block", "object"}},
 			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 			{name: "custom-name"},
 			{name: "file"},

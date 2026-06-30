@@ -37,8 +37,8 @@ func TestCloudResourceStorageHelpShowsProviders(t *testing.T) {
 	setUserDirs(t, dir)
 
 	cases := [][]string{
-		{"cloud-resource", "fetch", "--storage-type", "block_storage", "--help"},
-		{"cloud-resource", "fetch", "--storage-type", "object_storage", "--help"},
+		{"cloud-resource", "fetch", "--storage-type", "block", "--help"},
+		{"cloud-resource", "fetch", "--storage-type", "object", "--help"},
 	}
 
 	for _, args := range cases {
@@ -81,12 +81,12 @@ func TestCloudResourceDirectHelpShowsProviderProfile(t *testing.T) {
 		want []string
 	}{
 		{
-			args: []string{"cloud-resource", "fetch", "--cloud-type", "aliyun", "--storage-type", "block_storage", "--help"},
-			want: []string{"--access-key-id", "--access-key-secret", "block_storage", "Usage Notes:"},
+			args: []string{"cloud-resource", "fetch", "--cloud-type", "aliyun", "--storage-type", "block", "--help"},
+			want: []string{"--access-key-id", "--access-key-secret", "block", "Usage Notes:"},
 		},
 		{
-			args: []string{"cloud-resource", "fetch", "--cloud-type", "openstack", "--storage-type", "object_storage", "--help"},
-			want: []string{"--auth-url", "--username", "--password", "--user-domain-id", "object_storage", "Usage Notes:"},
+			args: []string{"cloud-resource", "fetch", "--cloud-type", "openstack", "--storage-type", "object", "--help"},
+			want: []string{"--auth-url", "--username", "--password", "--user-domain-id", "object", "Usage Notes:"},
 		},
 	}
 	for _, tt := range cases {
@@ -149,7 +149,7 @@ func TestCloudResourceRejectsCloudAccountIDWithDirectFlags(t *testing.T) {
 	err := Execute(withHost(t, "https://example.invalid",
 		"cloud-resource", "fetch",
 		"--cloud-type", "aliyun",
-		"--storage-type", "block_storage",
+		"--storage-type", "block",
 		"--cloud-account-id", "account-1",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
@@ -187,7 +187,7 @@ func TestCloudResourceBlockUsesDirectAuthEndpoint(t *testing.T) {
 	err := Execute(withHost(t, srv.URL,
 		"cloud-resource", "fetch",
 		"--cloud-type", "aliyun",
-		"--storage-type", "block_storage",
+		"--storage-type", "block",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--fetch-res", "regions",
@@ -235,7 +235,7 @@ func TestCloudResourceOpenStackUsesTargetAuthEndpoint(t *testing.T) {
 	err := Execute(withHost(t, srv.URL,
 		"cloud-resource", "fetch",
 		"--cloud-type", "openstack",
-		"--storage-type", "object_storage",
+		"--storage-type", "object",
 		"--auth-url", "http://identity:5000/v3",
 		"--username", "demo",
 		"--password", "secret",
@@ -524,8 +524,10 @@ func TestCloudResourceFetchValidation(t *testing.T) {
 		{args: []string{"cloud-resource", "fetch"}, want: "storage-type is required"},
 		{args: []string{"cloud-resource", "fetch", "aliyun"}, want: `unexpected argument "aliyun"`},
 		{args: []string{"cloud-resource", "fetch", "--cloud-type", "aliyun"}, want: "storage-type is required"},
-		{args: []string{"cloud-resource", "fetch", "--storage-type", "archive"}, want: "storage-type must be block_storage or object_storage"},
-		{args: []string{"cloud-resource", "fetch", "--cloud-type", "vmware", "--storage-type", "block_storage"}, want: `cloud-type "vmware" does not support storage-type block_storage`},
+		{args: []string{"cloud-resource", "fetch", "--storage-type", "archive"}, want: "storage-type must be block or object"},
+		{args: []string{"cloud-resource", "fetch", "--storage-type", "block_storage"}, want: "storage-type must be block or object"},
+		{args: []string{"cloud-resource", "fetch", "--storage-type", "object_storage"}, want: "storage-type must be block or object"},
+		{args: []string{"cloud-resource", "fetch", "--cloud-type", "vmware", "--storage-type", "block"}, want: `cloud-type "vmware" does not support storage-type block`},
 	}
 	for _, tt := range cases {
 		var out, errOut bytes.Buffer

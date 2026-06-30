@@ -276,14 +276,14 @@ func isCloudResourceCredentialFlag(name string) bool {
 
 func normalizeCloudResourcePublicStorageType(value string) (public, backend string, err error) {
 	switch strings.TrimSpace(value) {
-	case "block_storage":
-		return "block_storage", "HyperGate", nil
-	case "object_storage":
-		return "object_storage", "objectstorage", nil
+	case "block":
+		return "block", "HyperGate", nil
+	case "object":
+		return "object", "objectstorage", nil
 	case "":
 		return "", "", nil
 	default:
-		return "", "", fmt.Errorf("storage-type must be block_storage or object_storage")
+		return "", "", fmt.Errorf("storage-type must be block or object")
 	}
 }
 
@@ -402,14 +402,14 @@ func renderCloudResourceFetchHelp(ctx *context, cmd *cobra.Command, selection cl
 }
 
 func cloudResourceStorageUsageLineKey(publicStorageType string) string {
-	if publicStorageType == "block_storage" {
+	if publicStorageType == "block" {
 		return "cmd.cloud_resource.fetch.block_storage.usage_line"
 	}
 	return "cmd.cloud_resource.fetch.object_storage.usage_line"
 }
 
 func cloudResourceStorageShortKey(publicStorageType string) string {
-	if publicStorageType == "block_storage" {
+	if publicStorageType == "block" {
 		return "cmd.cloud_resource.fetch.block_storage.short"
 	}
 	return "cmd.cloud_resource.fetch.object_storage.short"
@@ -469,9 +469,9 @@ func cloudResourceDirectShortKey(kind string) string {
 
 func cloudResourcePublicStorageType(kind string) string {
 	if kind == "block" {
-		return "block_storage"
+		return "block"
 	}
-	return "object_storage"
+	return "object"
 }
 
 func cloudResourceAccountUsageNotes(ctx *context, accountCtx apptargetresource.CloudAccountContext, profile cloudResourceFetchProfile) string {

@@ -59,7 +59,7 @@ func TestCloudAccountsCreateBlockHelpShowsEnabledProviders(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"cloud-account", "create", "--storage-type", "block_storage", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-account", "create", "--storage-type", "block", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -79,12 +79,12 @@ func TestCloudAccountsCreateOSSHelpShowsEnabledProviders(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"cloud-account", "create", "--storage-type", "object_storage", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-account", "create", "--storage-type", "object", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
 	text := out.String()
-	for _, want := range []string{"aliyun", "openstack", "vmware"} {
+	for _, want := range []string{"aliyun", "huawei", "openstack"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
@@ -96,7 +96,7 @@ func TestCloudAccountsCreateOSSHelpShowsEnabledProviders(t *testing.T) {
 
 func TestCloudAccountsCreateBlockAliyunUsesValidatedWorkflow(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--region-id", "cn-qingdao",
@@ -115,7 +115,7 @@ func TestCloudAccountsCreateBlockAliyunUsesValidatedWorkflow(t *testing.T) {
 
 func TestCloudAccountsCreateBlockOpenStackUsesValidatedWorkflow(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block",
 		"--auth-url", "http://192.168.10.201:5000/v3",
 		"--username", "autotest",
 		"--password", "0b33333d1f0f3533",
@@ -139,7 +139,7 @@ func TestCloudAccountsCreateBlockOpenStackHelpShowsRefinedFlagGuidance(t *testin
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"--lang", "zh_cn", "cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block_storage", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"--lang", "zh_cn", "cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -192,8 +192,8 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 	}{
 		{
 			name: "block aliyun",
-			args: []string{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "cloud-resource fetch --cloud-type aliyun --storage-type block_storage", "--set stringArray", "--set-json stringArray", "--foo-bar <value>"},
+			args: []string{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block", "--help"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "cloud-resource fetch --cloud-type aliyun --storage-type block", "--set stringArray", "--set-json stringArray", "--foo-bar <value>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -209,8 +209,8 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		},
 		{
 			name: "block huawei generic",
-			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--account-name string", "--set stringArray", "--set-json stringArray", "cloud-account create --cloud-type huawei --storage-type block_storage", "--foo-bar <value>", "--access-id <ak>", "--access-secret <sk>"},
+			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block", "--help"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--account-name string", "--set stringArray", "--set-json stringArray", "cloud-account create --cloud-type huawei --storage-type block", "--foo-bar <value>", "--access-id <ak>", "--access-secret <sk>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -228,8 +228,8 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		},
 		{
 			name: "oss aliyun",
-			args: []string{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "object_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "boot_loader_images", "cloud-resource fetch --cloud-type aliyun --storage-type object_storage", "--set stringArray", "--set-json stringArray"},
+			args: []string{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "object", "--help"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "boot_loader_images", "cloud-resource fetch --cloud-type aliyun --storage-type object", "--set stringArray", "--set-json stringArray"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -246,8 +246,8 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		},
 		{
 			name: "oss openstack",
-			args: []string{"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "Parameter sources:", "OpenStack RC file", "cloud-resource fetch --cloud-type openstack --storage-type object_storage", "--set stringArray", "--set-json stringArray"},
+			args: []string{"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object", "--help"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "Parameter sources:", "OpenStack RC file", "cloud-resource fetch --cloud-type openstack --storage-type object", "--set stringArray", "--set-json stringArray"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -263,8 +263,8 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		},
 		{
 			name: "oss huawei generic",
-			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object_storage", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "cloud-account create --cloud-type huawei --storage-type object_storage", "--set stringArray", "--set-json stringArray", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
+			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object", "--help"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "cloud-account create --cloud-type huawei --storage-type object", "--set stringArray", "--set-json stringArray", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -314,7 +314,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 
 func TestCloudAccountsCreateOSSAliyunUsesValidatedWorkflow(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "object",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--region-id", "cn-qingdao",
@@ -332,7 +332,7 @@ func TestCloudAccountsCreateOSSAliyunUsesValidatedWorkflow(t *testing.T) {
 
 func TestCloudAccountsCreateOSSOpenStackUsesValidatedWorkflow(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
 		"--auth-url", "http://192.168.10.201:5000/v3",
 		"--username", "autotest",
 		"--password", "0b33333d1f0f3533",
@@ -376,7 +376,7 @@ func TestCloudAccountsCreateOSSOpenStackRejectsRemovedRootFlag(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
 		"--auth-url", "http://192.168.10.201:5000/v3",
 		"--username", "autotest",
 		"--password", "autotest",
@@ -390,7 +390,7 @@ func TestCloudAccountsCreateOSSOpenStackRejectsRemovedRootFlag(t *testing.T) {
 
 func TestCloudAccountsCreateBlockGenericProviderFallsBackToGenericBuilder(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--region-id", "cn-north-1",
@@ -407,7 +407,7 @@ func TestCloudAccountsCreateBlockGenericProviderFallsBackToGenericBuilder(t *tes
 
 func TestCloudAccountsCreateBlockGenericProviderInfersAKSKFromAliasFlags(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--access-id", "ak",
 		"--access-secret", "sk",
 		"--region-id", "cn-north-1",
@@ -439,7 +439,7 @@ func TestCloudAccountsCreateBlockRejectsRemovedRootFlag(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block",
 		"--auth-url", "http://192.168.10.201:5000/v3",
 		"--username", "autotest",
 		"--password", "autotest",
@@ -460,7 +460,7 @@ func TestCloudAccountsCreateBlockRejectsLegacyCredentialFlags(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block",
 		"--auth-url", "http://192.168.10.201:5000/v3",
 		"--cloud-account-username", "autotest",
 		"--cloud-account-password", "autotest",
@@ -480,7 +480,7 @@ func TestCloudAccountsCreateHuaweiBlockRejectsCloudAuthType(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--cloud-auth-type", "aksk",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
@@ -496,7 +496,7 @@ func TestCloudAccountsCreateHuaweiBlockRejectsPasswordStyleFlags(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--auth-url", "https://iam.example.invalid/v3",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
@@ -514,7 +514,7 @@ func TestCloudAccountsCreateBlockGenericFileSetAndFlagOverrides(t *testing.T) {
 	}
 
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--file", filePath,
 		"--set-json", `nested={"ssh_port":"2200","ssh_pass":"json-pass"}`,
 		"--set", "project_id=set-project",
@@ -548,7 +548,7 @@ func TestCloudAccountsCreateBlockOpenStackSupportsFileSetAndDynamicMetadata(t *t
 	}
 
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block",
 		"--file", filePath,
 		"--auth-url", "http://192.168.10.201:5000/v3",
 		"--username", "autotest",
@@ -586,7 +586,7 @@ func TestCloudAccountsCreateBlockFileRejectsWrapperObject(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--file", filePath,
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
@@ -598,7 +598,7 @@ func TestCloudAccountsCreateBlockFileRejectsWrapperObject(t *testing.T) {
 
 func TestCloudAccountsCreateOSSGenericProviderFallsBackToGenericBuilder(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "vmware", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 		"--auth-url", "https://vc.example.invalid",
 		"--username", "admin",
 		"--password", "secret",
@@ -608,7 +608,7 @@ func TestCloudAccountsCreateOSSGenericProviderFallsBackToGenericBuilder(t *testi
 		t.Fatalf("path = %q", path)
 	}
 	cloudAccount := body["cloud_account"].(map[string]interface{})
-	if cloudAccount["cloud_type"] != "vmware_obs" || cloudAccount["cloud_auth_type"] != "password" {
+	if cloudAccount["cloud_type"] != "huawei_obs" || cloudAccount["cloud_auth_type"] != "password" {
 		t.Fatalf("cloud_account = %+v", cloudAccount)
 	}
 }
@@ -619,7 +619,7 @@ func TestCloudAccountsCreateGenericProviderMixedCredentialStylesRequireCloudAuth
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "vmware", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--username", "admin",
@@ -632,7 +632,7 @@ func TestCloudAccountsCreateGenericProviderMixedCredentialStylesRequireCloudAuth
 
 func TestCloudAccountsCreateGenericProviderExplicitCloudAuthTypeAllowsMixedCredentialStyles(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "vmware", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 		"--cloud-auth-type", "password",
 		"--auth-url", "https://vc.example.invalid",
 		"--username", "admin",
@@ -663,7 +663,7 @@ func TestCloudAccountsCreateGenericProviderDirectCredentialStyleOverridesFileInf
 	}
 
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "vmware", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 		"--file", filePath,
 		"--auth-url", "https://vc.example.invalid",
 		"--username", "admin",
@@ -689,7 +689,7 @@ func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetada
 		{
 			name: "block host",
 			args: []string{
-				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 				"--access-key-id", "ak",
 				"--access-key-secret", "sk",
 				"--host", "https://legacy.invalid",
@@ -700,7 +700,7 @@ func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetada
 		{
 			name: "oss scene",
 			args: []string{
-				"cloud-account", "create", "--cloud-type", "vmware", "--storage-type", "object_storage",
+				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 				"--cloud-auth-type", "password",
 				"--auth-url", "https://vc.example.invalid",
 				"--username", "admin",
@@ -713,7 +713,7 @@ func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetada
 		{
 			name: "oss insecure",
 			args: []string{
-				"cloud-account", "create", "--cloud-type", "vmware", "--storage-type", "object_storage",
+				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 				"--cloud-auth-type", "password",
 				"--auth-url", "https://vc.example.invalid",
 				"--username", "admin",
@@ -738,7 +738,7 @@ func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetada
 
 func TestCloudAccountsCreateOSSHuaweiAcceptsDynamicMetadataFlags(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--region-id", "cn-north-4",
@@ -757,7 +757,7 @@ func TestCloudAccountsCreateOSSHuaweiAcceptsDynamicMetadataFlags(t *testing.T) {
 
 func TestCloudAccountsCreateOSSHuaweiAutoGeneratesCustomName(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--region-id", "cn-north-1",
@@ -775,7 +775,7 @@ func TestCloudAccountsCreateOSSHuaweiAutoGeneratesCustomName(t *testing.T) {
 
 func TestCloudAccountsCreateOSSOpenStackKeepsAccessAliasAsDynamicMetadata(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
 		"--auth-url", "http://192.168.10.201:5000/v3",
 		"--username", "autotest",
 		"--password", "0b33333d1f0f3533",
@@ -803,7 +803,7 @@ func TestCloudAccountsCreateBlockGenericAliasValidationKeepsFieldErrors(t *testi
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--access-id", "ak",
 		"--region-id", "cn-north-1",
 	), &out, &errOut)
@@ -820,7 +820,7 @@ func TestCloudAccountsCreateOSSGenericFileSetAndFlagOverrides(t *testing.T) {
 	}
 
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "vmware", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 		"--cloud-auth-type", "password",
 		"--file", filePath,
 		"--set-json", `nested={"disk_bus_type_id":"json-bus","disk_bus_type_name":"virtio"}`,
@@ -849,7 +849,7 @@ func TestCloudAccountsCreateOSSGenericFileSetAndFlagOverrides(t *testing.T) {
 
 func TestCloudAccountsCreateOSSGenericMakeImageKeepsAutoUploadImagesEnabled(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "vmware", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
 		"--auth-url", "https://vc.example.invalid",
 		"--username", "admin",
 		"--password", "secret",
@@ -875,7 +875,7 @@ func TestCloudAccountsCreateOSSRejectsLegacyCredentialFlags(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
 		"--auth-url", "http://192.168.10.201:5000/v3",
 		"--cloud-account-username", "autotest",
 		"--cloud-account-password", "autotest",
@@ -894,7 +894,7 @@ func TestCloudAccountsCreateOSSOpenStackSupportsFileSetAndDynamicMetadata(t *tes
 	}
 
 	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object_storage",
+		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
 		"--file", filePath,
 		"--auth-url", "http://192.168.10.201:5000/v3",
 		"--username", "autotest",
@@ -938,7 +938,7 @@ func TestCloudAccountsCreateRequiresCloudType(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
 		"cloud-account", "create",
-		"--storage-type", "block_storage",
+		"--storage-type", "block",
 		"--access-key-id", "ak",
 	), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "cloud-type is required") {
@@ -950,14 +950,17 @@ func TestCloudAccountsCreateRejectsInvalidPublicStorageType(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create",
-		"--cloud-type", "aliyun",
-		"--storage-type", "archive",
-	), &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), "storage-type must be block_storage or object_storage") {
-		t.Fatalf("err = %v", err)
+	cases := []string{"archive", "block_storage", "object_storage"}
+	for _, storageType := range cases {
+		var out, errOut bytes.Buffer
+		err := Execute(withHost(t, "https://example.invalid",
+			"cloud-account", "create",
+			"--cloud-type", "aliyun",
+			"--storage-type", storageType,
+		), &out, &errOut)
+		if err == nil || !strings.Contains(err.Error(), "storage-type must be block or object") {
+			t.Fatalf("storageType=%q err=%v", storageType, err)
+		}
 	}
 }
 
@@ -969,9 +972,9 @@ func TestCloudAccountsCreateRejectsUnknownProfile(t *testing.T) {
 	err := Execute(withHost(t, "https://example.invalid",
 		"cloud-account", "create",
 		"--cloud-type", "vmware",
-		"--storage-type", "block_storage",
+		"--storage-type", "block",
 	), &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), `cloud-type "vmware" does not support storage-type block_storage`) {
+	if err == nil || !strings.Contains(err.Error(), `cloud-type "vmware" does not support storage-type block`) {
 		t.Fatalf("err = %v", err)
 	}
 }

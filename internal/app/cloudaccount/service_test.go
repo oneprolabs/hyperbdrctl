@@ -424,7 +424,7 @@ func TestServiceListBuildsQuery(t *testing.T) {
 	_, err := service.List(ListSpec{
 		Page:        2,
 		PageSize:    50,
-		StorageType: "objectstorage",
+		StorageType: "object",
 		Query:       url.Values{"debug": []string{"1"}},
 	})
 	if err != nil {
@@ -434,6 +434,23 @@ func TestServiceListBuildsQuery(t *testing.T) {
 		t.Fatalf("path = %q", api.getPath)
 	}
 	if api.getQuery.Get("storage_type") != "objectstorage" || api.getQuery.Get("page") != "2" || api.getQuery.Get("page_size") != "50" || api.getQuery.Get("debug") != "1" {
+		t.Fatalf("query = %+v", api.getQuery)
+	}
+}
+
+func TestServiceListMapsBlockStorageFilterToHyperGate(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.List(ListSpec{
+		Page:        1,
+		PageSize:    10,
+		StorageType: "block",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.getQuery.Get("storage_type") != "HyperGate" {
 		t.Fatalf("query = %+v", api.getQuery)
 	}
 }

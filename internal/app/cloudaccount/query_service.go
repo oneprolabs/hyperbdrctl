@@ -61,6 +61,8 @@ func normalizeCloudAccountStorageType(storageType string) string {
 	switch strings.ToLower(strings.TrimSpace(storageType)) {
 	case "", "blockstorage", "block", "hypergate":
 		return "HyperGate"
+	case "object", "objectstorage":
+		return "objectstorage"
 	default:
 		return storageType
 	}

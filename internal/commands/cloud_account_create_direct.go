@@ -86,14 +86,14 @@ func parseCloudAccountCreateSelection(args []string) (cloudAccountCreateSelectio
 
 func normalizeCloudAccountCreatePublicStorageType(value string) (public, backend string, err error) {
 	switch strings.TrimSpace(value) {
-	case "block_storage":
-		return "block_storage", "block", nil
-	case "object_storage":
-		return "object_storage", "objectstorage", nil
+	case "block":
+		return "block", "block", nil
+	case "object":
+		return "object", "objectstorage", nil
 	case "":
 		return "", "", nil
 	default:
-		return "", "", fmt.Errorf("storage-type must be block_storage or object_storage")
+		return "", "", fmt.Errorf("storage-type must be block or object")
 	}
 }
 
@@ -126,12 +126,12 @@ func resolveCloudAccountCreateProfile(selection cloudAccountCreateSelection) (cl
 func renderCloudAccountCreateHelp(ctx *context, cmd *cobra.Command, selection cloudAccountCreateSelection) error {
 	profile := "generic"
 	switch {
-	case selection.PublicStorageType == "block_storage" && selection.Provider == "":
+	case selection.PublicStorageType == "block" && selection.Provider == "":
 		profile = "block_storage"
 		addUsageLine(cmd, ctx, "cmd.cloud_account.create.block_storage.usage_line")
 		addAnnotationValue(cmd, usageNotesAnnotation, cloudAccountCreateStorageUsageNotes(ctx, "block"))
 		addHelpDescription(cmd, ctx, "cmd.cloud_account.create.block_storage.short")
-	case selection.PublicStorageType == "object_storage" && selection.Provider == "":
+	case selection.PublicStorageType == "object" && selection.Provider == "":
 		profile = "object_storage"
 		addUsageLine(cmd, ctx, "cmd.cloud_account.create.object_storage.usage_line")
 		addAnnotationValue(cmd, usageNotesAnnotation, cloudAccountCreateStorageUsageNotes(ctx, "objectstorage"))
@@ -213,9 +213,9 @@ func cloudAccountCreateStorageUsageNotes(ctx *context, storageType string) strin
 }
 
 func rewriteCloudAccountCreateDirectCommandRefs(notes, provider, cloudType, storageType string) string {
-	publicStorageType := "object_storage"
+	publicStorageType := "object"
 	if storageType == "block" {
-		publicStorageType = "block_storage"
+		publicStorageType = "block"
 	}
 	createPath := fmt.Sprintf("hyperbdrctl cloud-account create --cloud-type %s --storage-type %s", provider, publicStorageType)
 	createFragment := fmt.Sprintf("cloud-account create --cloud-type %s --storage-type %s", provider, publicStorageType)

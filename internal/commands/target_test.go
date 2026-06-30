@@ -199,7 +199,7 @@ func TestCloudAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 		},
 		{
 			args: []string{"cloud-account", "create", "--help"},
-			want: []string{"Usage Notes:", "--preview-request", "cloud-account create --storage-type block_storage --help"},
+			want: []string{"Usage Notes:", "--preview-request", "cloud-account create --storage-type block --help"},
 		},
 		{
 			args: []string{"cloud-account", "delete", "--help"},
@@ -299,10 +299,12 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
+	var gotQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/getCloudAccounts" {
 			t.Fatalf("path=%q", r.URL.Path)
 		}
+		gotQuery = r.URL.RawQuery
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"code": "00000000",
 			"data": map[string]interface{}{
@@ -326,9 +328,12 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL, "cloud-account", "list", "--storage-type", "objectstorage", "-G"), &out, &errOut)
+	err := Execute(withHost(t, srv.URL, "cloud-account", "list", "--storage-type", "object", "-G"), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if !strings.Contains(gotQuery, "storage_type=objectstorage") {
+		t.Fatalf("query=%q", gotQuery)
 	}
 
 	text := out.String()
@@ -354,6 +359,34 @@ func TestTargetAccountListSupportsVerticalOutput(t *testing.T) {
 	}
 	if strings.Contains(text, "\navailable\n") {
 		t.Fatalf("vertical output should use display_status instead of raw status: %q", text)
+	}
+}
+
+func TestTargetAccountListMapsBlockStorageFilterToHyperGate(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v2/getCloudAccounts" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		gotQuery = r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"cloud_accounts": []map[string]interface{}{},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	if err := Execute(withHost(t, srv.URL, "cloud-account", "list", "--storage-type", "block"), &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(gotQuery, "storage_type=HyperGate") {
+		t.Fatalf("query=%q", gotQuery)
 	}
 }
 
@@ -428,12 +461,12 @@ func TestCloudAccountCreateStorageHelpShowsProviders(t *testing.T) {
 		want []string
 	}{
 		{
-			args: []string{"cloud-account", "create", "--storage-type", "block_storage", "--help"},
+			args: []string{"cloud-account", "create", "--storage-type", "block", "--help"},
 			want: []string{"Usage Notes:", "Providers:", "aliyun", "openstack"},
 		},
 		{
-			args: []string{"cloud-account", "create", "--storage-type", "object_storage", "--help"},
-			want: []string{"Usage Notes:", "Providers:", "aliyun", "openstack", "vmware"},
+			args: []string{"cloud-account", "create", "--storage-type", "object", "--help"},
+			want: []string{"Usage Notes:", "Providers:", "aliyun", "huawei", "openstack"},
 		},
 	}
 
