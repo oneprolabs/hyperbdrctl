@@ -10,9 +10,9 @@ The CLI talks to the platform through a unified HTTP API and supports both `dr` 
 - Query hosts, snapshots, tasks, licenses, and upgrade information
 - Run host lifecycle operations such as register, sync, boot, deregister, and wait
 - Manage host boot configurations and the top-level `boot-config apply` flow
-- Manage source connections, including Agent / Agentless install metadata and Agentless source creation
-- Manage target-side cloud accounts, cloud sync gateways, and object storage
-- Use `api request` to call authenticated APIs directly for troubleshooting and additional automation
+- Manage source-side preparation, including Agent install metadata, Agentless sync proxies, and production sites
+- Manage target-side cloud accounts, cloud resource discovery, cloud sync gateways, and object storage
+- Use JSON output for troubleshooting and additional automation
 
 ## Typical Use Cases
 
@@ -68,8 +68,8 @@ If you are in a test environment and must skip TLS verification, add:
 
 ```sh
 hyperbdrctl host list --page 1 --page-size 10
-hyperbdrctl target account list
-hyperbdrctl tasks list
+hyperbdrctl cloud-account list
+hyperbdrctl oss list
 ```
 
 ### 3. Use JSON Output in Scripts
@@ -123,30 +123,29 @@ Notes:
 ```sh
 hyperbdrctl host list
 hyperbdrctl host detail --id <host_id>
-hyperbdrctl host boot-config get --id <host_id>
+hyperbdrctl boot-config get --id <host_id>
 hyperbdrctl boot-config apply --id <host_id> --file ./boot-config.json
 hyperbdrctl host wait --id <host_id>
 ```
 
 Notes:
 
-- Stable host-level boot configuration management uses `host boot-config`
-- The independent single-host override apply flow uses top-level `boot-config apply`
+- Stable single-host boot configuration management uses `boot-config get` and `boot-config apply`
 
-### Source Connections
+### Source Preparation
 
 Inspect source-side install metadata:
 
 ```sh
-hyperbdrctl source agent-install
-hyperbdrctl source agentless-install
-hyperbdrctl source sync-nodes
+hyperbdrctl agent install
+hyperbdrctl sync-proxy install
+hyperbdrctl sync-proxy list
 ```
 
-Create an Agentless source connection:
+Create an Agentless production site:
 
 ```sh
-hyperbdrctl source create \
+hyperbdrctl production-site create \
   --type vmware \
   --synch-node-id <node_id> \
   --auth-url https://vcenter.example:443 \
@@ -157,28 +156,26 @@ hyperbdrctl source create \
 After creation, validate the binding result:
 
 ```sh
-hyperbdrctl source list --type vmware --binding-status binding
+hyperbdrctl production-site list --type vmware --binding-status binding
 ```
 
 ### Target Cloud Accounts
 
 ```sh
-hyperbdrctl target supports
-hyperbdrctl target account list
-hyperbdrctl target account fetch-block-resources --help
-hyperbdrctl target account create-block aliyun --help
-hyperbdrctl target account create-oss openstack --help
+hyperbdrctl cloud-account list
+hyperbdrctl cloud-account create --help
+hyperbdrctl cloud-resource fetch --help
 ```
 
-Write operations are exposed through provider-specific subcommands. The supported providers should be confirmed with `target supports` and the corresponding `create-* --help` output at runtime.
+`cloud-account create --help` adapts its guidance from the selected `--cloud-type` and `--storage-type`. Use `cloud-resource fetch --help` to resolve cloud-side resource IDs before creating accounts, gateways, or boot configurations.
 
 ### Cloud Sync Gateways
 
 ```sh
-hyperbdrctl target cloud-sync-gateway list
-hyperbdrctl target cloud-sync-gateway resources --cloud-account-id <account_id> --output json
-hyperbdrctl target cloud-sync-gateway create aliyun --help
-hyperbdrctl target cloud-sync-gateway wait --id <storage_id>
+hyperbdrctl cloud-sync-gateway list
+hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --output json
+hyperbdrctl cloud-sync-gateway create --help
+hyperbdrctl cloud-sync-gateway wait --id <storage_id>
 ```
 
 Recommended sequence:
@@ -191,10 +188,11 @@ Recommended sequence:
 ### Object Storage
 
 ```sh
-hyperbdrctl target oss list
-hyperbdrctl target oss detail --id <storage_id>
-hyperbdrctl target oss buckets --help
-hyperbdrctl target oss create --help
+hyperbdrctl oss list
+hyperbdrctl oss detail --id <storage_id>
+hyperbdrctl oss catalog
+hyperbdrctl oss buckets --help
+hyperbdrctl oss create --help
 ```
 
 ### License Management
@@ -209,26 +207,29 @@ hyperbdrctl license activate --kkty <reg_code> --ddty <activation_code>
 
 ```text
 hyperbdrctl
-|- api
-|- batch-boot-config
 |- boot-config
-|  `- apply
-|- boot-config-wizard
+|  `- get / apply
 |- completion
 |- config
+|  `- get / set
 |- host
-|  |- list / detail / snapshots / register / sync / boot / cleanup-validation-host / deregister / wait
-|  `- boot-config
+|  `- list / detail / snapshots / register / sync / boot / clean / deregister / wait
 |- license
-|- source
-|  |- list / detail / vms / agent-install / agentless-install / sync-nodes / create
-|- target
-|  |- supports
-|  |- account
-|  |- cloud-sync-gateway
-|  `- oss
-|- tasks
-`- upgrade
+|  `- list / reg-code / activate
+|- production-site
+|  `- list / detail / create / delete / vm-list
+|- agent
+|  `- install
+|- sync-proxy
+|  `- install / list / delete
+|- cloud-account
+|  `- list / detail / create / wait / delete
+|- cloud-resource
+|  `- fetch
+|- cloud-sync-gateway
+|  `- list / detail / create / wait / delete
+`- oss
+   `- list / detail / catalog / buckets / create / wait / delete
 ```
 
 For full flags and examples for a specific command, run:
@@ -237,9 +238,9 @@ For full flags and examples for a specific command, run:
 hyperbdrctl --help
 hyperbdrctl config set --help
 hyperbdrctl host --help
-hyperbdrctl source create --help
-hyperbdrctl target account create-block --help
-hyperbdrctl target cloud-sync-gateway create --help
+hyperbdrctl production-site create --help
+hyperbdrctl cloud-account create --help
+hyperbdrctl cloud-sync-gateway create --help
 ```
 
 ## Release and Integration Notes
@@ -257,5 +258,5 @@ When code changes are made, run the standard verification commands in this modul
 ```sh
 gofmt -w cmd internal
 go test ./...
-go build -o ../hyperbdrctl ./cmd/hyperbdrctl
+go build -o hyperbdrctl ./cmd/hyperbdrctl
 ```
