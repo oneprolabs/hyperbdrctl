@@ -12,6 +12,7 @@ import (
 	"hyperbdr-client/internal/config"
 	"hyperbdr-client/internal/i18n"
 	"hyperbdr-client/internal/output"
+	"hyperbdr-client/internal/version"
 )
 
 type context struct {
@@ -27,6 +28,14 @@ func Execute(args []string, out, errOut io.Writer) error {
 	args, flags, err := extractGlobalFlags(args)
 	if err != nil {
 		return err
+	}
+	if wantsVersion(args) {
+		cfg, err := config.Resolve(flags)
+		if err != nil {
+			return err
+		}
+		ctx := &context{out: out, errOut: errOut, flags: flags, cfg: cfg, loc: i18n.New(cfg.Lang)}
+		return renderVersion(ctx)
 	}
 	if wantsHelp(args) {
 		lang, err := config.ResolveLang(flags)
@@ -132,6 +141,10 @@ func wantsHelp(args []string) bool {
 	return hasHelpToken(args)
 }
 
+func wantsVersion(args []string) bool {
+	return len(args) == 1 && args[0] == "--version"
+}
+
 func hasHelpToken(args []string) bool {
 	for _, arg := range args {
 		switch arg {
@@ -140,6 +153,15 @@ func hasHelpToken(args []string) bool {
 		}
 	}
 	return false
+}
+
+func renderVersion(ctx *context) error {
+	info := version.Current()
+	if ctx.cfg.Output == "json" {
+		return output.JSON(ctx.out, info)
+	}
+	_, err := fmt.Fprintf(ctx.out, "hyperbdrctl version %s\n", info.Version)
+	return err
 }
 
 func runConfig(ctx *context, args []string) error {

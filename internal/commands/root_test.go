@@ -51,6 +51,9 @@ func TestUsageIsLocalized(t *testing.T) {
 	if !strings.Contains(out.String(), "license") {
 		t.Fatalf("usage missing license = %q", out.String())
 	}
+	if !strings.Contains(out.String(), "--version") {
+		t.Fatalf("usage missing version flag = %q", out.String())
+	}
 	for _, visible := range []string{"production-site", "agent", "sync-proxy"} {
 		if !strings.Contains(out.String(), visible) {
 			t.Fatalf("usage missing %s = %q", visible, out.String())
@@ -72,6 +75,41 @@ func TestUsageIsLocalized(t *testing.T) {
 	}
 	if strings.Contains(text, "licenses") {
 		t.Fatalf("usage should hide deprecated licenses alias = %q", text)
+	}
+}
+
+func TestVersionDoesNotRequireConfiguration(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"--version"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	if got := out.String(); !strings.Contains(got, "hyperbdrctl version dev") {
+		t.Fatalf("version output = %q", got)
+	}
+}
+
+func TestVersionJSONDoesNotRequireConfiguration(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"--output", "json", "--version"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	var got map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("version json = %q: %v", out.String(), err)
+	}
+	for _, key := range []string{"version", "commit", "build_date", "go_version", "platform"} {
+		if _, ok := got[key]; !ok {
+			t.Fatalf("version json missing %q: %v", key, got)
+		}
+	}
+	if got["version"] != "dev" {
+		t.Fatalf("version = %v", got["version"])
 	}
 }
 

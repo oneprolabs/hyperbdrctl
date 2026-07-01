@@ -72,6 +72,7 @@ func addGlobalHelpFlags(cmd *cobra.Command, ctx *context) {
 	flags.StringP("output", "o", "", ctx.loc.T("flag.output"))
 	flags.BoolP("vertical", "G", false, ctx.loc.T("flag.vertical"))
 	flags.Bool("debug", false, ctx.loc.T("flag.debug"))
+	flags.Bool("version", false, ctx.loc.T("flag.version"))
 }
 
 func newGroupCommand(ctx *context, use, shortKey, longKey, exampleKey, notesKey, groupName string) *cobra.Command {

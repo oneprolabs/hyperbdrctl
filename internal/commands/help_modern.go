@@ -89,6 +89,7 @@ func rootFlagSpecs() []flagHelpSpec {
 		{name: "lang"},
 		{name: "output"},
 		{name: "debug"},
+		{name: "version"},
 		{name: "help"},
 	}
 }

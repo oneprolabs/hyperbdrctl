@@ -170,6 +170,7 @@ var en = map[string]string{
 	"flag.output":                                            "Output format, choices table / json, default table",
 	"flag.vertical":                                          "Render list rows vertically in mysql-style blocks",
 	"flag.debug":                                             "Output request debug logs",
+	"flag.version":                                           "Show CLI version information",
 	"flag.help":                                              "Show help information",
 	"flag.method":                                            "HTTP method",
 	"flag.path":                                              "Host-relative API path starting with /",

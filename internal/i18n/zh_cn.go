@@ -170,6 +170,7 @@ var zhCN = map[string]string{
 	"flag.output":                                                      "输出格式，可选 table / json，默认值 table",
 	"flag.vertical":                                                    "按 mysql 风格逐条纵向展示列表结果",
 	"flag.debug":                                                       "输出请求调试日志",
+	"flag.version":                                                     "显示 CLI 版本信息",
 	"flag.help":                                                        "显示帮助信息",
 	"flag.method":                                                      "HTTP 方法",
 	"flag.path":                                                        "以 / 开头的主机相对 API 路径",
