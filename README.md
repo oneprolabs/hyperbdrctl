@@ -41,6 +41,25 @@ To generate a smaller binary for distribution:
 go build -trimpath -ldflags="-s -w" -o hyperbdrctl ./cmd/hyperbdrctl
 ```
 
+For a release build, inject the CLI version explicitly and require Go to embed VCS metadata:
+
+```sh
+VERSION=v1.2.3
+go build -trimpath -buildvcs=true \
+  -ldflags "\
+    -s -w \
+    -X 'hyperbdr-client/internal/version.Version=${VERSION}'" \
+  -o hyperbdrctl ./cmd/hyperbdrctl
+```
+
+`-buildvcs=true` records the Git revision and commit time in the binary when the source tree is available. After building, verify the CLI version:
+
+```sh
+./hyperbdrctl --version
+./hyperbdrctl --output json --version
+go version -m ./hyperbdrctl
+```
+
 On Windows, output `hyperbdrctl.exe` if needed.
 
 ## Quick Start
