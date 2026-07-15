@@ -264,7 +264,7 @@ func TestTopLevelBootConfigGetHelpUsesModernLayout(t *testing.T) {
 		"Usage Notes:",
 		"hyperbdrctl boot-config get --id <host_id>",
 		"hyperbdrctl --output json boot-config get --id <host_id>",
-		"current boot configuration on a host",
+		"Read the host's current boot configuration.",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q: %q", want, got)
@@ -276,6 +276,23 @@ func TestTopLevelBootConfigGetHelpUsesModernLayout(t *testing.T) {
 		}
 	}
 	assertNoHelpFooter(t, got)
+}
+
+func TestTopLevelBootConfigGetHelpZhCNMatchesArchiveGuidance(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"--lang", "zh_cn", "help", "boot-config", "get"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	if !strings.Contains(got, "读取主机当前已有的启动配置。") {
+		t.Fatalf("help missing archived guidance: %q", got)
+	}
+	if strings.Contains(got, "该命令用于读取主机当前已有的启动配置。") {
+		t.Fatalf("help contains stale guidance: %q", got)
+	}
 }
 
 func TestTopLevelBootConfigHelpZhCNMatchesArchiveGuidance(t *testing.T) {
