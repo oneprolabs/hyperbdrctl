@@ -164,9 +164,8 @@ func TestCloudAccountsCreateBlockOpenStackHelpShowsRefinedFlagGuidance(t *testin
 		"最小创建命令如下",
 		"--set stringArray",
 		"--set-json stringArray",
-		"--foo-bar <value>",
 		"--preview-request",
-		"cloud-account detail --id <account_id> --output json",
+		"cloud-account detail --id <account_id>",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
@@ -193,7 +192,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "block aliyun",
 			args: []string{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "cloud-resource fetch --cloud-type aliyun --storage-type block", "--set stringArray", "--set-json stringArray", "--foo-bar <value>"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "cloud-resource fetch --cloud-type aliyun --storage-type block", "--set stringArray", "--set-json stringArray", "cloud-account wait --id <account_id>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -210,7 +209,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "block huawei generic",
 			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--account-name string", "--set stringArray", "--set-json stringArray", "cloud-account create --cloud-type huawei --storage-type block", "--foo-bar <value>", "--access-id <ak>", "--access-secret <sk>"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--region-id string", "--account-name string", "--set stringArray", "--set-json stringArray", "cloud-resource fetch --cloud-type huawei --storage-type block", "cloud-account wait --id <account_id>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -222,6 +221,8 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				"--auth-url",
 				"--username <username>",
 				"--password <password>",
+				"--access-id <ak>",
+				"--access-secret <sk>",
 				"If both AK/SK-style and username/password-style flags are present",
 			},
 			orderWant: []string{"Usage:", "\nFlags:\n", "Usage Notes:"},
@@ -247,7 +248,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "oss openstack",
 			args: []string{"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "Parameter sources:", "OpenStack RC file", "cloud-resource fetch --cloud-type openstack --storage-type object", "--set stringArray", "--set-json stringArray"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "Parameter Sources:", "OpenStack RC File", "cloud-resource fetch --cloud-type openstack --storage-type object", "--set stringArray", "--set-json stringArray"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -264,7 +265,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "oss huawei generic",
 			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--cloud-auth-type <aksk|password>", "cloud-account create --cloud-type huawei --storage-type object", "--set stringArray", "--set-json stringArray", "--foo-bar <value>", "--access-id + --access-secret => aksk", "If both AK/SK-style and username/password-style flags are present"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--region-id string", "--custom-name string", "cloud-resource fetch --cloud-type huawei --storage-type object", "--set stringArray", "--set-json stringArray"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -273,6 +274,10 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				"--auto-upload-images",
 				"--only-verify",
 				"--file string",
+				"--cloud-auth-type",
+				"--foo-bar <value>",
+				"--access-id + --access-secret => aksk",
+				"If both AK/SK-style and username/password-style flags are present",
 			},
 			orderWant: []string{"Usage:", "\nFlags:\n", "Usage Notes:"},
 		},
@@ -309,6 +314,136 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 			}
 			assertNoHelpFooter(t, text)
 		})
+	}
+}
+
+func TestCloudAccountArchivedHelpCopyIsLocalized(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		name   string
+		path   []string
+		zh     []string
+		en     []string
+		omitZh []string
+		omitEn []string
+	}{
+		{
+			name: "root",
+			zh:   []string{"云账号管理", "list                     列出云账号", "查看已有云账号", "创建后等待任务完成"},
+			en:   []string{"Cloud account management", "list                     List cloud accounts", "View existing cloud accounts", "Wait for the task after creation"},
+		},
+		{
+			name: "list",
+			path: []string{"list"},
+			zh:   []string{"列出云账号", "分页列出云账号", "如未传入 --storage-type", "--storage-type object"},
+			en:   []string{"List cloud accounts", "List cloud accounts with pagination", "When --storage-type is omitted", "--storage-type object"},
+		},
+		{
+			name: "detail",
+			path: []string{"detail"},
+			zh:   []string{"查看云账号详情", "账号 ID 通常来自", "cloud-account detail --id <account_id>"},
+			en:   []string{"Show cloud account detail", "The account ID usually comes from", "cloud-account detail --id <account_id>"},
+		},
+		{
+			name: "wait",
+			path: []string{"wait"},
+			zh:   []string{"等待云账号创建完成", "--interval-seconds 15", "--timeout-seconds 1800"},
+			en:   []string{"Wait for cloud account creation", "--interval-seconds 15", "--timeout-seconds 1800"},
+		},
+		{
+			name:   "delete",
+			path:   []string{"delete"},
+			zh:     []string{"删除云账号", "最小删除命令如下", "未被其它配置引用"},
+			en:     []string{"Delete cloud account", "The minimum delete command is", "not referenced by other configurations"},
+			omitZh: []string{"默认值 false"},
+			omitEn: []string{"default false"},
+		},
+		{
+			name: "create guide",
+			path: []string{"create"},
+			zh:   []string{"创建云账号", "统一的云账号创建引导入口", "具体创建参数请进入对应云厂商帮助页查看", "--preview-request"},
+			en:   []string{"Create cloud account", "unified cloud account creation guide", "provider-specific help page", "--preview-request"},
+		},
+		{
+			name: "block guide",
+			path: []string{"create", "--storage-type", "block"},
+			zh:   []string{"创建块存储云账号", "先从下面选择云厂商", "--cloud-type huawei --storage-type block", "云厂商:"},
+			en:   []string{"Create block-storage cloud account", "Choose a cloud provider below", "--cloud-type huawei --storage-type block", "Providers:"},
+		},
+		{
+			name: "object guide",
+			path: []string{"create", "--storage-type", "object"},
+			zh:   []string{"创建对象存储云账号", "先从下面选择云厂商", "--cloud-type huawei --storage-type object", "云厂商:"},
+			en:   []string{"Create object-storage cloud account", "Choose a cloud provider below", "--cloud-type huawei --storage-type object", "Providers:"},
+		},
+		{
+			name: "aliyun block",
+			path: []string{"create", "--cloud-type", "aliyun", "--storage-type", "block"},
+			zh:   []string{"创建阿里云块存储账号", "参数来源：", "资源获取：", "--set-json < --set < 显式参数"},
+			en:   []string{"Create Alibaba Cloud block-storage account", "Parameter Sources:", "Resource Retrieval:", "--set-json < --set < explicit flags"},
+		},
+		{
+			name: "huawei block",
+			path: []string{"create", "--cloud-type", "huawei", "--storage-type", "block"},
+			zh:   []string{"创建华为云块存储账号", "区域 ID（必须）", "cloud-resource fetch --cloud-type huawei --storage-type block", "--account-name <name>"},
+			en:   []string{"Create Huawei Cloud block-storage account", "Region ID (required)", "cloud-resource fetch --cloud-type huawei --storage-type block", "--account-name <name>"},
+		},
+		{
+			name: "openstack block",
+			path: []string{"create", "--cloud-type", "openstack", "--storage-type", "block"},
+			zh:   []string{"创建 OpenStack 块存储账号", "OpenStack RC 文件", "创建本身不依赖前置资源查询", "--linux-hd-port string"},
+			en:   []string{"Create OpenStack block-storage account", "OpenStack RC File", "does not require a resource query first", "--linux-hd-port string"},
+		},
+		{
+			name: "aliyun object",
+			path: []string{"create", "--cloud-type", "aliyun", "--storage-type", "object"},
+			zh:   []string{"创建阿里云对象存储账号", "控制台访问方式", "可选值 0 / 1", "boot_loader_images,images"},
+			en:   []string{"Create Alibaba Cloud object-storage account", "Console access method", "allowed values 0 / 1", "boot_loader_images,images"},
+		},
+		{
+			name: "huawei object",
+			path: []string{"create", "--cloud-type", "huawei", "--storage-type", "object"},
+			zh:   []string{"创建华为云对象存储账号", "区域 ID（必须）", "--fetch-res zones", "--fetch-res system_volume_types"},
+			en:   []string{"Create Huawei Cloud object-storage account", "Region ID (required)", "--fetch-res zones", "--fetch-res system_volume_types"},
+		},
+		{
+			name: "openstack object",
+			path: []string{"create", "--cloud-type", "openstack", "--storage-type", "object"},
+			zh:   []string{"创建 OpenStack 对象存储账号", "控制台访问方式", "重点关注返回结果中的", "disk_bus_type_name"},
+			en:   []string{"Create OpenStack object-storage account", "Console access method", "Pay particular attention to these fields", "disk_bus_type_name"},
+		},
+	}
+
+	for _, tt := range cases {
+		for _, lang := range []string{"zh_cn", "en"} {
+			t.Run(tt.name+"/"+lang, func(t *testing.T) {
+				args := append([]string{"--lang", lang, "cloud-account"}, tt.path...)
+				args = append(args, "--help")
+				var out, errOut bytes.Buffer
+				if err := Execute(args, &out, &errOut); err != nil {
+					t.Fatalf("args=%v err=%v", args, err)
+				}
+
+				want, omit := tt.en, tt.omitEn
+				if lang == "zh_cn" {
+					want, omit = tt.zh, tt.omitZh
+				}
+				text := out.String()
+				for _, value := range want {
+					if !strings.Contains(text, value) {
+						t.Fatalf("args=%v help missing %q: %q", args, value, text)
+					}
+				}
+				for _, value := range omit {
+					if strings.Contains(text, value) {
+						t.Fatalf("args=%v help should not contain %q: %q", args, value, text)
+					}
+				}
+				assertNoHelpFooter(t, text)
+			})
+		}
 	}
 }
 
@@ -486,6 +621,21 @@ func TestCloudAccountsCreateHuaweiBlockRejectsCloudAuthType(t *testing.T) {
 		"--access-key-secret", "sk",
 	), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "cloud-auth-type cannot be used") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCloudAccountsCreateHuaweiBlockRequiresRegionID(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+	), &out, &errOut)
+	if err == nil || err.Error() != "region-id is required" {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -692,6 +842,7 @@ func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetada
 				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 				"--access-key-id", "ak",
 				"--access-key-secret", "sk",
+				"--region-id", "cn-north-1",
 				"--host", "https://legacy.invalid",
 			},
 			wantKey: "host",

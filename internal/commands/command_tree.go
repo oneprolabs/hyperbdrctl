@@ -133,7 +133,7 @@ func addNotes(cmd *cobra.Command, ctx *context, key string) {
 
 func newConfigCommand(ctx *context) *cobra.Command {
 	cmd := newGroupCommand(ctx, "config", "cmd.config.short", "cmd.config.long", "cmd.config.examples", "cmd.config.notes", "config")
-	addHelpLayout(cmd, helpLayoutFourSection)
+	addHelpLayout(cmd, helpLayoutGroup)
 	addUsageLine(cmd, ctx, "cmd.config.usage_line")
 	addUsageNotes(cmd, ctx, "cmd.config.usage_notes")
 	addWorkflow(cmd, ctx, "cmd.config.workflow")
@@ -181,7 +181,7 @@ func newProductionSiteCommand(ctx *context) *cobra.Command {
 	addUsageNotes(cmd, ctx, "cmd.production_site.usage_notes")
 	cmd.AddCommand(
 		newRawLeafCommand(ctx, "list", "cmd.production_site.list.short", "cmd.production_site.list.long", "cmd.production_site.list.examples", "cmd.production_site.list.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "type")
+			cmd.Flags().String("type", "", ctx.loc.T("flag.production-site-type"))
 			addFlagString(cmd, ctx, "kw")
 			addFlagString(cmd, ctx, "binding-status")
 			addFlagInt(cmd, ctx, "page")
@@ -217,7 +217,8 @@ func newProductionSiteCommand(ctx *context) *cobra.Command {
 	)
 
 	createCmd := newRawLeafCommand(ctx, "create", "cmd.production_site.create.short", "cmd.production_site.create.long", "cmd.production_site.create.examples", "cmd.production_site.create.notes", func(cmd *cobra.Command) {
-		for _, name := range []string{"type", "synch-node-id", "synch-node-ids", "auth-url", "auth-key", "auth-cert", "region-id"} {
+		cmd.Flags().String("type", "", ctx.loc.T("flag.production-site-type"))
+		for _, name := range []string{"synch-node-id", "synch-node-ids", "auth-url", "auth-key", "auth-cert", "region-id"} {
 			addFlagString(cmd, ctx, name)
 		}
 		addFlagBool(cmd, ctx, "preview-request")
@@ -311,7 +312,7 @@ func newOSSCommand(ctx *context) *cobra.Command {
 		}),
 		newObjectStorageBucketsCommand(ctx),
 		newRawLeafCommand(ctx, "catalog", "cmd.oss.catalog.short", "cmd.oss.catalog.long", "cmd.oss.catalog.examples", "cmd.oss.catalog.notes", func(cmd *cobra.Command) {
-			addFlagString(cmd, ctx, "provider")
+			cmd.Flags().String("provider", "", ctx.loc.T("flag.oss.provider"))
 		}, func(args []string) error {
 			return runObjectStorages(ctx, append([]string{"catalog"}, args...))
 		}),

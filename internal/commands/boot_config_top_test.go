@@ -53,19 +53,20 @@ func TestTopLevelBootConfigApplyHelpUsesModernLayout(t *testing.T) {
 		"Usage:",
 		"\nFlags:\n",
 		"--id",
+		"--cloud-account-id",
 		"--set",
 		"--set-json",
 		"--preview-request",
 		"Usage Notes:",
 		"hyperbdrctl host list",
-		"hyperbdrctl cloud-account list",
+		"hyperbdrctl cloud-account list --storage-type block",
 		"hyperbdrctl cloud-sync-gateway list",
 		"hyperbdrctl oss list",
-		"hyperbdrctl cloud-resource fetch --help",
-		"hyperbdrctl boot-config apply \\",
-		"Using a file:",
-		"--region-id cn-shanghai",
-		"--file < dynamic flags < --set < --set-json",
+		"hyperbdrctl cloud-account list --storage-type object",
+		"hyperbdrctl boot-config apply --cloud-account-id <account_id> --help",
+		"For block storage, first view:",
+		"For object storage, first view:",
+		"automatically matches the cloud provider and storage type",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q: %q", want, got)
@@ -124,9 +125,11 @@ func TestTopLevelBootConfigApplyAccountHelpReadsAccountDetailForBlockProfile(t *
 		"--storage-id",
 		"--volume-type-id",
 		"--security-group-id",
+		"Create or update boot configuration for cloud account <account_id>",
+		"provider `aliyun`, storage type `block`",
 		"hyperbdrctl cloud-sync-gateway list",
-		"hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help",
-		"cloud_type `aliyun_bs`",
+		"--fetch-res networks,subnets",
+		"--volume-type-id <volume_type_id>",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
@@ -174,7 +177,9 @@ func TestTopLevelBootConfigApplyAccountHelpShowsOpenStackObjectProfile(t *testin
 		"--boot-loader-image-id",
 		"--boot-loader-flavor-id",
 		"hyperbdrctl oss list",
-		"cloud_type `openstack`",
+		"provider `openstack`, storage type `object`",
+		"regions,compute_zones,projects",
+		"system_volume_types,volume_types",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
@@ -224,8 +229,6 @@ func TestTopLevelBootConfigHelpShowsGetSubcommand(t *testing.T) {
 		"Usage Notes:",
 		"hyperbdrctl host list",
 		"hyperbdrctl boot-config get --id <host_id>",
-		"hyperbdrctl cloud-sync-gateway list",
-		"hyperbdrctl cloud-resource fetch --help",
 		"hyperbdrctl boot-config apply --help",
 	} {
 		if !strings.Contains(got, want) {
@@ -287,12 +290,9 @@ func TestTopLevelBootConfigHelpZhCNMatchesArchiveGuidance(t *testing.T) {
 	for _, want := range []string{
 		"主机启动配置",
 		"查看主机启动配置",
-		"该命令组用于单主机启动配置的获取和应用。",
+		"查看或创建主机启动配置。",
 		"hyperbdrctl host list",
-		"hyperbdrctl cloud-account list",
-		"hyperbdrctl cloud-sync-gateway list",
-		"hyperbdrctl oss list",
-		"hyperbdrctl cloud-resource fetch --help",
+		"hyperbdrctl boot-config get --id <host_id>",
 		"hyperbdrctl boot-config apply --help",
 	} {
 		if !strings.Contains(got, want) {

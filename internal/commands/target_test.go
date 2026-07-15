@@ -432,8 +432,8 @@ func TestUnifiedFlagDescriptionsInChineseHelp(t *testing.T) {
 	text := out.String()
 	for _, want := range []string{
 		"输出请求调试日志",
-		"显示语言，可选 en / zh_cn，默认值 en",
-		"输出格式，可选 table / json，默认值 table",
+		"显示语言，可选值 en / zh_cn，默认值 en",
+		"输出格式，可选值 table / json，默认值 table",
 		"显示帮助信息",
 	} {
 		if !strings.Contains(text, want) {
@@ -526,7 +526,7 @@ func TestTargetCloudSyncGatewayLeafHelpUsesFourSectionLayout(t *testing.T) {
 	}{
 		{
 			args: []string{"cloud-sync-gateway", "list", "--help"},
-			want: []string{"Usage Notes:", "default `HyperGate`", "--cloud-account-id", "hyperbdrctl cloud-sync-gateway detail --id <storage_id>"},
+			want: []string{"Usage Notes:", "--type string", "default HyperGate", "--cloud-account-id", "hyperbdrctl cloud-sync-gateway list --cloud-account-id <account_id>", "hyperbdrctl cloud-sync-gateway detail --id <storage_id>"},
 		},
 		{
 			args: []string{"cloud-sync-gateway", "detail", "--help"},
@@ -562,7 +562,7 @@ func TestTargetCloudSyncGatewayLeafHelpUsesFourSectionLayout(t *testing.T) {
 	}
 }
 
-func TestTargetCloudSyncGatewayCreateHelpUsesGroupLayout(t *testing.T) {
+func TestTargetCloudSyncGatewayCreateHelpUsesAccountGuideLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -573,19 +573,17 @@ func TestTargetCloudSyncGatewayCreateHelpUsesGroupLayout(t *testing.T) {
 
 	text := out.String()
 	for _, want := range []string{
-		"--cloud-type",
 		"--cloud-account-id",
-		"aliyun",
-		"openstack",
-		"huawei",
+		"--preview-request",
 		"Usage Notes:",
-		"hyperbdrctl cloud-sync-gateway create --cloud-type aliyun --help",
+		"hyperbdrctl cloud-account list --storage-type block",
+		"hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> --help",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("cloud-sync-gateway create help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+	for _, unwanted := range []string{"--cloud-type", "Providers:", "aliyun", "openstack", "huawei", "\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("cloud-sync-gateway create help should not include %q: %q", unwanted, text)
 		}
@@ -666,7 +664,7 @@ func TestOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 	}{
 		{
 			args: []string{"oss", "list", "--help"},
-			want: []string{"Usage Notes:", "hyperbdrctl oss list", "objectstorage"},
+			want: []string{"Usage Notes:", "hyperbdrctl oss list", "`object` type"},
 			omit: []string{"--type"},
 		},
 		{
@@ -729,7 +727,7 @@ func TestOSSCreateHelpProfiles(t *testing.T) {
 		{
 			name: "default custom",
 			args: []string{"oss", "create", "--help"},
-			want: []string{"Usage Notes:", "direct custom object storage", "--auth-url", "--bucket-mode", "--bucket-name"},
+			want: []string{"Usage Notes:", "creates custom object storage", "--auth-url", "--bucket-mode", "--bucket-name"},
 			omit: []string{"--cloud-type-select"},
 		},
 		{
@@ -741,7 +739,7 @@ func TestOSSCreateHelpProfiles(t *testing.T) {
 		{
 			name: "custom provider alias",
 			args: []string{"oss", "create", "--provider", "custom", "--help"},
-			want: []string{"Usage Notes:", "direct custom object storage", "--auth-url", "--region-id"},
+			want: []string{"Usage Notes:", "creates custom object storage", "--auth-url", "--region-id"},
 			omit: []string{"--cloud-type-select", "localized provider name and region name"},
 		},
 	}
@@ -781,7 +779,7 @@ func TestOSSBucketsHelpProfiles(t *testing.T) {
 		{
 			name: "default custom",
 			args: []string{"oss", "buckets", "--help"},
-			want: []string{"Usage Notes:", "--auth-url", "--bucket-lookup", "explicit auth URL"},
+			want: []string{"Usage Notes:", "--auth-url", "--bucket-lookup", "target bucket"},
 		},
 		{
 			name: "provider catalog",
@@ -791,7 +789,7 @@ func TestOSSBucketsHelpProfiles(t *testing.T) {
 		{
 			name: "custom provider alias",
 			args: []string{"oss", "buckets", "--provider", "custom", "--help"},
-			want: []string{"Usage Notes:", "--auth-url", "explicit auth URL"},
+			want: []string{"Usage Notes:", "--auth-url", "target bucket"},
 		},
 	}
 
@@ -826,15 +824,138 @@ func TestOSSCreateHelpUsesCustomModeInChinese(t *testing.T) {
 	}
 
 	text := out.String()
-	for _, want := range []string{"使用说明", "其它平台", "--provider custom", "--region-id string"} {
+	for _, want := range []string{"使用说明", "默认按自定义对象存储方式创建", "--provider <provider_id>", "--region-id string"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("oss create zh help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"<cloud-type>-<region-id>", "基于 `--auth-url` 的兼容回退行为", "区域 ID（必须）"} {
+	for _, unwanted := range []string{"<cloud-type>-<region-id>", "基于 `--auth-url` 的兼容回退行为", "区域 ID（必须）", "其它平台"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("oss create zh help should not expose %q: %q", unwanted, text)
 		}
+	}
+}
+
+func TestOSSArchivedHelpCopyIsLocalized(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		name string
+		args []string
+		want []string
+		omit []string
+	}{
+		{
+			name: "zh root",
+			args: []string{"--lang", "zh_cn", "oss", "--help"},
+			want: []string{"目标对象存储管理", "buckets                  验证存储桶可见性", "catalog                  查看云厂商和区域", "建议按下面顺序操作"},
+		},
+		{
+			name: "zh buckets",
+			args: []string{"--lang", "zh_cn", "oss", "buckets", "--help"},
+			want: []string{"验证存储桶可见性", "云厂商 ID", "存储桶寻址方式，可选值 dns /", "当前凭据是否能访问目标存储桶"},
+			omit: []string{"默认值 true"},
+		},
+		{
+			name: "zh catalog",
+			args: []string{"--lang", "zh_cn", "oss", "catalog", "--help"},
+			want: []string{"查看云厂商和区域", "查看当前平台支持的云厂商和区域信息", "--provider string   云厂商 ID"},
+		},
+		{
+			name: "zh create",
+			args: []string{"--lang", "zh_cn", "oss", "create", "--help"},
+			want: []string{"创建目标对象存储", "存储桶模式，可选值 existing /", "默认按自定义对象存储方式创建", "--preview-request"},
+			omit: []string{"默认值 true"},
+		},
+		{
+			name: "zh delete",
+			args: []string{"--lang", "zh_cn", "oss", "delete", "--help"},
+			want: []string{"删除目标对象存储", "CLI 会先检查该对象存储是否仍有关联主机", "目标对象存储 ID 通常来自"},
+			omit: []string{"默认值 false"},
+		},
+		{
+			name: "zh detail",
+			args: []string{"--lang", "zh_cn", "oss", "detail", "--help"},
+			want: []string{"查看目标对象存储详情", "根据目标对象存储 ID 读取单个目标对象存储详情", "hyperbdrctl oss create"},
+		},
+		{
+			name: "zh list",
+			args: []string{"--lang", "zh_cn", "oss", "list", "--help"},
+			want: []string{"列出目标对象存储", "固定查询 `object` 类型", "--page-size int"},
+			omit: []string{"固定查询 `objectstorage` 类型"},
+		},
+		{
+			name: "zh wait",
+			args: []string{"--lang", "zh_cn", "oss", "wait", "--help"},
+			want: []string{"等待目标对象存储创建完成", "对象存储创建请求提交后", "超时只会停止本地轮询"},
+		},
+		{
+			name: "en root",
+			args: []string{"--lang", "en", "oss", "--help"},
+			want: []string{"Target object storage management", "buckets                  Verify bucket visibility", "catalog                  View cloud providers and regions", "Follow this recommended sequence"},
+		},
+		{
+			name: "en buckets",
+			args: []string{"--lang", "en", "oss", "buckets", "--help"},
+			want: []string{"Verify bucket visibility", "Cloud provider ID", "Bucket lookup style, allowed values dns / path", "current credentials can access the target bucket"},
+			omit: []string{"default true"},
+		},
+		{
+			name: "en catalog",
+			args: []string{"--lang", "en", "oss", "catalog", "--help"},
+			want: []string{"View cloud providers and regions", "supported by the current platform", "--provider string   Cloud provider ID"},
+		},
+		{
+			name: "en create",
+			args: []string{"--lang", "en", "oss", "create", "--help"},
+			want: []string{"Create target object storage", "Bucket mode, allowed values existing / new", "creates custom object storage", "--preview-request"},
+			omit: []string{"default true"},
+		},
+		{
+			name: "en delete",
+			args: []string{"--lang", "en", "oss", "delete", "--help"},
+			want: []string{"Delete target object storage", "still has associated hosts", "target object storage ID usually comes from"},
+			omit: []string{"default false"},
+		},
+		{
+			name: "en detail",
+			args: []string{"--lang", "en", "oss", "detail", "--help"},
+			want: []string{"Show target object storage detail", "Read the details of one target object storage", "hyperbdrctl oss create"},
+		},
+		{
+			name: "en list",
+			args: []string{"--lang", "en", "oss", "list", "--help"},
+			want: []string{"List target object storages", "always queries the `object` type", "--page-size int"},
+			omit: []string{"always queries the `objectstorage` type"},
+		},
+		{
+			name: "en wait",
+			args: []string{"--lang", "en", "oss", "wait", "--help"},
+			want: []string{"Wait for target object storage creation", "Continue polling for the final status", "does not cancel the backend create task"},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute(tt.args, &out, &errOut); err != nil {
+				t.Fatalf("args=%v err=%v", tt.args, err)
+			}
+
+			text := out.String()
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("args=%v help missing %q: %q", tt.args, want, text)
+				}
+			}
+			for _, unwanted := range tt.omit {
+				if strings.Contains(text, unwanted) {
+					t.Fatalf("args=%v help should not contain %q: %q", tt.args, unwanted, text)
+				}
+			}
+			assertNoHelpFooter(t, text)
+		})
 	}
 }
 

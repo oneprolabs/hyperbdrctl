@@ -868,6 +868,118 @@ func TestSourceSplitHelpUsesDirectPaths(t *testing.T) {
 	}
 }
 
+func TestSourceSplitHelpMatchesArchivedCopyInBothLanguages(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		name string
+		path []string
+		zh   []string
+		en   []string
+	}{
+		{
+			name: "production-site group",
+			path: []string{"production-site"},
+			zh:   []string{"生产站点管理", "管理生产站点，包括查询、创建、删除和生产虚拟机发现。", "如需创建 Agentless 生产站点"},
+			en:   []string{"Production site management", "Manage production sites, including queries, creation, deletion, and production VM discovery.", "To create an Agentless production site"},
+		},
+		{
+			name: "production-site list",
+			path: []string{"production-site", "list"},
+			zh:   []string{"列出生产站点", "生产站点类型（必须）", "最小查询命令如下：", "校验新建生产站点"},
+			en:   []string{"List production sites", "Production site type (required)", "The minimum query is:", "validating a newly created production site"},
+		},
+		{
+			name: "production-site detail",
+			path: []string{"production-site", "detail"},
+			zh:   []string{"查看生产站点详情", "查看单个生产站点详情。", "--binding-status binding"},
+			en:   []string{"Show production site details", "View the details of one production site.", "--binding-status binding"},
+		},
+		{
+			name: "production-site delete",
+			path: []string{"production-site", "delete"},
+			zh:   []string{"删除生产站点", "删除前确认生产站点：", "最小删除命令如下："},
+			en:   []string{"Delete production site", "Confirm the production site before deletion:", "The minimum delete command is:"},
+		},
+		{
+			name: "production-site vm-list",
+			path: []string{"production-site", "vm-list"},
+			zh:   []string{"列出生产站点虚拟机", "注册状态过滤，可选值 0 / 1", "参数来源：", "生产站点 UUID 通常来自："},
+			en:   []string{"List production site VMs", "Registration filter, allowed values 0 / 1", "Parameter Sources:", "The production site UUID usually comes from:"},
+		},
+		{
+			name: "production-site create",
+			path: []string{"production-site", "create"},
+			zh:   []string{"创建生产站点", "生产站点类型（必须），可选值 vmware / aws", "多个同步节点 ID 使用英文逗号分隔。", "--type vmware --binding-status binding"},
+			en:   []string{"Create production site", "Production site type (required), allowed values", "vmware / aws", "Separate multiple sync node IDs with commas.", "--type vmware --binding-status binding"},
+		},
+		{
+			name: "sync-proxy group",
+			path: []string{"sync-proxy"},
+			zh:   []string{"同步代理管理", "管理 Agentless 同步代理准备流程和已注册节点。", "输出同步代理安装说明："},
+			en:   []string{"Sync proxy management", "Manage Agentless sync proxy preparation and registered nodes.", "Output sync proxy installation guidance:"},
+		},
+		{
+			name: "sync-proxy install",
+			path: []string{"sync-proxy", "install"},
+			zh:   []string{"输出 Agentless 同步代理安装说明", "查看默认安装说明：", "确认同步节点在线后，继续创建生产站点："},
+			en:   []string{"Output Agentless sync proxy installation guidance", "View the default installation guidance:", "After confirming the sync node is online, continue by creating a production site:"},
+		},
+		{
+			name: "sync-proxy list",
+			path: []string{"sync-proxy", "list"},
+			zh:   []string{"列出同步代理节点", "在创建 Agentless 生产站点前", "--type string     类型过滤，默认值 proxy"},
+			en:   []string{"List sync proxy nodes", "before creating an Agentless production site", "--type string     Type filter, default proxy"},
+		},
+		{
+			name: "sync-proxy delete",
+			path: []string{"sync-proxy", "delete"},
+			zh:   []string{"删除同步代理节点", "删除前确认同步代理节点：", "删除成功后，继续校验剩余节点："},
+			en:   []string{"Delete sync proxy node", "Confirm the sync proxy node before deletion:", "After successful deletion, validate the remaining nodes:"},
+		},
+		{
+			name: "agent group",
+			path: []string{"agent"},
+			zh:   []string{"Agent 源端代理管理", "管理 Agent 模式下的源端主机准备流程。", "输出源端代理安装说明："},
+			en:   []string{"Agent source proxy management", "Manage the source host preparation workflow for Agent mode.", "Output source proxy installation guidance:"},
+		},
+		{
+			name: "agent install",
+			path: []string{"agent", "install"},
+			zh:   []string{"输出 Agent 源端代理安装说明", "默认输出按 Linux 和 Windows 分段展示安装命令。", "安装完成后，可返回 CLI 查看源端主机："},
+			en:   []string{"Output Agent source proxy installation guidance", "separate Linux and Windows sections", "After installation, return to the CLI to view source hosts:"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, lang := range []struct {
+				name string
+				want []string
+			}{
+				{name: "zh_cn", want: tc.zh},
+				{name: "en", want: tc.en},
+			} {
+				t.Run(lang.name, func(t *testing.T) {
+					args := append([]string{"--lang", lang.name}, tc.path...)
+					args = append(args, "--help")
+					var out, errOut bytes.Buffer
+					if err := Execute(args, &out, &errOut); err != nil {
+						t.Fatal(err)
+					}
+					text := normalizeHelpText(out.String())
+					for _, want := range lang.want {
+						if !strings.Contains(text, want) {
+							t.Fatalf("help missing %q: %q", want, text)
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
 func normalizeHelpText(text string) string {
 	text = strings.ReplaceAll(text, "\r\n", "\n")
 	lines := strings.Split(text, "\n")

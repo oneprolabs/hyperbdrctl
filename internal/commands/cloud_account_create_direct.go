@@ -149,10 +149,20 @@ func renderCloudAccountCreateHelp(ctx *context, cmd *cobra.Command, selection cl
 }
 
 func applyCloudAccountCreateProviderHelp(ctx *context, cmd *cobra.Command, profile cloudAccountCreateProfile) {
+	if profile.StorageType == "objectstorage" && (profile.Provider == "aliyun" || profile.Provider == "openstack") {
+		overrideFlagUsage(cmd, ctx, "use-internal-ip", "flag.cloud-account.use-internal-ip")
+	}
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(cloudAccountCreateProviderDirectUsageLineKey(profile.StorageType)), profile.Provider))
 	addAnnotationValue(cmd, usageNotesAnnotation, cloudAccountCreateProviderDirectUsageNotes(ctx, profile))
 	shortKey, longKey, _, _, _, _, _, _, _ := cloudAccountCreateProviderTextKeys(profile.Provider, profile.StorageType, profile.Specialized)
 	shortText, longText := providerCommandTexts(ctx, profile.Entry, profile.StorageType, profile.Specialized, shortKey, longKey)
+	if profile.Provider == "huawei" {
+		shortKey = "cmd.cloud_accounts.create.block.huawei.short"
+		if profile.StorageType == "objectstorage" {
+			shortKey = "cmd.cloud_accounts.create.object.huawei.short"
+		}
+		shortText = ctx.loc.T(shortKey)
+	}
 	cmd.Short = shortText
 	cmd.Long = longText
 	addAnnotationValue(cmd, helpDescriptionAnnotation, shortText)
@@ -178,6 +188,24 @@ func cloudAccountCreateProviderDirectUsageLineKey(storageType string) string {
 }
 
 func cloudAccountCreateProviderDirectUsageNotes(ctx *context, profile cloudAccountCreateProfile) string {
+	directKey := ""
+	switch {
+	case profile.StorageType == "block" && profile.Provider == "aliyun":
+		directKey = "help.cloud_account.block.aliyun"
+	case profile.StorageType == "block" && profile.Provider == "huawei":
+		directKey = "help.cloud_account.block.huawei"
+	case profile.StorageType == "block" && profile.Provider == "openstack":
+		directKey = "help.cloud_account.block.openstack"
+	case profile.StorageType == "objectstorage" && profile.Provider == "aliyun":
+		directKey = "help.cloud_account.object.aliyun"
+	case profile.StorageType == "objectstorage" && profile.Provider == "huawei":
+		directKey = "help.cloud_account.object.huawei"
+	case profile.StorageType == "objectstorage" && profile.Provider == "openstack":
+		directKey = "help.cloud_account.object.openstack"
+	}
+	if directKey != "" {
+		return ctx.loc.T(directKey)
+	}
 	notes := cloudAccountCreateProviderUsageNotes(ctx, profile.Entry, profile.StorageType, profile.Specialized)
 	notes = rewriteCloudAccountCreateDirectCommandRefs(notes, profile.Provider, profile.Entry.CloudType, profile.StorageType)
 	return strings.ReplaceAll(notes, "target account", "cloud-account")

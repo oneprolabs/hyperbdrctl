@@ -82,6 +82,11 @@ func TestBlockStoragesDeleteHelpUsesFourSectionLayout(t *testing.T) {
 				t.Fatalf("leaf help should not include %q args=%v: %q", unwanted, tt.args, text)
 			}
 		}
+		for _, unwanted := range []string{"default false", "默认值 false"} {
+			if strings.Contains(text, unwanted) {
+				t.Fatalf("force help should not include %q args=%v: %q", unwanted, tt.args, text)
+			}
+		}
 		assertNoHelpFooter(t, text)
 	}
 }

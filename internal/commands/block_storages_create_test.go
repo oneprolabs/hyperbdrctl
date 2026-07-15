@@ -8,8 +8,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-
-	"hyperbdr-client/catalog"
 )
 
 func TestBlockStoragesHelpShowsGuidedSections(t *testing.T) {
@@ -40,7 +38,7 @@ func TestBlockStoragesHelpShowsGuidedSections(t *testing.T) {
 	}
 }
 
-func TestBlockStoragesCreateHelpShowsProviders(t *testing.T) {
+func TestBlockStoragesCreateHelpShowsCloudAccountGuide(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -50,26 +48,22 @@ func TestBlockStoragesCreateHelpShowsProviders(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := out.String()
-	for _, entry := range catalog.EnabledBlockClouds() {
-		if !strings.Contains(text, entry.Provider) {
-			t.Fatalf("help should list provider %q: %q", entry.Provider, text)
-		}
-	}
 	if strings.Contains(text, "Read JSON request body or metadata object from file") {
 		t.Fatalf("help should not expose hidden legacy flags: %q", text)
 	}
 	for _, want := range []string{
 		"Usage:",
 		"\nFlags:\n",
-		"--cloud-type",
 		"--cloud-account-id",
 		"Usage Notes:",
+		"hyperbdrctl cloud-account list --storage-type block",
+		"hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> --help",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+	for _, unwanted := range []string{"--cloud-type", "Providers:", "aliyun", "openstack", "huawei", "\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
@@ -139,14 +133,18 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"storage_type": "HyperGate",
 			},
 			want: []string{
+				"Usage: hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> [flags]",
 				"--cloud-account-id",
 				"--region-id",
 				"--bandwidth-size",
 				"--hd-control-network",
+				"Create an Alibaba Cloud cloud sync gateway.",
+				"--fetch-res images,system_disk_types",
 				"cloud-resource fetch",
 			},
 			unwanted: []string{
 				"--boot-loader-image-id string    引导加载器镜像 ID（必须）",
+				"--cloud-type string",
 			},
 		},
 		{
@@ -162,10 +160,39 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 			},
 			want: []string{
 				"--cloud-account-id",
-				"Boot loader image ID (required)",
+				"Boot loader image ID",
 				"System disk size in GiB, default 50",
 				"--boot-types-id string",
+				"Usage: hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> [flags]",
+				"--fetch-res regions,compute_zones,projects",
 				"cloud-sync-gateway wait --id <storage_id>",
+			},
+			unwanted: []string{
+				"Boot loader image ID (required)",
+				"--cloud-type string",
+			},
+		},
+		{
+			name: "huawei account shows huawei profile in chinese",
+			args: []string{
+				"--lang", "zh_cn",
+				"cloud-sync-gateway", "create",
+				"--cloud-account-id", "account-1",
+				"--help",
+			},
+			account: map[string]interface{}{
+				"cloud_type":   "huawei_bs",
+				"storage_type": "HyperGate",
+			},
+			want: []string{
+				"用法: hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> [参数]",
+				"--cloud-account-id string        云账号 ID（必须）",
+				"创建华为云云同步网关。",
+				"--fetch-res images,system_disk_types",
+				"cloud-sync-gateway detail --id <storage_id>",
+			},
+			unwanted: []string{
+				"--cloud-type string",
 			},
 		},
 	}

@@ -66,17 +66,31 @@ func newObjectStorageCreateCommand(ctx *context) *cobra.Command {
 }
 
 func addObjectStorageBucketsFlags(cmd *cobra.Command, ctx *context) {
-	for _, name := range []string{"provider", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup"} {
-		addFlagString(cmd, ctx, name)
-	}
-	addFlagBool(cmd, ctx, "use-tls")
+	cmd.Flags().String("provider", "", ctx.loc.T("flag.oss.provider"))
+	cmd.Flags().String("auth-url", "", ctx.loc.T("flag.oss.auth-url"))
+	addFlagString(cmd, ctx, "region-id")
+	cmd.Flags().String("access-key-id", "", ctx.loc.T("flag.oss.access-key-id"))
+	cmd.Flags().String("access-key-secret", "", ctx.loc.T("flag.oss.access-key-secret"))
+	addFlagString(cmd, ctx, "protocol")
+	cmd.Flags().String("bucket-lookup", "", ctx.loc.T("flag.oss.bucket-lookup"))
+	cmd.Flags().Bool("use-tls", false, ctx.loc.T("flag.oss.use-tls"))
 }
 
 func addObjectStorageCreateFlags(cmd *cobra.Command, ctx *context) {
-	for _, name := range []string{"display-name", "provider", "auth-url", "region-id", "access-key-id", "access-key-secret", "protocol", "bucket-lookup", "bucket-mode", "bucket-name", "public-endpoint", "internal-endpoint", "app-id"} {
-		addFlagString(cmd, ctx, name)
-	}
-	addFlagBool(cmd, ctx, "use-tls")
+	addFlagString(cmd, ctx, "display-name")
+	cmd.Flags().String("provider", "", ctx.loc.T("flag.oss.provider"))
+	cmd.Flags().String("auth-url", "", ctx.loc.T("flag.oss.auth-url"))
+	addFlagString(cmd, ctx, "region-id")
+	cmd.Flags().String("access-key-id", "", ctx.loc.T("flag.oss.access-key-id"))
+	cmd.Flags().String("access-key-secret", "", ctx.loc.T("flag.oss.access-key-secret"))
+	addFlagString(cmd, ctx, "protocol")
+	cmd.Flags().String("bucket-lookup", "", ctx.loc.T("flag.oss.bucket-lookup"))
+	cmd.Flags().Bool("use-tls", false, ctx.loc.T("flag.oss.use-tls"))
+	cmd.Flags().String("bucket-mode", "", ctx.loc.T("flag.oss.bucket-mode"))
+	cmd.Flags().String("bucket-name", "", ctx.loc.T("flag.oss.bucket-name"))
+	cmd.Flags().String("public-endpoint", "", ctx.loc.T("flag.oss.public-endpoint"))
+	cmd.Flags().String("internal-endpoint", "", ctx.loc.T("flag.oss.internal-endpoint"))
+	cmd.Flags().String("app-id", "", ctx.loc.T("flag.oss.app-id"))
 	addFlagBool(cmd, ctx, "preview-request")
 }
 

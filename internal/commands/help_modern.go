@@ -23,7 +23,7 @@ func renderRootHelp(cmd *cobra.Command, ctx *context) error {
 	renderDescription(ctx, cmd)
 	fmt.Fprintf(ctx.out, "\n%s: %s\n", ctx.loc.T("help.section_usage"), helpUseLine(cmd))
 	if flags := orderedFlagUsages(ctx, cmd, rootFlagSpecs()); flags != "" {
-		fmt.Fprintf(ctx.out, "\n%s:\n%s\n", ctx.loc.T("help.section_global_flags"), flags)
+		fmt.Fprintf(ctx.out, "\n%s:\n%s\n", ctx.loc.T("help.section_flags"), flags)
 	}
 	if subcommands := visibleSubcommands(cmd); len(subcommands) > 0 {
 		fmt.Fprintf(ctx.out, "\n%s:\n", ctx.loc.T("help.section_commands"))
@@ -407,7 +407,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		return []flagHelpSpec{
 			{name: "id", required: true},
 			{name: "status"},
-			{name: "sync-detail", defaultValue: "false"},
+			{name: "sync-detail"},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
@@ -460,7 +460,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		return []flagHelpSpec{
 			{name: "id"},
 			{name: "ids"},
-			{name: "force", defaultValue: "false"},
+			{name: "force"},
 			{name: "file"},
 			{name: "debug"},
 			{name: "lang"},
@@ -471,10 +471,10 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		return []flagHelpSpec{
 			{name: "id"},
 			{name: "ids"},
-			{name: "operation", required: true, choices: []string{"sync", "boot", "clean", "deregister"}},
+			{name: "operation", choices: []string{"sync", "boot", "clean", "deregister"}},
 			{name: "interval-seconds", defaultValue: "60"},
 			{name: "timeout-seconds", defaultValue: "3600"},
-			{name: "include-steps", defaultValue: "false"},
+			{name: "include-steps"},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
@@ -482,10 +482,10 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		}
 	case "hyperbdrctl config":
 		return []flagHelpSpec{
-			{name: "help"},
 			{name: "debug"},
 			{name: "lang"},
-			{name: "output"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
 		}
 	case "hyperbdrctl production-site":
 		return []flagHelpSpec{
@@ -531,7 +531,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		return []flagHelpSpec{
 			{name: "connection-type", required: true},
 			{name: "connection-uuid"},
-			{name: "registered"},
+			{name: "registered", choices: []string{"0", "1"}},
 			{name: "kw"},
 			{name: "page", defaultValue: "1"},
 			{name: "page-size", defaultValue: "10"},
@@ -669,7 +669,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	case "hyperbdrctl cloud-account delete":
 		return []flagHelpSpec{
 			{name: "id", required: true},
-			{name: "force", defaultValue: "false"},
+			{name: "force"},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
@@ -712,7 +712,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		return []flagHelpSpec{
 			{name: "id"},
 			{name: "ids"},
-			{name: "force", defaultValue: "false"},
+			{name: "force"},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
@@ -903,7 +903,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	case "hyperbdrctl oss delete":
 		return []flagHelpSpec{
 			{name: "id", required: true},
-			{name: "force", defaultValue: "false"},
+			{name: "force"},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
@@ -1034,8 +1034,8 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "username", requiredOnInit: true},
 			{name: "password", requiredOnInit: true},
 			{name: "scene", choices: []string{"dr", "migration"}, defaultValue: config.DefaultScene},
-			{name: "insecure", defaultValue: "false"},
-			{name: "debug", defaultValue: "false"},
+			{name: "insecure"},
+			{name: "debug"},
 			{name: "lang", choices: []string{"en", "zh_cn"}, defaultValue: config.DefaultLang},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
@@ -1073,8 +1073,8 @@ func objectStorageFlagSpecsForProfile(path, profile string) []flagHelpSpec {
 				{name: "access-key-id", required: true},
 				{name: "access-key-secret", required: true},
 				{name: "protocol", defaultValue: "s3"},
-				{name: "bucket-lookup", defaultValue: "dns"},
-				{name: "use-tls", defaultValue: "true"},
+				{name: "bucket-lookup", choices: []string{"dns", "path"}, defaultValue: "dns"},
+				{name: "use-tls"},
 			}, common...)
 		default:
 			return append([]flagHelpSpec{
@@ -1117,8 +1117,8 @@ func objectStorageFlagSpecsForProfile(path, profile string) []flagHelpSpec {
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},
 			{name: "protocol"},
-			{name: "bucket-lookup"},
-			{name: "use-tls", defaultValue: "true"},
+			{name: "bucket-lookup", choices: []string{"dns", "path"}},
+			{name: "use-tls"},
 			{name: "bucket-mode", choices: []string{"existing", "new"}, defaultValue: "existing"},
 			{name: "bucket-name", required: true},
 			{name: "public-endpoint"},
@@ -1207,7 +1207,7 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	openstack := []flagHelpSpec{
 		{name: "cloud-type", required: true},
 		{name: "cloud-account-id", required: true},
-		{name: "boot-loader-image-id", required: true},
+		{name: "boot-loader-image-id"},
 		{name: "project-id"},
 		{name: "region-id"},
 		{name: "compute-zone-id"},
@@ -1228,14 +1228,32 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 		{name: "hg-data-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
 		{name: "data-nat-ip"},
 	}
+	accountScoped := func(specs []flagHelpSpec) []flagHelpSpec {
+		result := make([]flagHelpSpec, 0, len(specs))
+		for _, spec := range specs {
+			if spec.name == "cloud-type" {
+				continue
+			}
+			if spec.name == "boot-loader-image-id" {
+				spec.required = false
+			}
+			result = append(result, spec)
+		}
+		return append(result, commonGlobal...)
+	}
 	switch profile {
 	case "aliyun":
 		return append(aliyun, commonGlobal...)
+	case "aliyun-account":
+		return accountScoped(aliyun)
+	case "huawei-account", "provider-account":
+		return accountScoped(genericProvider)
 	case "openstack":
 		return append(openstack, commonGlobal...)
+	case "openstack-account":
+		return accountScoped(openstack)
 	case "generic":
 		return []flagHelpSpec{
-			{name: "cloud-type"},
 			{name: "cloud-account-id"},
 			{name: "preview-request"},
 			{name: "debug"},
@@ -1274,7 +1292,6 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 	directCommon := []flagHelpSpec{
 		{name: "cloud-type", required: true},
 		{name: "storage-type", required: true, choices: []string{"block", "object"}},
-		{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 		{name: "fetch-res"},
 		{name: "region-id"},
 		{name: "zone-id"},
@@ -1394,6 +1411,7 @@ func bootConfigApplyFlagSpecsForProfile(profile string) []flagHelpSpec {
 	default:
 		return append([]flagHelpSpec{
 			{name: "id", required: true},
+			{name: "cloud-account-id"},
 			{name: "file"},
 			{name: "set"},
 			{name: "set-json"},
@@ -1454,7 +1472,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "storage-type", required: true, choices: []string{"block", "object"}},
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},
-			{name: "region-id"},
+			{name: "region-id", required: true},
 			{name: "region-name"},
 			{name: "account-name"},
 			{name: "file"},
@@ -1478,7 +1496,7 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "file"},
 			{name: "set"},
 			{name: "set-json"},
-			{name: "use-internal-ip"},
+			{name: "use-internal-ip", choices: []string{"0", "1"}},
 			{name: "boot-loader-image-id"},
 			{name: "boot-loader-image-name"},
 			{name: "boot-loader-flavor-id"},
@@ -1513,9 +1531,26 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "disk-bus-type-id"},
 			{name: "disk-bus-type-name"},
 			{name: "custom-name"},
-			{name: "use-internal-ip"},
+			{name: "use-internal-ip", choices: []string{"0", "1"}},
 			{name: "linux-boot-image-id"},
 			{name: "windows-boot-image-id"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
+	case "objectstorage|huawei":
+		return []flagHelpSpec{
+			{name: "cloud-type", required: true},
+			{name: "storage-type", required: true, choices: []string{"block", "object"}},
+			{name: "access-key-id", required: true},
+			{name: "access-key-secret", required: true},
+			{name: "region-id", required: true},
+			{name: "custom-name"},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
 			{name: "preview-request"},
 			{name: "debug"},
 			{name: "lang"},
@@ -1664,7 +1699,7 @@ func orderedFlagUsages(ctx *context, cmd *cobra.Command, specs []flagHelpSpec) s
 		copy.Usage = decorateFlagUsage(ctx, flag.Usage, spec)
 		tmp.AddFlag(&copy)
 	}
-	return strings.TrimRight(tmp.FlagUsagesWrapped(88), "\n")
+	return strings.TrimRight(tmp.FlagUsagesWrapped(120), "\n")
 }
 
 func lookupAnyFlag(cmd *cobra.Command, name string) *pflag.Flag {

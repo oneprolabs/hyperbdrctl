@@ -19,7 +19,15 @@ func TestCloudResourceHelpUsesGroupLayout(t *testing.T) {
 	}
 
 	text := out.String()
-	for _, want := range []string{"Usage:", "\nFlags:\n", "\nCommands:\n", "fetch", "Usage Notes:"} {
+	for _, want := range []string{
+		"Usage:",
+		"\nFlags:\n",
+		"\nCommands:\n",
+		"fetch",
+		"Usage Notes:",
+		"hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help",
+		"hyperbdrctl cloud-resource fetch --cloud-type aliyun --storage-type block --help",
+	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
@@ -65,7 +73,19 @@ func TestCloudResourceFetchHelpShowsGenericModes(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := out.String()
-	for _, want := range []string{"--cloud-account-id", "--cloud-type", "--storage-type", "--fetch-res", "Usage Notes:"} {
+	for _, want := range []string{
+		"--cloud-account-id",
+		"--cloud-type",
+		"--storage-type",
+		"Cloud account authentication type",
+		"values aksk / password",
+		"--fetch-res",
+		"Usage Notes:",
+		"Choose one of these two modes:",
+		"regions",
+		"networks,subnets",
+		"Authentication flags such as `--auth-url`",
+	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
@@ -77,16 +97,71 @@ func TestCloudResourceDirectHelpShowsProviderProfile(t *testing.T) {
 	setUserDirs(t, dir)
 
 	cases := []struct {
-		args []string
-		want []string
+		args     []string
+		want     []string
+		unwanted []string
 	}{
 		{
 			args: []string{"cloud-resource", "fetch", "--cloud-type", "aliyun", "--storage-type", "block", "--help"},
-			want: []string{"--access-key-id", "--access-key-secret", "block", "Usage Notes:"},
+			want: []string{
+				"Usage: hyperbdrctl cloud-resource fetch --cloud-type aliyun --storage-type block [flags]",
+				"Fetch read-only Alibaba Cloud block-storage resources.",
+				"--access-key-id <ak>",
+				"system_disk_types",
+				"cloud-sync-gateway create --cloud-account-id <account_id> --help",
+			},
+			unwanted: []string{"--cloud-auth-type string"},
+		},
+		{
+			args: []string{"--lang", "zh_cn", "cloud-resource", "fetch", "--cloud-type", "huawei", "--storage-type", "block", "--help"},
+			want: []string{
+				"用法: hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type block [参数]",
+				"获取华为云块存储只读资源。",
+				"--access-key-secret <sk>",
+				"system_disk_types",
+			},
+			unwanted: []string{"--cloud-auth-type string"},
+		},
+		{
+			args: []string{"--lang", "zh_cn", "cloud-resource", "fetch", "--cloud-type", "openstack", "--storage-type", "block", "--help"},
+			want: []string{
+				"获取 OpenStack 块存储只读资源。",
+				"--auth-url string",
+				"云平台、源端或对象存储鉴权地址（必须）",
+				"regions,compute_zones,projects",
+				"cloud-sync-gateway create --cloud-account-id <account_id> --help",
+			},
 		},
 		{
 			args: []string{"cloud-resource", "fetch", "--cloud-type", "openstack", "--storage-type", "object", "--help"},
-			want: []string{"--auth-url", "--username", "--password", "--user-domain-id", "object", "Usage Notes:"},
+			want: []string{
+				"Fetch read-only OpenStack object-storage resources.",
+				"--auth-url",
+				"--username",
+				"--password",
+				"--user-domain-id",
+				"volume_types,subnets,security_groups",
+				"cloud-account create --cloud-type openstack --storage-type object --help",
+			},
+		},
+		{
+			args: []string{"cloud-resource", "fetch", "--cloud-type", "aliyun", "--storage-type", "object", "--help"},
+			want: []string{
+				"Fetch read-only Alibaba Cloud object-storage resources.",
+				"system_volume_types",
+				"volume_types",
+				"cloud-account create --cloud-type aliyun --storage-type object --help",
+			},
+			unwanted: []string{"cloud-sync-gateway create", "--cloud-auth-type string"},
+		},
+		{
+			args: []string{"--lang", "zh_cn", "cloud-resource", "fetch", "--cloud-type", "huawei", "--storage-type", "object", "--help"},
+			want: []string{
+				"获取华为云对象存储只读资源。",
+				"system_volume_types",
+				"cloud-account create --cloud-type huawei --storage-type object --help",
+			},
+			unwanted: []string{"云同步网关帮助", "--cloud-auth-type string"},
 		},
 	}
 	for _, tt := range cases {
@@ -98,6 +173,11 @@ func TestCloudResourceDirectHelpShowsProviderProfile(t *testing.T) {
 		for _, want := range tt.want {
 			if !strings.Contains(text, want) {
 				t.Fatalf("args=%v missing %q: %q", tt.args, want, text)
+			}
+		}
+		for _, unwanted := range tt.unwanted {
+			if strings.Contains(text, unwanted) {
+				t.Fatalf("args=%v should not contain %q: %q", tt.args, unwanted, text)
 			}
 		}
 		assertNoHelpFooter(t, text)

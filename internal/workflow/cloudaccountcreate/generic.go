@@ -6,6 +6,9 @@ import (
 )
 
 func buildGenericBlock(spec Spec) (string, map[string]interface{}, error) {
+	if strings.TrimSpace(spec.CloudType) == "huawei_bs" && strings.TrimSpace(spec.RegionID) == "" {
+		return "", nil, fmt.Errorf("region-id is required")
+	}
 	authType, metadata, err := buildGenericMetadata(spec, false)
 	if err != nil {
 		return "", nil, err

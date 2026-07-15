@@ -179,7 +179,7 @@ func renderBootConfigApplyHelp(ctx *context, cmd *cobra.Command, selection bootC
 		}
 		profile = resolved.Kind
 		addAnnotationValue(cmd, usageLineAnnotation, ctx.loc.T("cmd.boot_config_top.apply.account.usage_line"))
-		addAnnotationValue(cmd, helpDescriptionAnnotation, fmt.Sprintf(ctx.loc.T("cmd.boot_config_top.apply.account.short"), accountCtx.CloudAccountID))
+		addAnnotationValue(cmd, helpDescriptionAnnotation, ctx.loc.T("cmd.boot_config_top.apply.account.short"))
 		addAnnotationValue(cmd, usageNotesAnnotation, bootConfigApplyAccountUsageNotes(ctx, accountCtx, resolved))
 	}
 	addAnnotationValue(cmd, bootConfigApplyHelpProfileAnnotation, profile)
@@ -233,6 +233,13 @@ func bootConfigApplyStorageKind(storageType string) (string, error) {
 }
 
 func bootConfigApplyAccountUsageNotes(ctx *context, accountCtx apptargetresource.CloudAccountContext, profile bootConfigApplyHelpProfile) string {
+	storageKind := "object"
+	if strings.HasSuffix(profile.Kind, "|block") {
+		storageKind = "block"
+	}
+	if profile.Provider == "aliyun" || profile.Provider == "openstack" || (profile.Provider == "huawei" && storageKind == "object") {
+		return ctx.loc.T(fmt.Sprintf("help.boot_config.apply.%s.%s", profile.Provider, storageKind))
+	}
 	switch profile.Kind {
 	case "account|openstack|block":
 		return fmt.Sprintf(ctx.loc.T("cmd.boot_config_top.apply.account.openstack.block.usage_notes"), accountCtx.CloudAccountID, accountCtx.CloudType, accountCtx.StorageType, profile.Provider)

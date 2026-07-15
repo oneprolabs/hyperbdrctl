@@ -54,6 +54,9 @@ func TestUsageIsLocalized(t *testing.T) {
 	if !strings.Contains(out.String(), "--version") {
 		t.Fatalf("usage missing version flag = %q", out.String())
 	}
+	if strings.Contains(out.String(), "--insecure") {
+		t.Fatalf("usage should not include non-global insecure flag = %q", out.String())
+	}
 	for _, visible := range []string{"production-site", "agent", "sync-proxy"} {
 		if !strings.Contains(out.String(), visible) {
 			t.Fatalf("usage missing %s = %q", visible, out.String())
@@ -250,7 +253,7 @@ func TestHostWaitHelpShowsCleanOperationChoice(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := out.String()
-	for _, want := range []string{"--operation", "allowed values sync / boot / clean /", "default 60", "default 3600"} {
+	for _, want := range []string{"--operation", "allowed values sync / boot /", "clean / deregister", "default 60", "default 3600"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q: %q", want, got)
 		}
@@ -259,6 +262,46 @@ func TestHostWaitHelpShowsCleanOperationChoice(t *testing.T) {
 		t.Fatalf("help should not mention legacy operation: %q", got)
 	}
 	assertNoHelpFooter(t, got)
+}
+
+func TestHostHelpMatchesArchivedChineseGuidance(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	tests := []struct {
+		args []string
+		want []string
+	}{
+		{[]string{"host", "--help"}, []string{"管理主机生命周期，包括查询、注册、同步、启动、清理和注销。", "hyperbdrctl boot-config get --id <host_id>"}},
+		{[]string{"host", "list", "--help"}, []string{"页码，默认值 1", "每页数量，默认值 10", "host list --status sync_snapshot_done --boot-status not_boot"}},
+		{[]string{"host", "detail", "--help"}, []string{"资源 ID（必须）", "host detail --id <host_id>"}},
+		{[]string{"host", "snapshots", "--help"}, []string{"资源 ID（必须）", "只有在需要同步细节字段时，才附加下面的参数", "--sync-detail"}},
+		{[]string{"host", "sync", "--help"}, []string{"参数来源：", "--id 和 --ids 至少传入一个。", "host sync --ids <host_id_1,host_id_2>"}},
+		{[]string{"host", "register", "--help"}, []string{"hyperbdrctl production-site vm-list", "host register --vm-ids <vm_id_1,vm_id_2>"}},
+		{[]string{"host", "boot", "--help"}, []string{"--snapshot-id string", "hyperbdrctl host snapshots --id <host_id>", "host wait --id <host_id> --operation boot"}},
+		{[]string{"host", "clean", "--help"}, []string{"删除一个或多个主机的验证启动实例。", "--id 和 --ids 至少传入一个。"}},
+		{[]string{"host", "deregister", "--help"}, []string{"--id 和 --ids 至少传入一个。", "只有在确认目标主机无误后，才附加下面的参数"}},
+		{[]string{"host", "wait", "--help"}, []string{"等待的操作，可选值 sync / boot / clean /", "deregister", "--id 和 --ids 至少传入一个。", "--include-steps"}},
+	}
+
+	for _, tt := range tests {
+		var out, errOut bytes.Buffer
+		args := append([]string{"--lang", "zh_cn"}, tt.args...)
+		if err := Execute(args, &out, &errOut); err != nil {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
+		text := out.String()
+		for _, want := range tt.want {
+			if !strings.Contains(text, want) {
+				t.Fatalf("args=%v missing %q: %q", args, want, text)
+			}
+		}
+		for _, unwanted := range []string{"默认值 false", "--file string"} {
+			if strings.Contains(text, unwanted) {
+				t.Fatalf("args=%v should not contain %q: %q", args, unwanted, text)
+			}
+		}
+	}
 }
 
 func TestFindListItemsFallback(t *testing.T) {
@@ -334,9 +377,12 @@ func TestConfigHelpShowsGuidedSections(t *testing.T) {
 	text := out.String()
 	for _, want := range []string{
 		"Usage Notes:",
+		"Commands:",
+		"get                      Show the saved local configuration",
+		"set                      Validate and save local CLI configuration",
 		"hyperbdrctl config get",
 		"hyperbdrctl config set \\",
-		"HYPERBDR_HOST",
+		"set environment variables using the syntax for your current shell",
 		"command-line flags > environment variables > config file > defaults",
 	} {
 		if !strings.Contains(text, want) {
@@ -357,9 +403,13 @@ func TestConfigHelpShowsGuidedSections(t *testing.T) {
 	}
 	usage := strings.Index(text, "Usage:")
 	flags := strings.Index(text, "\nFlags:\n")
+	commands := strings.Index(text, "\nCommands:\n")
 	notes := strings.Index(text, "Usage Notes:")
-	if usage < 0 || flags < 0 || notes < 0 || !(usage < flags && flags < notes) {
+	if usage < 0 || flags < 0 || commands < 0 || notes < 0 || !(usage < flags && flags < commands && commands < notes) {
 		t.Fatalf("help order mismatch: %q", text)
+	}
+	if strings.Contains(text, "HYPERBDR_HOST") {
+		t.Fatalf("config group help should defer environment variable details to config set: %q", text)
 	}
 	assertNoHelpFooter(t, text)
 }
@@ -415,10 +465,11 @@ func TestConfigSetHelpShowsGuidedSectionsInStyleOrder(t *testing.T) {
 		"required for first-time initialization",
 		"allowed values dr /",
 		"default dr",
-		"default false",
 		"default en",
 		"default table",
 		"hyperbdrctl config set \\",
+		"export HYPERBDR_HOST=https://example:10443",
+		"validates the login before saving",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
@@ -461,7 +512,133 @@ func TestConfigSetHelpShowsGuidedSectionsInStyleOrder(t *testing.T) {
 	if !(flagsStart < notes) {
 		t.Fatalf("help order mismatch: %q", text)
 	}
+	if strings.Contains(flagsSection, "default false") {
+		t.Fatalf("boolean flags should not show a false default: %q", flagsSection)
+	}
 	assertNoHelpFooter(t, text)
+}
+
+func TestConfigHelpMatchesArchivedCopyInBothLanguages(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	tests := []struct {
+		name      string
+		args      []string
+		want      []string
+		unwanted  []string
+		countText string
+	}{
+		{
+			name: "zh_cn group",
+			args: []string{"--lang", "zh_cn", "config", "--help"},
+			want: []string{
+				"查看或更新 CLI 默认配置",
+				"\n命令:\n",
+				"get                      显示已保存的本地配置",
+				"set                      校验并保存本地 CLI 配置",
+				"如果不希望把地址或凭证写入本地配置，也可以按当前 Shell 的方式设置环境变量。",
+				"完整参数、环境变量和校验规则请继续查看：",
+				"--username <username>",
+				"--password <password>",
+			},
+			unwanted: []string{"HYPERBDR_HOST"},
+		},
+		{
+			name: "en group",
+			args: []string{"--lang", "en", "config", "--help"},
+			want: []string{
+				"View or update CLI default configuration",
+				"\nCommands:\n",
+				"get                      Show the saved local configuration",
+				"set                      Validate and save local CLI configuration",
+				"set environment variables using the syntax for your current shell",
+				"For complete flags, environment variables, and validation rules",
+				"--username <username>",
+				"--password <password>",
+			},
+			unwanted: []string{"HYPERBDR_HOST"},
+		},
+		{
+			name: "zh_cn get",
+			args: []string{"--lang", "zh_cn", "config", "get", "--help"},
+			want: []string{
+				"读取当前机器上已保存的本地配置，并显示配置文件路径和 token 缓存路径。",
+				"查看已保存配置：",
+				"如需明文查看已保存密码：",
+				"把结果交给其他工具处理：",
+				"--username <username>",
+				"--password <password>",
+			},
+		},
+		{
+			name: "en get",
+			args: []string{"--lang", "en", "config", "get", "--help"},
+			want: []string{
+				"Read the local configuration saved on the current machine and show the config file and token cache paths.",
+				"View the saved configuration:",
+				"To view the saved password in plain text:",
+				"Pass the result to another tool:",
+				"--username <username>",
+				"--password <password>",
+			},
+		},
+		{
+			name: "zh_cn set",
+			args: []string{"--lang", "zh_cn", "config", "set", "--help"},
+			want: []string{
+				"平台场景，可选值 dr /",
+				"--insecure          测试环境跳过 TLS 证书校验",
+				"--debug             输出请求调试日志",
+				"首次初始化本地配置：",
+				"如果命令行省略某个字段，CLI 会按下面的优先级补齐：",
+				"以 Bash 为例，可以先设置环境变量，再执行保存：",
+				"export HYPERBDR_USERNAME=<username>",
+				"保存前会先执行登录校验；如果登录失败，不会保存新的配置。",
+			},
+			unwanted:  []string{"默认值 false", "配置读取优先级如下："},
+			countText: "命令行参数 > 环境变量 > 配置文件 > 默认值",
+		},
+		{
+			name: "en set",
+			args: []string{"--lang", "en", "config", "set", "--help"},
+			want: []string{
+				"Platform scene, allowed values dr /",
+				"--insecure          Skip TLS certificate verification for test environments",
+				"--debug             Output request debug logs",
+				"Initialize the local configuration for the first time:",
+				"If a field is omitted from the command line, the CLI fills it according to the following priority order:",
+				"Using Bash as an example, set the environment variables before saving:",
+				"export HYPERBDR_USERNAME=<username>",
+				"The CLI validates the login before saving; if login fails, the new configuration is not saved.",
+			},
+			unwanted:  []string{"default false", "Configuration is read in the following priority order:"},
+			countText: "command-line flags > environment variables > config file > defaults",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute(tt.args, &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+			text := out.String()
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			for _, unwanted := range tt.unwanted {
+				if strings.Contains(text, unwanted) {
+					t.Fatalf("help should not include %q: %q", unwanted, text)
+				}
+			}
+			if tt.countText != "" && strings.Count(text, tt.countText) != 1 {
+				t.Fatalf("help should include %q exactly once: %q", tt.countText, text)
+			}
+		})
+	}
 }
 
 func TestRootHelpShowsModernGuidance(t *testing.T) {
@@ -475,7 +652,7 @@ func TestRootHelpShowsModernGuidance(t *testing.T) {
 
 	text := out.String()
 	for _, want := range []string{
-		"Global Flags:",
+		"Flags:",
 		"Usage Notes:",
 		"Generate shell completion scripts",
 		"hyperbdrctl config set \\",
@@ -486,20 +663,99 @@ func TestRootHelpShowsModernGuidance(t *testing.T) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	if strings.Contains(text, "--vertical") {
-		t.Fatalf("help should hide --vertical from global flags: %q", text)
+	for _, hiddenFlag := range []string{"--vertical", "--insecure"} {
+		if strings.Contains(text, hiddenFlag) {
+			t.Fatalf("help should hide %s from flags: %q", hiddenFlag, text)
+		}
 	}
 	for _, hidden := range []string{"\n  api", "\n  batch-boot-config", "\n  boot-config-wizard", "\n  tasks", "\n  upgrade", "hyperbdrctl tasks list"} {
 		if strings.Contains(text, hidden) {
 			t.Fatalf("help should not include %q: %q", hidden, text)
 		}
 	}
-	for _, unwanted := range []string{"Examples:", "\nFlags:\n", "help for hyperbdrctl"} {
+	for _, unwanted := range []string{"Examples:", "\nGlobal Flags:\n", "help for hyperbdrctl"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
 	}
 	assertNoHelpFooter(t, text)
+}
+
+func TestRootHelpUsesLocalizedCopyInBothLanguages(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "zh_cn",
+			args: []string{"--lang", "zh_cn", "--help"},
+			want: []string{
+				"HyperBDR 与 HyperMotion 命令行客户端\n\n用法: hyperbdrctl [全局参数] <命令> [参数]",
+				"\n参数:\n",
+				"--lang string     显示语言，可选值 en / zh_cn，默认值 en",
+				"--output string   输出格式，可选值 table / json，默认值 table",
+				"--version         显示 CLI 版本信息",
+				"cloud-sync-gateway       云同步网关管理",
+				"oss                      目标对象存储管理",
+				"production-site          生产站点管理",
+				"--host https://<server>:10443",
+				"以 Bash 为例，先准备环境变量，再直接执行查询命令：",
+				"配置完成后，可以先执行下面的命令确认配置和连接是否正常：\n    hyperbdrctl config get",
+				"hyperbdrctl boot-config apply --cloud-account-id <account_id> --help",
+				"hyperbdrctl cloud-account create --help",
+			},
+		},
+		{
+			name: "en",
+			args: []string{"--lang", "en", "--help"},
+			want: []string{
+				"HyperBDR and HyperMotion command-line client\n\nUsage: hyperbdrctl [global flags] <command> [flags]",
+				"\nFlags:\n",
+				"--lang string     Display language, allowed values en / zh_cn, default en",
+				"--output string   Output format, allowed values table / json, default table",
+				"--version         Show CLI version information",
+				"cloud-sync-gateway       Cloud sync gateway management",
+				"oss                      Target object storage management",
+				"production-site          Production site management",
+				"--host https://<server>:10443",
+				"Using Bash as an example, prepare the environment variables before running a query command:",
+				"After configuration, run the following commands to verify the configuration and connection:\n    hyperbdrctl config get",
+				"hyperbdrctl boot-config apply --cloud-account-id <account_id> --help",
+				"hyperbdrctl cloud-account create --help",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute(tt.args, &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+			text := out.String()
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			usage := strings.Index(text, i18n.New(tt.name).T("help.section_usage")+":")
+			flags := strings.Index(text, "\n"+i18n.New(tt.name).T("help.section_flags")+":\n")
+			commands := strings.Index(text, "\n"+i18n.New(tt.name).T("help.section_commands")+":\n")
+			notes := strings.Index(text, "\n"+i18n.New(tt.name).T("help.section_usage_notes")+":\n")
+			if usage < 0 || flags < 0 || commands < 0 || notes < 0 || !(usage < flags && flags < commands && commands < notes) {
+				t.Fatalf("help order mismatch: %q", text)
+			}
+			for _, unwanted := range []string{"--insecure", "--vertical", "\nGlobal Flags:\n", "\n全局参数:\n"} {
+				if strings.Contains(text, unwanted) {
+					t.Fatalf("help should not include %q: %q", unwanted, text)
+				}
+			}
+		})
+	}
 }
 
 func TestNonConfigHelpDoesNotShowFooter(t *testing.T) {
@@ -796,43 +1052,100 @@ func TestLicenseHelpOmitsArchivedRemovedNotesInBothLanguages(t *testing.T) {
 	}
 }
 
-func TestLicenseHelpMatchesArchivedConcisePhrasingInBothLanguages(t *testing.T) {
+func TestLicenseHelpMatchesArchivedCopyInBothLanguages(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	cases := []struct {
-		name string
-		args []string
-		want []string
+		name     string
+		args     []string
+		want     []string
+		unwanted []string
 	}{
 		{
 			name: "zh group",
 			args: []string{"--lang", "zh_cn", "license", "--help"},
 			want: []string{
-				"查看当前许可证列表：",
-				"获取注册码，并据此生成激活码：",
+				"查看当前许可证状态：",
+				"获取当前环境的注册码：",
+				"使用注册码生成激活码后，提交激活：",
+			},
+			unwanted: []string{"该命令组用于"},
+		},
+		{
+			name: "zh list",
+			args: []string{"--lang", "zh_cn", "license", "list", "--help"},
+			want: []string{
+				"按分页查看当前平台上的许可证摘要。",
+				"查看默认分页结果：",
+				"指定分页参数：",
+				"输出 JSON 供其他工具处理：",
+				"hyperbdrctl license list --output json",
+			},
+			unwanted: []string{"hyperbdrctl --output json license list"},
+		},
+		{
+			name: "zh reg-code",
+			args: []string{"--lang", "zh_cn", "license", "reg-code", "--help"},
+			want: []string{
+				"读取当前环境许可证激活所需的注册码。",
+				"获取注册码：",
+				"该命令只读取注册码，不会修改服务端状态。",
+				"使用注册码生成激活码后，继续执行：",
 			},
 		},
 		{
 			name: "zh activate",
 			args: []string{"--lang", "zh_cn", "license", "activate", "--help"},
 			want: []string{
-				"执行激活命令：",
+				"提交许可证激活码，完成当前环境的许可证激活。",
+				"参数来源：",
+				"--ddty string\n      使用基于注册码生成的许可证激活码。",
+				"执行前，先获取当前环境的注册码：",
+				"激活完成后，查看许可证状态：",
 			},
 		},
 		{
 			name: "en group",
-			args: []string{"license", "--help"},
+			args: []string{"--lang", "en", "license", "--help"},
 			want: []string{
-				"Review the current license list:",
-				"Fetch the registration code and generate the activation code from it:",
+				"View the current license status:",
+				"Get the registration code for the current environment:",
+				"After using the registration code to generate an activation code, submit the activation:",
+			},
+			unwanted: []string{"Use this command group"},
+		},
+		{
+			name: "en list",
+			args: []string{"--lang", "en", "license", "list", "--help"},
+			want: []string{
+				"View paginated license summaries on the current platform.",
+				"View the default page:",
+				"Specify pagination parameters:",
+				"Output JSON for other tools:",
+				"hyperbdrctl license list --output json",
+			},
+			unwanted: []string{"hyperbdrctl --output json license list"},
+		},
+		{
+			name: "en reg-code",
+			args: []string{"--lang", "en", "license", "reg-code", "--help"},
+			want: []string{
+				"Read the registration code required to activate the license in the current environment.",
+				"Get the registration code:",
+				"This command only reads the registration code and does not modify server-side state.",
+				"After using the registration code to generate an activation code, continue with:",
 			},
 		},
 		{
 			name: "en activate",
-			args: []string{"license", "activate", "--help"},
+			args: []string{"--lang", "en", "license", "activate", "--help"},
 			want: []string{
-				"run the activation command:",
+				"Submit a license activation code to activate the license in the current environment.",
+				"Parameter Sources:",
+				"--ddty string\n      Use the license activation code generated from the registration code.",
+				"Before activation, get the registration code for the current environment:",
+				"After activation, view the license status:",
 			},
 		},
 	}
@@ -847,6 +1160,11 @@ func TestLicenseHelpMatchesArchivedConcisePhrasingInBothLanguages(t *testing.T) 
 			for _, want := range tc.want {
 				if !strings.Contains(text, want) {
 					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			for _, unwanted := range tc.unwanted {
+				if strings.Contains(text, unwanted) {
+					t.Fatalf("help should not include %q: %q", unwanted, text)
 				}
 			}
 		})

@@ -88,12 +88,12 @@ func renderLegacyHelp(cmd *cobra.Command, ctx *context) error {
 	if nextSteps := strings.TrimSpace(cmd.Annotations[nextStepsAnnotation]); nextSteps != "" {
 		renderHelpSection(ctx, ctx.loc.T("help.section_next_steps"), nextSteps)
 	}
-	if flags := strings.TrimRight(cmd.NonInheritedFlags().FlagUsagesWrapped(88), "\n"); strings.TrimSpace(flags) != "" {
+	if flags := strings.TrimRight(cmd.NonInheritedFlags().FlagUsagesWrapped(120), "\n"); strings.TrimSpace(flags) != "" {
 		fmt.Fprintf(ctx.out, "\n%s:\n%s", helpSectionTitle(cmd, ctx, flagsTitleAnnotation, "help.section_flags"), flags)
 	}
-	globalFlags := strings.TrimRight(cmd.InheritedFlags().FlagUsagesWrapped(88), "\n")
+	globalFlags := strings.TrimRight(cmd.InheritedFlags().FlagUsagesWrapped(120), "\n")
 	if cmd == cmd.Root() {
-		globalFlags = strings.TrimRight(cmd.PersistentFlags().FlagUsagesWrapped(88), "\n")
+		globalFlags = strings.TrimRight(cmd.PersistentFlags().FlagUsagesWrapped(120), "\n")
 	}
 	if strings.TrimSpace(globalFlags) != "" {
 		fmt.Fprintf(ctx.out, "\n%s:\n%s", ctx.loc.T("help.section_global_flags"), globalFlags)

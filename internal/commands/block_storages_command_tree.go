@@ -31,7 +31,7 @@ func newCloudSyncGatewayCommand(ctx *context) *cobra.Command {
 	addUsageLine(cmd, ctx, "cmd.cloud_sync_gateway.usage_line")
 	addUsageNotes(cmd, ctx, "cmd.cloud_sync_gateway.usage_notes")
 
-	listCmd := newRawLeafCommand(ctx, "list", "cmd.block_storages.list.short", "cmd.block_storages.list.long", "cmd.block_storages.list.examples", "cmd.block_storages.list.notes", func(cmd *cobra.Command) {
+	listCmd := newRawLeafCommand(ctx, "list", "cmd.cloud_sync_gateway.list.short", "cmd.cloud_sync_gateway.list.long", "cmd.block_storages.list.examples", "cmd.block_storages.list.notes", func(cmd *cobra.Command) {
 		addFlagInt(cmd, ctx, "page")
 		addFlagInt(cmd, ctx, "page-size")
 		addFlagString(cmd, ctx, "type")
@@ -41,7 +41,7 @@ func newCloudSyncGatewayCommand(ctx *context) *cobra.Command {
 	})
 	configureTargetCloudSyncGatewayLeafHelp(listCmd, ctx, "cmd.cloud_sync_gateway.list.usage_line", "cmd.cloud_sync_gateway.list.usage_notes")
 
-	detailCmd := newRawLeafCommand(ctx, "detail", "cmd.block_storages.detail.short", "cmd.block_storages.detail.long", "cmd.block_storages.detail.examples", "cmd.block_storages.detail.notes", func(cmd *cobra.Command) {
+	detailCmd := newRawLeafCommand(ctx, "detail", "cmd.cloud_sync_gateway.detail.short", "cmd.cloud_sync_gateway.detail.long", "cmd.block_storages.detail.examples", "cmd.block_storages.detail.notes", func(cmd *cobra.Command) {
 		addFlagString(cmd, ctx, "id")
 	}, func(args []string) error {
 		return runBlockStorages(ctx, append([]string{"detail"}, args...))
@@ -79,8 +79,8 @@ func newCloudSyncGatewayCommand(ctx *context) *cobra.Command {
 func newCloudSyncGatewayCreateCommand(ctx *context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                "create",
-		Short:              ctx.loc.T("cmd.block_storages.create.short"),
-		Long:               ctx.loc.T("cmd.block_storages.create.long"),
+		Short:              ctx.loc.T("cmd.cloud_sync_gateway.create.short"),
+		Long:               ctx.loc.T("cmd.cloud_sync_gateway.create.long"),
 		Example:            strings.TrimSpace(ctx.loc.T("cmd.cloud_sync_gateway.create.examples")),
 		DisableFlagParsing: true,
 		Args:               cobra.ArbitraryArgs,
@@ -181,9 +181,9 @@ func renderCloudSyncGatewayCreateHelp(ctx *context, cmd *cobra.Command, selectio
 		if err != nil {
 			return err
 		}
-		addAnnotationValue(cmd, cloudSyncGatewayCreateHelpProfileAnnotation, accountProfile.Kind)
-		addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T("cmd.cloud_sync_gateway.create.provider.usage_line"), accountProfile.Provider))
-		addAnnotationValue(cmd, usageNotesAnnotation, cloudSyncGatewayCreateUsageNotes(ctx, accountProfile))
+		addAnnotationValue(cmd, cloudSyncGatewayCreateHelpProfileAnnotation, cloudSyncGatewayCreateAccountHelpProfile(accountProfile))
+		addAnnotationValue(cmd, usageLineAnnotation, ctx.loc.T("cmd.cloud_sync_gateway.create.account.usage_line"))
+		addAnnotationValue(cmd, usageNotesAnnotation, cloudSyncGatewayCreateAccountUsageNotes(ctx, accountProfile))
 		return renderHelp(cmd, ctx)
 	}
 
@@ -282,21 +282,30 @@ func cloudSyncGatewayCreateUsageNotes(ctx *context, profile cloudSyncGatewayCrea
 	return rewriteCloudSyncGatewayCommandRefs(notes, profile.Provider)
 }
 
+func cloudSyncGatewayCreateAccountHelpProfile(profile cloudSyncGatewayCreateProfile) string {
+	switch profile.Provider {
+	case "aliyun", "huawei", "openstack":
+		return profile.Provider + "-account"
+	default:
+		return "provider-account"
+	}
+}
+
+func cloudSyncGatewayCreateAccountUsageNotes(ctx *context, profile cloudSyncGatewayCreateProfile) string {
+	switch profile.Provider {
+	case "aliyun":
+		return ctx.loc.T("help.cloud_sync_gateway.create.aliyun")
+	case "huawei":
+		return ctx.loc.T("help.cloud_sync_gateway.create.huawei")
+	case "openstack":
+		return ctx.loc.T("help.cloud_sync_gateway.create.openstack")
+	default:
+		return cloudSyncGatewayCreateUsageNotes(ctx, profile)
+	}
+}
+
 func cloudSyncGatewayCreateGenericUsageNotes(ctx *context) string {
-	notes := strings.TrimSpace(ctx.loc.T("cmd.cloud_sync_gateway.create.usage_notes"))
-	label := "Providers:"
-	if ctx.loc.Lang() == "zh_cn" {
-		label = "云厂商:"
-	}
-	var b strings.Builder
-	b.WriteString(notes)
-	b.WriteString("\n\n")
-	b.WriteString(label)
-	for _, entry := range catalog.EnabledBlockClouds() {
-		b.WriteString("\n  ")
-		b.WriteString(entry.Provider)
-	}
-	return b.String()
+	return strings.TrimSpace(ctx.loc.T("cmd.cloud_sync_gateway.create.usage_notes"))
 }
 
 func rewriteCloudSyncGatewayCommandRefs(notes, provider string) string {

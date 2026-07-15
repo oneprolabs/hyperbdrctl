@@ -445,12 +445,19 @@ func cloudResourceStorageUsageNotes(ctx *context, storageType string) string {
 
 func applyCloudResourceDirectHelp(ctx *context, cmd *cobra.Command, profile cloudResourceFetchProfile) {
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(cloudResourceDirectUsageLineKey(profile.Kind)), profile.Provider))
-	if profile.Provider == "openstack" {
-		addAnnotationValue(cmd, usageNotesAnnotation, fmt.Sprintf(ctx.loc.T("cmd.cloud_resource.fetch.openstack.usage_notes"), profile.Provider, cloudResourcePublicStorageType(profile.Kind), profile.Provider, cloudResourcePublicStorageType(profile.Kind)))
-	} else {
-		addAnnotationValue(cmd, usageNotesAnnotation, fmt.Sprintf(ctx.loc.T("cmd.cloud_resource.fetch.provider.usage_notes"), localizedCloudEntryName(ctx, profile.Entry), profile.Provider, cloudResourcePublicStorageType(profile.Kind), profile.Provider, cloudResourcePublicStorageType(profile.Kind)))
-	}
+	addAnnotationValue(cmd, usageNotesAnnotation, cloudResourceDirectUsageNotes(ctx, profile))
 	addHelpDescription(cmd, ctx, cloudResourceDirectShortKey(profile.Kind))
+}
+
+func cloudResourceDirectUsageNotes(ctx *context, profile cloudResourceFetchProfile) string {
+	if profile.Provider == "aliyun" || profile.Provider == "huawei" {
+		notes := ctx.loc.T(fmt.Sprintf("help.cloud_resource.fetch.%s.%s", profile.Provider, cloudResourcePublicStorageType(profile.Kind)))
+		return fmt.Sprintf(notes, ctx.loc.T("help.cloud_resource.provider."+profile.Provider), profile.Provider)
+	}
+	if profile.Provider == "openstack" {
+		return ctx.loc.T(fmt.Sprintf("help.cloud_resource.fetch.openstack.%s", cloudResourcePublicStorageType(profile.Kind)))
+	}
+	return fmt.Sprintf(ctx.loc.T("cmd.cloud_resource.fetch.provider.usage_notes"), localizedCloudEntryName(ctx, profile.Entry), profile.Provider, cloudResourcePublicStorageType(profile.Kind), profile.Provider, cloudResourcePublicStorageType(profile.Kind))
 }
 
 func cloudResourceDirectUsageLineKey(kind string) string {
