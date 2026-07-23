@@ -108,6 +108,10 @@ func Load(path string) (Config, error) {
 	if err := json.Unmarshal(b, &cfg); err != nil {
 		return cfg, fmt.Errorf("read config %s: %w", path, err)
 	}
+	cfg.Password, err = decodePassword(cfg.Username, cfg.Password)
+	if err != nil {
+		return Config{}, fmt.Errorf("read config %s: %w", path, err)
+	}
 	return cfg, nil
 }
 
@@ -119,7 +123,12 @@ func Save(path string, cfg Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
-	b, err := json.MarshalIndent(normalized, "", "  ")
+	stored := normalized
+	stored.Password, err = encodePassword(stored.Username, stored.Password)
+	if err != nil {
+		return fmt.Errorf("write config %s: %w", path, err)
+	}
+	b, err := json.MarshalIndent(stored, "", "  ")
 	if err != nil {
 		return err
 	}

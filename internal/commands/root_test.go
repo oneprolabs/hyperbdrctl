@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -839,6 +840,13 @@ func TestConfigSetLogsInBeforeSaving(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	rawConfig, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(rawConfig), `"password": "secret"`) || !strings.Contains(string(rawConfig), `"password": "enc:v1:12010e1b0b15"`) {
+		t.Fatalf("password was not encoded in config file: %s", rawConfig)
+	}
 	cfg, err := config.Load(path)
 	if err != nil {
 		t.Fatal(err)
@@ -856,6 +864,57 @@ func TestConfigSetLogsInBeforeSaving(t *testing.T) {
 	}
 	if tok.Token != "saved-token" {
 		t.Fatalf("token = %+v", tok)
+	}
+}
+
+func TestConfigSetReencodesPasswordWhenUsernameChanges(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotUsername, gotPassword string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		gotUsername = body["username"]
+		gotPassword = body["password"]
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"token": "updated-token"},
+		})
+	}))
+	defer srv.Close()
+
+	path, err := config.ConfigPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := config.Save(path, config.Config{Host: srv.URL, Username: "old", Password: "secret"}); err != nil {
+		t.Fatal(err)
+	}
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{"config", "set", "--username", "new"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	if gotUsername != "new" || gotPassword != "secret" {
+		t.Fatalf("login body username=%q password=%q", gotUsername, gotPassword)
+	}
+
+	rawConfig, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(rawConfig), `"password": "enc:v1:1d00141c0003"`) {
+		t.Fatalf("password was not re-encoded with the new username: %s", rawConfig)
+	}
+	loaded, err := config.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Username != "new" || loaded.Password != "secret" {
+		t.Fatalf("config = %+v", loaded)
 	}
 }
 
