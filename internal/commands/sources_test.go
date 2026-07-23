@@ -843,7 +843,12 @@ func TestSourceSplitHelpUsesDirectPaths(t *testing.T) {
 		},
 		{
 			args:     []string{"--lang", "zh_cn", "production-site", "vm-list", "--help"},
-			want:     []string{"用法: hyperbdrctl production-site vm-list", "--connection-type", "hyperbdrctl host register --vm-id <vm_id>"},
+			want:     []string{"用法: hyperbdrctl production-site vm-list", "--connection-type", "按虚拟机名称关键字筛选", "hyperbdrctl production-site vm-list --connection-type vmware --kw <name>", "hyperbdrctl host register --vm-id <vm_id>"},
+			unwanted: []string{"source vms", "hyperbdrctl source"},
+		},
+		{
+			args:     []string{"--lang", "en", "production-site", "vm-list", "--help"},
+			want:     []string{"Usage: hyperbdrctl production-site vm-list", "--connection-type", "To filter VMs by a name keyword", "hyperbdrctl production-site vm-list --connection-type vmware --kw <name>", "hyperbdrctl host register --vm-id <vm_id>"},
 			unwanted: []string{"source vms", "hyperbdrctl source"},
 		},
 	}
