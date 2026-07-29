@@ -1281,6 +1281,7 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 		{name: "flavor-id"},
 		{name: "flavor-vcpus"},
 		{name: "flavor-ram"},
+		{name: "network-id"},
 	}
 	openStackContext := []flagHelpSpec{
 		{name: "project-id"},
@@ -1288,13 +1289,20 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 		{name: "project-name"},
 		{name: "compute-zone-id"},
 		{name: "block-store-zone-id"},
+		{name: "os-type"},
 	}
-	directCommon := []flagHelpSpec{
+	directAK := []flagHelpSpec{
 		{name: "cloud-type", required: true},
 		{name: "storage-type", required: true, choices: []string{"block", "object"}},
+		{name: "access-key-id", required: true},
+		{name: "access-key-secret", required: true},
 		{name: "fetch-res"},
 		{name: "region-id"},
 		{name: "zone-id"},
+		{name: "flavor-id"},
+		{name: "flavor-vcpus"},
+		{name: "flavor-ram"},
+		{name: "network-id"},
 		{name: "boot-mode"},
 	}
 	directOpenStack := []flagHelpSpec{
@@ -1307,48 +1315,36 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 		{name: "fetch-res"},
 		{name: "region-id"},
 		{name: "zone-id"},
+		{name: "flavor-id"},
+		{name: "flavor-vcpus"},
+		{name: "flavor-ram"},
+		{name: "network-id"},
 		{name: "project-id"},
 		{name: "project-domain-id"},
 		{name: "project-name"},
 		{name: "compute-zone-id"},
 		{name: "block-store-zone-id"},
+		{name: "os-type"},
 	}
-	switch profile {
-	case "account|openstack":
+	switch {
+	case strings.HasPrefix(profile, "account|openstack|"):
 		return append(append(accountFlags, openStackContext...), commonGlobal...)
-	case "account|block", "account|objectstorage":
+	case strings.HasPrefix(profile, "account|"):
 		return append(accountFlags, commonGlobal...)
-	case "block_storage", "object_storage":
+	case profile == "storage|block" || profile == "storage|object":
 		return append([]flagHelpSpec{
 			{name: "cloud-type"},
 			{name: "storage-type", required: true, choices: []string{"block", "object"}},
-			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
-			{name: "fetch-res"},
-			{name: "region-id"},
-			{name: "zone-id"},
-			{name: "boot-mode"},
 		}, commonGlobal...)
-	case "direct|openstack":
+	case strings.HasPrefix(profile, "direct|openstack|"):
 		return append(directOpenStack, commonGlobal...)
-	case "direct|block", "direct|objectstorage":
-		return append(directCommon, commonGlobal...)
+	case strings.HasPrefix(profile, "direct|"):
+		return append(directAK, commonGlobal...)
 	default:
 		return append([]flagHelpSpec{
 			{name: "cloud-account-id"},
 			{name: "cloud-type"},
 			{name: "storage-type", choices: []string{"block", "object"}},
-			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
-			{name: "fetch-res"},
-			{name: "region-id"},
-			{name: "zone-id"},
-			{name: "flavor-id"},
-			{name: "flavor-vcpus"},
-			{name: "flavor-ram"},
-			{name: "boot-mode"},
-			{name: "auth-url"},
-			{name: "username"},
-			{name: "password"},
-			{name: "user-domain-id"},
 		}, commonGlobal...)
 	}
 }

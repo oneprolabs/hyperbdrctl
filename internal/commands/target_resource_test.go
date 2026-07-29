@@ -9,6 +9,21 @@ import (
 	"testing"
 )
 
+func cloudResourceHelpFlags(text string) string {
+	start := strings.Index(text, "\nFlags:\n")
+	if start < 0 {
+		start = strings.Index(text, "\n参数:\n")
+	}
+	end := strings.Index(text, "\nUsage Notes:\n")
+	if end < 0 {
+		end = strings.Index(text, "\n使用说明:\n")
+	}
+	if start < 0 || end < 0 || end <= start {
+		return ""
+	}
+	return text[start:end]
+}
+
 func TestCloudResourceHelpUsesGroupLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -60,6 +75,15 @@ func TestCloudResourceStorageHelpShowsProviders(t *testing.T) {
 				t.Fatalf("args=%v missing %q: %q", args, want, text)
 			}
 		}
+		flags := cloudResourceHelpFlags(text)
+		for _, unwanted := range []string{"--cloud-account-id", "--fetch-res", "--access-key-id", "--auth-url", "--region-id"} {
+			if strings.Contains(flags, unwanted) {
+				t.Fatalf("args=%v flags should not contain %q: %q", args, unwanted, flags)
+			}
+		}
+		if !strings.Contains(flags, "Storage type (required)") {
+			t.Fatalf("args=%v storage-type should be required: %q", args, flags)
+		}
 		assertNoHelpFooter(t, text)
 	}
 }
@@ -77,17 +101,20 @@ func TestCloudResourceFetchHelpShowsGenericModes(t *testing.T) {
 		"--cloud-account-id",
 		"--cloud-type",
 		"--storage-type",
-		"Cloud account authentication type",
-		"values aksk / password",
-		"--fetch-res",
 		"Usage Notes:",
-		"Choose one of these two modes:",
-		"regions",
-		"networks,subnets",
-		"Authentication flags such as `--auth-url`",
+		"With an existing cloud account",
+		"--storage-type block --help",
+		"--storage-type object --help",
+		"Then view the direct-query flags for a provider",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	flags := cloudResourceHelpFlags(text)
+	for _, unwanted := range []string{"--cloud-auth-type", "--fetch-res", "--region-id", "--flavor-id", "--auth-url", "--username", "--password"} {
+		if strings.Contains(flags, unwanted) {
+			t.Fatalf("generic flags should not contain %q: %q", unwanted, flags)
 		}
 	}
 }
@@ -180,44 +207,106 @@ func TestCloudResourceDirectHelpShowsProviderProfile(t *testing.T) {
 				t.Fatalf("args=%v should not contain %q: %q", tt.args, unwanted, text)
 			}
 		}
+		flags := cloudResourceHelpFlags(text)
+		if strings.Contains(strings.Join(tt.args, " "), "openstack") {
+			for _, want := range []string{"--auth-url", "--username", "--password", "--user-domain-id", "--network-id", "--os-type"} {
+				if !strings.Contains(flags, want) {
+					t.Fatalf("args=%v flags missing %q: %q", tt.args, want, flags)
+				}
+			}
+			if strings.Contains(flags, "--access-key-id") {
+				t.Fatalf("args=%v OpenStack flags should not contain AK credentials: %q", tt.args, flags)
+			}
+		} else {
+			for _, want := range []string{"--access-key-id", "--access-key-secret", "--flavor-vcpus", "--flavor-ram", "--network-id"} {
+				if !strings.Contains(flags, want) {
+					t.Fatalf("args=%v flags missing %q: %q", tt.args, want, flags)
+				}
+			}
+			for _, unwanted := range []string{"--cloud-auth-type", "--auth-url", "--username", "--password"} {
+				if strings.Contains(flags, unwanted) {
+					t.Fatalf("args=%v AK flags should not contain %q: %q", tt.args, unwanted, flags)
+				}
+			}
+		}
 		assertNoHelpFooter(t, text)
 	}
 }
 
-func TestCloudResourceAccountHelpReadsAccountDetail(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
+func TestCloudResourceAccountHelpUsesProviderStorageProfile(t *testing.T) {
+	cases := []struct {
+		name        string
+		lang        string
+		cloudType   string
+		storageType string
+		want        []string
+		unwanted    []string
+		openstack   bool
+	}{
+		{name: "aliyun block", cloudType: "aliyun_bs", storageType: "HyperGate", want: []string{"Alibaba Cloud", "images,system_disk_types", "cloud-sync-gateway create"}},
+		{name: "huawei block zh", lang: "zh_cn", cloudType: "huawei_bs", storageType: "HyperGate", want: []string{"华为云", "images,system_disk_types", "cloud-sync-gateway create"}},
+		{name: "aliyun object", cloudType: "aliyun_obs", storageType: "objectstorage", want: []string{"Alibaba Cloud", "system_volume_types,volume_types", "--network-id <network_id>"}, unwanted: []string{"cloud-sync-gateway create"}},
+		{name: "huawei object zh", lang: "zh_cn", cloudType: "huawei_obs", storageType: "objectstorage", want: []string{"华为云", "华为云子网不按可用区划分", "subnets,security_groups"}, unwanted: []string{"cloud-sync-gateway create"}},
+		{name: "openstack block", cloudType: "openstack", storageType: "HyperGate", openstack: true, want: []string{"regions,compute_zones,projects", "--os-type linux", "cloud-sync-gateway create"}},
+		{name: "openstack object zh", lang: "zh_cn", cloudType: "openstack", storageType: "objectstorage", openstack: true, want: []string{"regions,compute_zones,projects", "system_volume_types,volume_types", "--fetch-res networks", "boot-config apply"}, unwanted: []string{"cloud-sync-gateway create"}},
+	}
 
-	var gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code": "00000000",
-			"data": map[string]interface{}{
-				"cloud_type":   "aliyun_bs",
-				"storage_type": "HyperGate",
-			},
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			setUserDirs(t, dir)
+
+			var gotPath string
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"code": "00000000",
+					"data": map[string]interface{}{
+						"cloud_type":   tt.cloudType,
+						"storage_type": tt.storageType,
+					},
+				})
+			}))
+			defer srv.Close()
+
+			args := []string{"cloud-resource", "fetch", "--cloud-account-id", "account-1", "--help"}
+			if tt.lang != "" {
+				args = append([]string{"--lang", tt.lang}, args...)
+			}
+			var out, errOut bytes.Buffer
+			if err := Execute(withHost(t, srv.URL, args...), &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+			if gotPath != "/hypermotion/v1/cloud_accounts/account-1" {
+				t.Fatalf("path=%q", gotPath)
+			}
+			text := out.String()
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			for _, unwanted := range append(tt.unwanted, "aliyun_bs", "huawei_bs", "HyperGate", "objectstorage") {
+				if strings.Contains(text, unwanted) {
+					t.Fatalf("help should not contain %q: %q", unwanted, text)
+				}
+			}
+			flags := cloudResourceHelpFlags(text)
+			for _, want := range []string{"--cloud-account-id", "--fetch-res", "--network-id"} {
+				if !strings.Contains(flags, want) {
+					t.Fatalf("flags missing %q: %q", want, flags)
+				}
+			}
+			if tt.openstack {
+				for _, want := range []string{"--project-id", "--project-domain-id", "--compute-zone-id", "--os-type"} {
+					if !strings.Contains(flags, want) {
+						t.Fatalf("OpenStack flags missing %q: %q", want, flags)
+					}
+				}
+			} else if strings.Contains(flags, "--project-id") || strings.Contains(flags, "--os-type") {
+				t.Fatalf("non-OpenStack flags contain OpenStack context: %q", flags)
+			}
 		})
-	}))
-	defer srv.Close()
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, srv.URL,
-		"cloud-resource", "fetch",
-		"--cloud-account-id", "account-1",
-		"--help",
-	), &out, &errOut)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if gotPath != "/hypermotion/v1/cloud_accounts/account-1" {
-		t.Fatalf("path=%q", gotPath)
-	}
-	text := out.String()
-	for _, want := range []string{"--cloud-account-id", "aliyun_bs", "HyperGate", "Usage Notes:"} {
-		if !strings.Contains(text, want) {
-			t.Fatalf("help missing %q: %q", want, text)
-		}
 	}
 }
 
@@ -374,6 +463,8 @@ func TestCloudResourceFetchUsesGetCloudInfoByDefault(t *testing.T) {
 		"cloud-resource", "fetch",
 		"--cloud-account-id", "account-1",
 		"--fetch-res", "regions",
+		"--network-id", "network-1",
+		"--os-type", "linux",
 	), &out, &errOut)
 	if err != nil {
 		t.Fatal(err)
@@ -381,7 +472,10 @@ func TestCloudResourceFetchUsesGetCloudInfoByDefault(t *testing.T) {
 	if len(paths) != 2 || paths[1] != "/api/v3/getCloudInfo" {
 		t.Fatalf("paths=%v", paths)
 	}
-	if !strings.Contains(queries[1], "cloud_account_id=account-1") || !strings.Contains(queries[1], "rt_flatten=1") {
+	if !strings.Contains(queries[1], "cloud_account_id=account-1") ||
+		!strings.Contains(queries[1], "rt_flatten=1") ||
+		!strings.Contains(queries[1], "network_id=network-1") ||
+		!strings.Contains(queries[1], "os_type=linux") {
 		t.Fatalf("query=%q", queries[1])
 	}
 }

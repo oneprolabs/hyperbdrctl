@@ -69,7 +69,7 @@ func newCloudResourceFetchCommand(ctx *context) *cobra.Command {
 func addCloudResourceFetchAllFlags(cmd *cobra.Command, ctx *context) {
 	for _, name := range []string{
 		"cloud-account-id", "cloud-type", "storage-type", "cloud-auth-type",
-		"fetch-res", "region-id", "zone-id", "flavor-id", "flavor-vcpus", "flavor-ram", "boot-mode",
+		"fetch-res", "region-id", "zone-id", "flavor-id", "flavor-vcpus", "flavor-ram", "network-id", "os-type", "boot-mode",
 		"access-key-id", "access-key-secret", "access-id", "access-secret",
 		"auth-url", "username", "password", "user-domain-id",
 		"project-id", "project-domain-id", "project-name", "compute-zone-id", "block-store-zone-id",
@@ -374,15 +374,17 @@ func renderCloudResourceFetchHelp(ctx *context, cmd *cobra.Command, selection cl
 			return fmt.Errorf("storage-type cannot be inferred from cloud-account-id")
 		}
 		backendProfile, _ := findCloudResourceBackendProfile(accountCtx.CloudType, accountCtx.StorageType)
-		profile = "account|" + cloudResourceStorageKind(accountCtx.StorageType)
-		if backendProfile.Provider == "openstack" {
-			profile = "account|openstack"
+		provider := backendProfile.Provider
+		if provider == "" {
+			provider = "generic"
 		}
+		storageKind := cloudResourcePublicStorageType(cloudResourceStorageKind(accountCtx.StorageType))
+		profile = fmt.Sprintf("account|%s|%s", provider, storageKind)
 		addUsageLine(cmd, ctx, "cmd.cloud_resource.fetch.account.usage_line")
 		addAnnotationValue(cmd, usageNotesAnnotation, cloudResourceAccountUsageNotes(ctx, accountCtx, backendProfile))
 		addHelpDescription(cmd, ctx, "cmd.cloud_resource.fetch.account.short")
 	case selection.PublicStorageType != "" && selection.Provider == "":
-		profile = selection.PublicStorageType
+		profile = "storage|" + selection.PublicStorageType
 		addUsageLine(cmd, ctx, cloudResourceStorageUsageLineKey(selection.PublicStorageType))
 		addAnnotationValue(cmd, usageNotesAnnotation, cloudResourceStorageUsageNotes(ctx, selection.BackendStorage))
 		addHelpDescription(cmd, ctx, cloudResourceStorageShortKey(selection.PublicStorageType))
@@ -391,10 +393,7 @@ func renderCloudResourceFetchHelp(ctx *context, cmd *cobra.Command, selection cl
 		if err != nil {
 			return err
 		}
-		profile = "direct|" + resolved.Kind
-		if resolved.Provider == "openstack" {
-			profile = "direct|openstack"
-		}
+		profile = fmt.Sprintf("direct|%s|%s", resolved.Provider, cloudResourcePublicStorageType(resolved.Kind))
 		applyCloudResourceDirectHelp(ctx, cmd, resolved)
 	}
 	addAnnotationValue(cmd, cloudResourceFetchHelpProfileAnnotation, profile)
@@ -484,9 +483,18 @@ func cloudResourcePublicStorageType(kind string) string {
 func cloudResourceAccountUsageNotes(ctx *context, accountCtx apptargetresource.CloudAccountContext, profile cloudResourceFetchProfile) string {
 	provider := profile.Provider
 	if provider == "" {
-		provider = accountCtx.CloudType
+		provider = "generic"
 	}
-	return fmt.Sprintf(ctx.loc.T("cmd.cloud_resource.fetch.account.usage_notes"), accountCtx.CloudAccountID, accountCtx.CloudType, accountCtx.StorageType, provider)
+	storageKind := cloudResourcePublicStorageType(cloudResourceStorageKind(accountCtx.StorageType))
+	key := fmt.Sprintf("help.cloud_resource.fetch.account.%s.%s", provider, storageKind)
+	notes := ctx.loc.T(key)
+	if notes == key {
+		notes = ctx.loc.T("help.cloud_resource.fetch.account.generic." + storageKind)
+	}
+	if provider == "generic" {
+		return notes
+	}
+	return fmt.Sprintf(notes, localizedCloudEntryName(ctx, profile.Entry))
 }
 
 func parseTargetResourceDirectAuthArgs(commandName, cloudType, storageType string, args []string) (apptargetresource.DirectAuthSpec, error) {

@@ -6,6 +6,13 @@ const (
 直连凭证模式用于没有云账号时查询云资源；已有云账号时，优先执行：
   hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help
 
+参数来源：
+  --access-key-id string
+    使用云账号的 Access Key ID。
+
+  --access-key-secret string
+    使用云账号的 Access Key Secret。
+
 最小查询命令如下：
   hyperbdrctl cloud-resource fetch --cloud-type %[2]s --storage-type block \
     --access-key-id <ak> \
@@ -37,11 +44,26 @@ const (
 直连凭证模式用于没有云账号时查询云资源；已有云账号时，优先执行：
   hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help
 
+参数来源：
+  --access-key-id string
+    使用云账号的 Access Key ID。
+
+  --access-key-secret string
+    使用云账号的 Access Key Secret。
+
 最小查询命令如下：
   hyperbdrctl cloud-resource fetch --cloud-type %[2]s --storage-type object \
     --access-key-id <ak> \
     --access-key-secret <sk> \
     --fetch-res regions
+
+如需手动覆盖镜像相关字段，再查询镜像：
+  hyperbdrctl cloud-resource fetch --cloud-type %[2]s --storage-type object \
+    --access-key-id <ak> \
+    --access-key-secret <sk> \
+    --region-id <region_id> \
+    --fetch-res boot_loader_images,images \
+    --output json
 
 常见资源组包括：
   regions
@@ -65,6 +87,8 @@ const (
 
 直连凭证模式用于没有云账号时查询云资源；已有云账号时，优先执行：
   hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help
+
+创建 OpenStack 块存储云账号不要求预先查询资源；仅在需要验证认证信息或查看候选资源时使用下面的查询。
 
 参数来源：
   --auth-url string
@@ -133,6 +157,8 @@ const (
   flavors,networks,images
   volume_types,subnets,security_groups
 
+重点关注原始返回中的项目、区域、启动镜像和磁盘总线相关字段。
+
 查看云账号创建帮助：
   hyperbdrctl cloud-account create --cloud-type openstack --storage-type object --help
 
@@ -146,6 +172,13 @@ const (
 
 Use direct-credential mode to query cloud resources when no cloud account exists. With an existing cloud account, prefer:
   hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help
+
+Parameter Sources:
+  --access-key-id string
+    Use the Access Key ID from the cloud account.
+
+  --access-key-secret string
+    Use the Access Key Secret from the cloud account.
 
 The minimum query is:
   hyperbdrctl cloud-resource fetch --cloud-type %[2]s --storage-type block \
@@ -178,11 +211,26 @@ For scripting against raw fields, add:
 Use direct-credential mode to query cloud resources when no cloud account exists. With an existing cloud account, prefer:
   hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help
 
+Parameter Sources:
+  --access-key-id string
+    Use the Access Key ID from the cloud account.
+
+  --access-key-secret string
+    Use the Access Key Secret from the cloud account.
+
 The minimum query is:
   hyperbdrctl cloud-resource fetch --cloud-type %[2]s --storage-type object \
     --access-key-id <ak> \
     --access-key-secret <sk> \
     --fetch-res regions
+
+To override image-related fields manually, query images next:
+  hyperbdrctl cloud-resource fetch --cloud-type %[2]s --storage-type object \
+    --access-key-id <ak> \
+    --access-key-secret <sk> \
+    --region-id <region_id> \
+    --fetch-res boot_loader_images,images \
+    --output json
 
 Common resource groups include:
   regions
@@ -206,6 +254,8 @@ For scripting against raw fields, add:
 
 Use direct-credential mode to query cloud resources when no cloud account exists. With an existing cloud account, prefer:
   hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help
+
+Creating an OpenStack block-storage cloud account does not require a resource query first. Use the query below only to validate credentials or inspect candidate resources.
 
 Parameter Sources:
   --auth-url string
@@ -273,6 +323,8 @@ Common resource groups include:
   regions,compute_zones,projects
   flavors,networks,images
   volume_types,subnets,security_groups
+
+Pay particular attention to project, region, boot loader image, and disk bus fields in the raw response.
 
 View cloud account creation help:
   hyperbdrctl cloud-account create --cloud-type openstack --storage-type object --help
