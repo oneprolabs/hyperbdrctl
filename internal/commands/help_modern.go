@@ -682,6 +682,13 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}
+	case "hyperbdrctl cloud-resource catalog":
+		return []flagHelpSpec{
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "hyperbdrctl cloud-sync-gateway":
 		return []flagHelpSpec{
 			{name: "debug"},
@@ -846,13 +853,6 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "id", required: true},
 			{name: "storage-type"},
 			{name: "force", defaultValue: "false"},
-			{name: "debug"},
-			{name: "lang"},
-			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
-			{name: "help"},
-		}
-	case "hyperbdrctl target supports":
-		return []flagHelpSpec{
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},

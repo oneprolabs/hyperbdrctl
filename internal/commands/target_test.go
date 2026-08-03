@@ -11,12 +11,12 @@ import (
 	"hyperbdr-client/catalog"
 )
 
-func TestTargetSupportsTableOutput(t *testing.T) {
+func TestCloudResourceCatalogTableOutput(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "supports"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-resource", "catalog"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -31,34 +31,34 @@ func TestTargetSupportsTableOutput(t *testing.T) {
 		"Alibaba Cloud",
 	} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("target supports output missing %q: %q", want, text)
+			t.Fatalf("cloud-resource catalog output missing %q: %q", want, text)
 		}
 	}
 }
 
-func TestTargetSupportsTableUsesLocalizedName(t *testing.T) {
+func TestCloudResourceCatalogTableUsesLocalizedName(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"--lang", "zh_cn", "target", "supports"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"--lang", "zh_cn", "cloud-resource", "catalog"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
 	text := out.String()
 	for _, want := range []string{"== 块存储支持列表 ==", "== 对象存储支持列表 ==", "-------------------------", "阿里云"} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("zh target supports output missing %q: %q", want, text)
+			t.Fatalf("zh cloud-resource catalog output missing %q: %q", want, text)
 		}
 	}
 }
 
-func TestTargetSupportsJSONOutput(t *testing.T) {
+func TestCloudResourceCatalogJSONOutput(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"--output", "json", "target", "supports"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"--output", "json", "cloud-resource", "catalog"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -88,55 +88,23 @@ func TestTargetSupportsJSONOutput(t *testing.T) {
 	}
 }
 
-func TestTargetHelpUsesGroupLayout(t *testing.T) {
+func TestCloudResourceCatalogHelpUsesFourSectionLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"cloud-resource", "catalog", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
 	text := out.String()
-	for _, want := range []string{
-		"Usage:",
-		"\nFlags:\n",
-		"Usage Notes:",
-	} {
+	for _, want := range []string{"Usage: hyperbdrctl cloud-resource catalog [flags]", "\nFlags:\n", "Usage Notes:", "does not call the remote API", "hyperbdrctl cloud-resource fetch --help"} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("target help missing %q: %q", want, text)
-		}
-	}
-	for _, unwanted := range []string{"cloud-sync-gateway", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n", "\nCommands:\n", "supports", "\n  oss"} {
-		if strings.Contains(text, unwanted) {
-			t.Fatalf("target help should not include %q: %q", unwanted, text)
-		}
-	}
-	flags := strings.Index(text, "\nFlags:\n")
-	notes := strings.Index(text, "Usage Notes:")
-	if flags < 0 || notes < 0 || !(flags < notes) {
-		t.Fatalf("target help order mismatch: %q", text)
-	}
-	assertNoHelpFooter(t, text)
-}
-
-func TestTargetSupportsHelpUsesFourSectionLayout(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	if err := Execute([]string{"target", "supports", "--help"}, &out, &errOut); err != nil {
-		t.Fatal(err)
-	}
-
-	text := out.String()
-	for _, want := range []string{"Usage:", "\nFlags:\n", "Usage Notes:", "does not call the remote API"} {
-		if !strings.Contains(text, want) {
-			t.Fatalf("target supports help missing %q: %q", want, text)
+			t.Fatalf("cloud-resource catalog help missing %q: %q", want, text)
 		}
 	}
 	if strings.Contains(text, "\nCommands:\n") {
-		t.Fatalf("target supports help should not include commands section: %q", text)
+		t.Fatalf("cloud-resource catalog help should not include commands section: %q", text)
 	}
 	assertNoHelpFooter(t, text)
 }
@@ -425,7 +393,7 @@ func TestUnifiedFlagDescriptionsInChineseHelp(t *testing.T) {
 	setUserDirs(t, dir)
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"--lang", "zh_cn", "target", "--help"}, &out, &errOut); err != nil {
+	if err := Execute([]string{"--lang", "zh_cn", "cloud-resource", "catalog", "--help"}, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -437,7 +405,7 @@ func TestUnifiedFlagDescriptionsInChineseHelp(t *testing.T) {
 		"显示帮助信息",
 	} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("target help missing %q: %q", want, text)
+			t.Fatalf("cloud-resource catalog help missing %q: %q", want, text)
 		}
 	}
 
@@ -959,7 +927,7 @@ func TestOSSArchivedHelpCopyIsLocalized(t *testing.T) {
 	}
 }
 
-func TestLegacyObjectStoragesAndTargetInfoAreRemoved(t *testing.T) {
+func TestLegacyCommandGroupsAreRemoved(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -970,9 +938,9 @@ func TestLegacyObjectStoragesAndTargetInfoAreRemoved(t *testing.T) {
 		{args: []string{"object-storages", "list"}, want: `unknown command "object-storages"`},
 		{args: []string{"cloud-accounts", "list"}, want: `unknown command "cloud-accounts"`},
 		{args: []string{"block-storages", "list"}, want: `unknown command "block-storages"`},
-		{args: []string{"target", "info"}, want: `unknown target command "info"`},
-		{args: []string{"target", "account", "fetch-regions"}, want: `unknown target command "account"`},
-		{args: []string{"target", "cloud-sync-gateway", "transition-images"}, want: `unknown target command "cloud-sync-gateway"`},
+		{args: []string{"target", "info"}, want: `unknown command "target"`},
+		{args: []string{"target", "account", "fetch-regions"}, want: `unknown command "target"`},
+		{args: []string{"target", "cloud-sync-gateway", "transition-images"}, want: `unknown command "target"`},
 	}
 
 	for _, tt := range cases {
@@ -989,6 +957,8 @@ func TestRemovedTargetCommandsReturnUnknownCommand(t *testing.T) {
 	setUserDirs(t, dir)
 
 	cases := [][]string{
+		{"target"},
+		{"target", "supports"},
 		{"target", "account"},
 		{"target", "account", "list"},
 		{"target", "account", "detail"},
@@ -1030,13 +1000,19 @@ func TestRemovedTargetCommandsReturnUnknownCommand(t *testing.T) {
 	}
 }
 
-func TestRemovedTargetOSSHelpReturnsUnknownCommand(t *testing.T) {
+func TestRemovedTargetHelpReturnsUnknownCommand(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	var out, errOut bytes.Buffer
-	err := Execute([]string{"help", "target", "oss"}, &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), "unknown") || !strings.Contains(err.Error(), "oss") {
-		t.Fatalf("err = %v", err)
+	for _, args := range [][]string{
+		{"help", "target"},
+		{"help", "target", "supports"},
+		{"help", "target", "oss"},
+	} {
+		var out, errOut bytes.Buffer
+		err := Execute(args, &out, &errOut)
+		if err == nil || !strings.Contains(err.Error(), "unknown") || !strings.Contains(err.Error(), "target") {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
 	}
 }

@@ -691,7 +691,7 @@ func TestRootHelpShowsModernGuidance(t *testing.T) {
 			t.Fatalf("help should hide %s from flags: %q", hiddenFlag, text)
 		}
 	}
-	for _, hidden := range []string{"\n  api", "\n  batch-boot-config", "\n  boot-config-wizard", "\n  tasks", "\n  upgrade", "hyperbdrctl tasks list"} {
+	for _, hidden := range []string{"\n  api", "\n  batch-boot-config", "\n  boot-config-wizard", "\n  target", "\n  tasks", "\n  upgrade", "hyperbdrctl tasks list"} {
 		if strings.Contains(text, hidden) {
 			t.Fatalf("help should not include %q: %q", hidden, text)
 		}

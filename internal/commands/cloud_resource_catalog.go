@@ -7,13 +7,13 @@ import (
 	"hyperbdr-client/internal/output"
 )
 
-func runTargetSupports(ctx *context, args []string) error {
-	fs := newFlagSet("target supports")
+func runCloudResourceCatalog(ctx *context, args []string) error {
+	fs := newFlagSet("cloud-resource catalog")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if rest := fs.Args(); len(rest) > 0 {
-		return errUnknown("target supports", rest[0])
+		return errUnknown("cloud-resource catalog", rest[0])
 	}
 
 	grouped := map[string]interface{}{
@@ -24,21 +24,21 @@ func runTargetSupports(ctx *context, args []string) error {
 		return output.JSON(ctx.out, grouped)
 	}
 
-	if err := renderTargetSupportsSection(ctx, ctx.loc.T("cmd.target.supports.block_title"), catalog.BlockClouds); err != nil {
+	if err := renderCloudResourceCatalogSection(ctx, ctx.loc.T("cmd.cloud_resource.catalog.block_title"), catalog.BlockClouds); err != nil {
 		return err
 	}
 	fmt.Fprintln(ctx.out)
-	return renderTargetSupportsSection(ctx, ctx.loc.T("cmd.target.supports.object_title"), catalog.ObjectClouds)
+	return renderCloudResourceCatalogSection(ctx, ctx.loc.T("cmd.cloud_resource.catalog.object_title"), catalog.ObjectClouds)
 }
 
-func renderTargetSupportsSection(ctx *context, title string, clouds []catalog.CloudEntry) error {
+func renderCloudResourceCatalogSection(ctx *context, title string, clouds []catalog.CloudEntry) error {
 	if err := writeSectionTitle(ctx, title); err != nil {
 		return err
 	}
-	return output.Table(ctx.out, ctx.loc, cloudRowsForDisplay(ctx, clouds), targetSupportColumns())
+	return output.Table(ctx.out, ctx.loc, cloudCatalogRowsForDisplay(ctx, clouds), cloudResourceCatalogColumns())
 }
 
-func cloudRowsForDisplay(ctx *context, clouds []catalog.CloudEntry) []map[string]interface{} {
+func cloudCatalogRowsForDisplay(ctx *context, clouds []catalog.CloudEntry) []map[string]interface{} {
 	rows := make([]map[string]interface{}, 0, len(clouds))
 	for _, cloud := range clouds {
 		name := cloud.NameEn
@@ -53,7 +53,7 @@ func cloudRowsForDisplay(ctx *context, clouds []catalog.CloudEntry) []map[string
 	return rows
 }
 
-func targetSupportColumns() []output.Column {
+func cloudResourceCatalogColumns() []output.Column {
 	return []output.Column{
 		{HeaderKey: "table.provider", Field: "provider"},
 		{HeaderKey: "table.name", Field: "name"},

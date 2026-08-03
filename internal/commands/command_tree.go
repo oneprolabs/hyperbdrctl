@@ -37,7 +37,6 @@ func newRootCommand(ctx *context) *cobra.Command {
 		newCloudResourceCommand(ctx),
 		newCloudSyncGatewayCommand(ctx),
 		newOSSCommand(ctx),
-		newTargetCommand(ctx),
 	)
 	configureBuiltinHelpArtifacts(root, ctx)
 	return root
@@ -365,26 +364,6 @@ func newLicensesCommand(ctx *context) *cobra.Command {
 	addUsageNotes(activateCmd, ctx, "cmd.licenses.activate.usage_notes")
 
 	cmd.AddCommand(listCmd, regCodeCmd, activateCmd)
-	return cmd
-}
-
-func newTargetCommand(ctx *context) *cobra.Command {
-	cmd := newGroupCommand(ctx, "target", "cmd.target.short", "cmd.target.long", "cmd.target.examples", "cmd.target.notes", "target")
-	addHelpLayout(cmd, helpLayoutGroup)
-	addUsageLine(cmd, ctx, "cmd.target.usage_line")
-	addUsageNotes(cmd, ctx, "cmd.target.usage_notes")
-
-	supportsCmd := newRawLeafCommand(ctx, "supports", "cmd.target.supports.short", "cmd.target.supports.long", "cmd.target.supports.examples", "cmd.target.supports.notes", nil, func(args []string) error {
-		return runTargetSupports(ctx, args)
-	})
-	supportsCmd.Hidden = true
-	addHelpLayout(supportsCmd, helpLayoutFourSection)
-	addUsageLine(supportsCmd, ctx, "cmd.target.supports.usage_line")
-	addUsageNotes(supportsCmd, ctx, "cmd.target.supports.usage_notes")
-
-	cmd.AddCommand(
-		supportsCmd,
-	)
 	return cmd
 }
 

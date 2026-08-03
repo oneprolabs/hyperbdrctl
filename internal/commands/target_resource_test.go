@@ -38,10 +38,13 @@ func TestCloudResourceHelpUsesGroupLayout(t *testing.T) {
 		"Usage:",
 		"\nFlags:\n",
 		"\nCommands:\n",
+		"catalog",
 		"fetch",
 		"Usage Notes:",
-		"hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --help",
-		"hyperbdrctl cloud-resource fetch --cloud-type aliyun --storage-type block --help",
+		"hyperbdrctl cloud-resource catalog",
+		"--cloud-account-id <account_id>",
+		"--cloud-type aliyun",
+		"--storage-type block",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)

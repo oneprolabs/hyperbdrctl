@@ -36,7 +36,15 @@ func newCloudResourceCommand(ctx *context) *cobra.Command {
 	addHelpLayout(cmd, helpLayoutGroup)
 	addUsageLine(cmd, ctx, "cmd.cloud_resource.usage_line")
 	addUsageNotes(cmd, ctx, "cmd.cloud_resource.usage_notes")
-	cmd.AddCommand(newCloudResourceFetchCommand(ctx))
+
+	catalogCmd := newRawLeafCommand(ctx, "catalog", "cmd.cloud_resource.catalog.short", "cmd.cloud_resource.catalog.long", "cmd.cloud_resource.catalog.examples", "cmd.cloud_resource.catalog.notes", nil, func(args []string) error {
+		return runCloudResourceCatalog(ctx, args)
+	})
+	addHelpLayout(catalogCmd, helpLayoutFourSection)
+	addUsageLine(catalogCmd, ctx, "cmd.cloud_resource.catalog.usage_line")
+	addUsageNotes(catalogCmd, ctx, "cmd.cloud_resource.catalog.usage_notes")
+
+	cmd.AddCommand(catalogCmd, newCloudResourceFetchCommand(ctx))
 	return cmd
 }
 
