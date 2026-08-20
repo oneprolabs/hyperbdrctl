@@ -13,10 +13,41 @@ Prepare the inputs in this order:
     hyperbdrctl cloud-account detail --id <account_id>
     hyperbdrctl cloud-sync-gateway list
 
-  2. Query zones, then flavors, then networks and subnets:
-    hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --fetch-res zones
-    hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --zone-id <zone_id> --fetch-res flavors --flavor-vcpus 2 --flavor-ram 4
-    hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --zone-id <zone_id> --fetch-res networks,subnets --output json
+  2. Query cloud resources:
+    Query zones first:
+      hyperbdrctl cloud-resource fetch \
+        --cloud-account-id <account_id> \
+        --fetch-res zones
+
+    Then query flavors:
+      hyperbdrctl cloud-resource fetch \
+        --cloud-account-id <account_id> \
+        --zone-id <zone_id> \
+        --fetch-res flavors \
+        --flavor-vcpus 2 \
+        --flavor-ram 4
+
+    Then query volume types:
+      hyperbdrctl cloud-resource fetch \
+        --cloud-account-id <account_id> \
+        --zone-id <zone_id> \
+        --flavor-id <flavor_id> \
+        --purpose make_hg \
+        --image_type=system \
+        --fetch-res system_volume_types,volume_types
+
+    Then query networks and subnets:
+      hyperbdrctl cloud-resource fetch \
+        --cloud-account-id <account_id> \
+        --zone-id <zone_id> \
+        --fetch-res networks,subnets
+
+    Then query security groups:
+      hyperbdrctl cloud-resource fetch \
+        --cloud-account-id <account_id> \
+        --zone-id <zone_id> \
+        --network-id <network_id> \
+        --fetch-res security_groups
 
 The minimum apply command is:
   hyperbdrctl boot-config apply \

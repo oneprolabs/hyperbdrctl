@@ -28,12 +28,27 @@ const (
         --flavor-vcpus 2 \
         --flavor-ram 4
 
+    再查询卷类型：
+      hyperbdrctl cloud-resource fetch \
+        --cloud-account-id <account_id> \
+        --zone-id <zone_id> \
+        --flavor-id <flavor_id> \
+        --purpose make_hg \
+        --image_type=system \
+        --fetch-res system_volume_types,volume_types
+
     再查询网络和子网：
       hyperbdrctl cloud-resource fetch \
         --cloud-account-id <account_id> \
         --zone-id <zone_id> \
-        --fetch-res networks,subnets \
-        --output json
+        --fetch-res networks,subnets
+
+    再查询安全组：
+      hyperbdrctl cloud-resource fetch \
+        --cloud-account-id <account_id> \
+        --zone-id <zone_id> \
+        --network-id <network_id> \
+        --fetch-res security_groups
 
 最小应用命令如下：
   hyperbdrctl boot-config apply \

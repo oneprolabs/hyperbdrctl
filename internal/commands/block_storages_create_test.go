@@ -139,7 +139,9 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"--bandwidth-size",
 				"--hd-control-network",
 				"Create an Alibaba Cloud cloud sync gateway.",
-				"--fetch-res images,system_disk_types",
+				"--purpose make_hg",
+				"--image_type=system",
+				"--fetch-res images,system_volume_types",
 				"cloud-resource fetch",
 			},
 			unwanted: []string{

@@ -19,6 +19,7 @@ const (
       --cloud-account-id <account_id> \
       --zone-id <zone_id> \
       --fetch-res flavors \
+      --purpose make_hg \
       --flavor-vcpus 2 \
       --flavor-ram 4
 
@@ -27,7 +28,9 @@ const (
       --cloud-account-id <account_id> \
       --zone-id <zone_id> \
       --flavor-id <flavor_id> \
-      --fetch-res images,system_disk_types
+      --purpose make_hg \
+      --image_type=system \
+      --fetch-res images,system_volume_types
 
   再查询网络和子网：
     hyperbdrctl cloud-resource fetch \
@@ -177,6 +180,7 @@ Resource Discovery:
       --cloud-account-id <account_id> \
       --zone-id <zone_id> \
       --fetch-res flavors \
+      --purpose make_hg \
       --flavor-vcpus 2 \
       --flavor-ram 4
 
@@ -185,7 +189,9 @@ Resource Discovery:
       --cloud-account-id <account_id> \
       --zone-id <zone_id> \
       --flavor-id <flavor_id> \
-      --fetch-res images,system_disk_types
+      --purpose make_hg \
+      --image_type=system \
+      --fetch-res images,system_volume_types
 
   Then query networks and subnets:
     hyperbdrctl cloud-resource fetch \
