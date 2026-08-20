@@ -120,11 +120,15 @@ func TestTopLevelBootConfigApplyAccountHelpReadsAccountDetailForBlockProfile(t *
 
 	text := out.String()
 	for _, want := range []string{
-		"--id",
-		"--cloud-account-id",
-		"--storage-id",
-		"--volume-type-id",
-		"--security-group-id",
+		"Resource ID (required)",
+		"Cloud account ID (required)",
+		"Storage ID (required)",
+		"Zone ID (required)",
+		"Flavor ID (required)",
+		"Volume type ID (required)",
+		"Network ID (required)",
+		"Subnet ID (required)",
+		"Security group ID (required)",
 		"Create or update boot configuration for cloud account <account_id>",
 		"provider `aliyun`, storage type `block`",
 		"hyperbdrctl cloud-sync-gateway list",
@@ -141,6 +145,32 @@ func TestTopLevelBootConfigApplyAccountHelpReadsAccountDetailForBlockProfile(t *
 		}
 	}
 	assertNoHelpFooter(t, text)
+
+	var zhOut, zhErrOut bytes.Buffer
+	err = Execute(withHost(t, srv.URL,
+		"--lang", "zh_cn",
+		"boot-config", "apply",
+		"--cloud-account-id", "account-1",
+		"--help",
+	), &zhOut, &zhErrOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"资源 ID（必须）",
+		"云账号 ID（必须）",
+		"存储 ID（必须）",
+		"可用区 ID（必须）",
+		"规格 ID（必须）",
+		"卷类型 ID（必须）",
+		"网络 ID（必须）",
+		"子网 ID（必须）",
+		"安全组 ID（必须）",
+	} {
+		if !strings.Contains(zhOut.String(), want) {
+			t.Fatalf("Chinese help missing %q: %q", want, zhOut.String())
+		}
+	}
 }
 
 func TestTopLevelBootConfigApplyAccountHelpShowsOpenStackObjectProfile(t *testing.T) {

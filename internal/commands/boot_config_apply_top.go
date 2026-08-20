@@ -211,6 +211,8 @@ func resolveBootConfigApplyAccountProfile(accountCtx apptargetresource.CloudAcco
 	profile := "account|" + kind
 	if entry.Provider == "openstack" {
 		profile = "account|openstack|" + kind
+	} else if entry.Provider == "aliyun" && kind == "block" {
+		profile = "account|aliyun|block"
 	}
 	return bootConfigApplyHelpProfile{
 		Entry:    entry,

@@ -1374,6 +1374,19 @@ func bootConfigApplyFlagSpecsForProfile(profile string) []flagHelpSpec {
 		{name: "security-group-id"},
 	}
 	switch profile {
+	case "account|aliyun|block":
+		return append(append([]flagHelpSpec{
+			{name: "id", required: true},
+			{name: "cloud-account-id", required: true},
+			{name: "storage-id", required: true},
+			{name: "zone-id", required: true},
+			{name: "flavor-id", required: true},
+			{name: "volume-type-id", required: true},
+			{name: "network-id", required: true},
+			{name: "subnet-id", required: true},
+			{name: "security-group-id", required: true},
+			{name: "region-id"},
+		}, commonOverrides...), commonGlobal...)
 	case "account|block":
 		return append(append(append(accountBase, []flagHelpSpec{
 			{name: "volume-type-id"},
