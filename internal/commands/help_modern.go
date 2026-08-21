@@ -97,13 +97,19 @@ func rootFlagSpecs() []flagHelpSpec {
 func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	path := cmd.CommandPath()
 	if path == "hyperbdrctl cloud-account create" {
-		return cloudAccountCreateFlagSpecsForProfile(cmd.Annotations[cloudAccountCreateHelpProfileAnnotation])
+		return omitDynamicParameterHelpFlags(
+			cloudAccountCreateFlagSpecsForProfile(cmd.Annotations[cloudAccountCreateHelpProfileAnnotation]),
+			dynamicParameterHelpContextFromCommand(cmd),
+		)
 	}
 	if path == "hyperbdrctl cloud-resource fetch" {
 		return cloudResourceFetchFlagSpecsForProfile(cmd.Annotations[cloudResourceFetchHelpProfileAnnotation])
 	}
 	if path == "hyperbdrctl cloud-sync-gateway create" {
-		return cloudSyncGatewayCreateFlagSpecsForProfile(cmd.Annotations[cloudSyncGatewayCreateHelpProfileAnnotation])
+		return omitDynamicParameterHelpFlags(
+			cloudSyncGatewayCreateFlagSpecsForProfile(cmd.Annotations[cloudSyncGatewayCreateHelpProfileAnnotation]),
+			dynamicParameterHelpContextFromCommand(cmd),
+		)
 	}
 	if path == "hyperbdrctl boot-config apply" {
 		return bootConfigApplyFlagSpecsForProfile(cmd.Annotations[bootConfigApplyHelpProfileAnnotation])
@@ -1193,15 +1199,14 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	aliyun := []flagHelpSpec{
 		{name: "cloud-type", required: true},
 		{name: "cloud-account-id", required: true},
-		{name: "region-id"},
-		{name: "zone-id"},
-		{name: "image-id"},
-		{name: "flavor-id"},
-		{name: "network-id"},
-		{name: "subnet-id"},
+		{name: "zone-id", required: true},
+		{name: "image-id", required: true},
+		{name: "flavor-id", required: true},
+		{name: "network-id", required: true},
+		{name: "subnet-id", required: true},
 		{name: "fixed-ip"},
-		{name: "system-disk-type-id"},
-		{name: "system-disk-size"},
+		{name: "system-disk-type-id", required: true},
+		{name: "system-disk-size", defaultValue: "40"},
 		{name: "boot-loader-image-id"},
 		{name: "volume-proxy-type", defaultValue: "s3"},
 		{name: "hg-control-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},

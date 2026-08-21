@@ -209,7 +209,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "block huawei generic",
 			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--region-id string", "--account-name string", "--set stringArray", "--set-json stringArray", "cloud-resource fetch --cloud-type huawei --storage-type block", "cloud-account wait --id <account_id>"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--region-id string", "Optional dynamic parameters:", "--account-name <name>", "--set stringArray", "--set-json stringArray", "cloud-resource fetch --cloud-type huawei --storage-type block", "cloud-account wait --id <account_id>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -217,6 +217,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				"\nRelated Commands:\n",
 				"--only-verify",
 				"--file string",
+				"--account-name string",
 				"--cloud-auth-type <aksk|password>",
 				"--auth-url",
 				"--username <username>",
@@ -314,6 +315,141 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 			}
 			assertNoHelpFooter(t, text)
 		})
+	}
+}
+
+func TestCloudAccountCreateAtomyDynamicParameterHelp(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	atomyCases := []struct {
+		name        string
+		cloudType   string
+		storageType string
+	}{
+		{name: "aliyun block", cloudType: "aliyun", storageType: "block"},
+		{name: "huawei block", cloudType: "huawei", storageType: "block"},
+		{name: "aliyun object", cloudType: "aliyun", storageType: "object"},
+		{name: "huawei object", cloudType: "huawei", storageType: "object"},
+	}
+	for _, tt := range atomyCases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			err := Execute([]string{
+				"--lang", "en", "cloud-account", "create",
+				"--cloud-type", tt.cloudType,
+				"--storage-type", tt.storageType,
+				"--help",
+			}, &out, &errOut)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			text := out.String()
+			for _, want := range []string{
+				"Optional dynamic parameters:",
+				"--account-name <name>",
+				"Cloud account name; sent as metadata.account_name",
+			} {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			if strings.Contains(text, "--account-name string") {
+				t.Fatalf("dynamic parameter must not be rendered in Flags: %q", text)
+			}
+			if strings.Contains(text, "metadata.account_name.") {
+				t.Fatalf("dynamic parameter description must not end with a period: %q", text)
+			}
+			if strings.Count(text, "--account-name <name>") != 1 {
+				t.Fatalf("dynamic parameter should be rendered once: %q", text)
+			}
+		})
+	}
+
+	t.Run("localized", func(t *testing.T) {
+		var out, errOut bytes.Buffer
+		err := Execute([]string{
+			"--lang", "zh_cn", "cloud-account", "create",
+			"--cloud-type", "huawei",
+			"--storage-type", "block",
+			"--help",
+		}, &out, &errOut)
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := out.String()
+		for _, want := range []string{
+			"可按需补充以下动态参数：",
+			"--account-name <name>",
+			"云账号名称，会写入 metadata.account_name",
+		} {
+			if !strings.Contains(text, want) {
+				t.Fatalf("help missing %q: %q", want, text)
+			}
+		}
+		if strings.Contains(text, "--account-name string") || strings.Count(text, "--account-name <name>") != 1 {
+			t.Fatalf("localized dynamic parameter placement is invalid: %q", text)
+		}
+		if strings.Contains(text, "metadata.account_name。") {
+			t.Fatalf("localized dynamic parameter description must not end with a full stop: %q", text)
+		}
+	})
+
+	for _, storageType := range []string{"block", "object"} {
+		t.Run("not atomy "+storageType, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			err := Execute([]string{
+				"--lang", "en", "cloud-account", "create",
+				"--cloud-type", "openstack",
+				"--storage-type", storageType,
+				"--help",
+			}, &out, &errOut)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if text := out.String(); strings.Contains(text, "Optional dynamic parameters:") || strings.Contains(text, "--account-name <name>") {
+				t.Fatalf("non-Atomy help must not include Atomy dynamic parameter: %q", text)
+			}
+		})
+	}
+}
+
+func TestDynamicParameterHelpAttachmentMatchesAllSelectors(t *testing.T) {
+	attachment := dynamicParameterHelpAttachment{
+		Command:      "cloud-account-create",
+		Provider:     "huawei",
+		CloudType:    "huawei_bs",
+		Architecture: "AtomyV2",
+		StorageType:  "block",
+	}
+	match := dynamicParameterHelpContext{
+		Command:      "CLOUD-ACCOUNT-CREATE",
+		Provider:     "Huawei",
+		CloudType:    "HUAWEI_BS",
+		Architecture: "atomyv2",
+		StorageType:  "BLOCK",
+	}
+	if !dynamicParameterHelpAttachmentMatches(attachment, match) {
+		t.Fatal("attachment should match every selector case-insensitively")
+	}
+
+	for name, context := range map[string]dynamicParameterHelpContext{
+		"command":      {Command: "cloud-sync-gateway-create", Provider: "huawei", CloudType: "huawei_bs", Architecture: "AtomyV2", StorageType: "block"},
+		"provider":     {Command: "cloud-account-create", Provider: "aliyun", CloudType: "huawei_bs", Architecture: "AtomyV2", StorageType: "block"},
+		"cloud type":   {Command: "cloud-account-create", Provider: "huawei", CloudType: "huawei_obs", Architecture: "AtomyV2", StorageType: "block"},
+		"architecture": {Command: "cloud-account-create", Provider: "huawei", CloudType: "huawei_bs", Architecture: "NotAtomy", StorageType: "block"},
+		"storage type": {Command: "cloud-account-create", Provider: "huawei", CloudType: "huawei_bs", Architecture: "AtomyV2", StorageType: "objectstorage"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if dynamicParameterHelpAttachmentMatches(attachment, context) {
+				t.Fatalf("attachment unexpectedly matched context: %+v", context)
+			}
+		})
+	}
+
+	if !dynamicParameterHelpAttachmentMatches(dynamicParameterHelpAttachment{Command: "cloud-account-create"}, dynamicParameterHelpContext{Command: "cloud-account-create"}) {
+		t.Fatal("empty selectors should act as wildcards")
 	}
 }
 

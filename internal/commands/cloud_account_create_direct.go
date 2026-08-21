@@ -152,6 +152,13 @@ func applyCloudAccountCreateProviderHelp(ctx *context, cmd *cobra.Command, profi
 	if profile.StorageType == "objectstorage" && (profile.Provider == "aliyun" || profile.Provider == "openstack") {
 		overrideFlagUsage(cmd, ctx, "use-internal-ip", "flag.cloud-account.use-internal-ip")
 	}
+	setDynamicParameterHelpContext(cmd, dynamicParameterHelpContext{
+		Command:      dynamicParameterHelpCloudAccountCreate,
+		Provider:     profile.Provider,
+		CloudType:    profile.Entry.CloudType,
+		Architecture: profile.Entry.Architecture,
+		StorageType:  profile.StorageType,
+	})
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(cloudAccountCreateProviderDirectUsageLineKey(profile.StorageType)), profile.Provider))
 	addAnnotationValue(cmd, usageNotesAnnotation, cloudAccountCreateProviderDirectUsageNotes(ctx, profile))
 	shortKey, longKey, _, _, _, _, _, _, _ := cloudAccountCreateProviderTextKeys(profile.Provider, profile.StorageType, profile.Specialized)
@@ -204,11 +211,24 @@ func cloudAccountCreateProviderDirectUsageNotes(ctx *context, profile cloudAccou
 		directKey = "help.cloud_account.object.openstack"
 	}
 	if directKey != "" {
-		return ctx.loc.T(directKey)
+		return appendDynamicParameterHelp(ctx, ctx.loc.T(directKey), dynamicParameterHelpContext{
+			Command:      dynamicParameterHelpCloudAccountCreate,
+			Provider:     profile.Provider,
+			CloudType:    profile.Entry.CloudType,
+			Architecture: profile.Entry.Architecture,
+			StorageType:  profile.StorageType,
+		})
 	}
 	notes := cloudAccountCreateProviderUsageNotes(ctx, profile.Entry, profile.StorageType, profile.Specialized)
 	notes = rewriteCloudAccountCreateDirectCommandRefs(notes, profile.Provider, profile.Entry.CloudType, profile.StorageType)
-	return strings.ReplaceAll(notes, "target account", "cloud-account")
+	notes = strings.ReplaceAll(notes, "target account", "cloud-account")
+	return appendDynamicParameterHelp(ctx, notes, dynamicParameterHelpContext{
+		Command:      dynamicParameterHelpCloudAccountCreate,
+		Provider:     profile.Provider,
+		CloudType:    profile.Entry.CloudType,
+		Architecture: profile.Entry.Architecture,
+		StorageType:  profile.StorageType,
+	})
 }
 
 func cloudAccountCreateStorageUsageNotes(ctx *context, storageType string) string {

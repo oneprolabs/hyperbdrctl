@@ -182,9 +182,10 @@ func renderCloudSyncGatewayCreateHelp(ctx *context, cmd *cobra.Command, selectio
 			return err
 		}
 		addAnnotationValue(cmd, cloudSyncGatewayCreateHelpProfileAnnotation, cloudSyncGatewayCreateAccountHelpProfile(accountProfile))
+		setCloudSyncGatewayCreateDynamicParameterHelpContext(cmd, accountProfile)
 		addAnnotationValue(cmd, helpDescriptionAnnotation, cloudSyncGatewayCreateDescription(ctx, accountProfile))
 		addAnnotationValue(cmd, usageLineAnnotation, ctx.loc.T("cmd.cloud_sync_gateway.create.account.usage_line"))
-		addAnnotationValue(cmd, usageNotesAnnotation, cloudSyncGatewayCreateAccountUsageNotes(ctx, accountProfile))
+		addAnnotationValue(cmd, usageNotesAnnotation, appendCloudSyncGatewayCreateDynamicParameterHelp(ctx, cloudSyncGatewayCreateAccountUsageNotes(ctx, accountProfile), accountProfile))
 		return renderHelp(cmd, ctx)
 	}
 
@@ -198,11 +199,35 @@ func renderCloudSyncGatewayCreateHelp(ctx *context, cmd *cobra.Command, selectio
 	if err != nil {
 		return err
 	}
-	addAnnotationValue(cmd, cloudSyncGatewayCreateHelpProfileAnnotation, profile.Kind)
+	// Provider selection only identifies the cloud-specific profile for help. Keep
+	// the rendered page aligned with the primary cloud-account-id workflow so the
+	// provider-selected and account-inferred entry points share one guide.
+	addAnnotationValue(cmd, cloudSyncGatewayCreateHelpProfileAnnotation, cloudSyncGatewayCreateAccountHelpProfile(profile))
+	setCloudSyncGatewayCreateDynamicParameterHelpContext(cmd, profile)
 	addAnnotationValue(cmd, helpDescriptionAnnotation, cloudSyncGatewayCreateDescription(ctx, profile))
-	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T("cmd.cloud_sync_gateway.create.provider.usage_line"), profile.Provider))
-	addAnnotationValue(cmd, usageNotesAnnotation, cloudSyncGatewayCreateUsageNotes(ctx, profile))
+	addAnnotationValue(cmd, usageLineAnnotation, ctx.loc.T("cmd.cloud_sync_gateway.create.account.usage_line"))
+	addAnnotationValue(cmd, usageNotesAnnotation, appendCloudSyncGatewayCreateDynamicParameterHelp(ctx, cloudSyncGatewayCreateAccountUsageNotes(ctx, profile), profile))
 	return renderHelp(cmd, ctx)
+}
+
+func setCloudSyncGatewayCreateDynamicParameterHelpContext(cmd *cobra.Command, profile cloudSyncGatewayCreateProfile) {
+	setDynamicParameterHelpContext(cmd, dynamicParameterHelpContext{
+		Command:      dynamicParameterHelpCloudSyncGatewayCreate,
+		Provider:     profile.Provider,
+		CloudType:    profile.Entry.CloudType,
+		Architecture: profile.Entry.Architecture,
+		StorageType:  "block",
+	})
+}
+
+func appendCloudSyncGatewayCreateDynamicParameterHelp(ctx *context, notes string, profile cloudSyncGatewayCreateProfile) string {
+	return appendDynamicParameterHelp(ctx, notes, dynamicParameterHelpContext{
+		Command:      dynamicParameterHelpCloudSyncGatewayCreate,
+		Provider:     profile.Provider,
+		CloudType:    profile.Entry.CloudType,
+		Architecture: profile.Entry.Architecture,
+		StorageType:  "block",
+	})
 }
 
 func cloudSyncGatewayCreateDescription(ctx *context, profile cloudSyncGatewayCreateProfile) string {

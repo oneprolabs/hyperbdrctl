@@ -72,7 +72,7 @@ func TestBlockStoragesCreateHelpShowsCloudAccountGuide(t *testing.T) {
 	}
 }
 
-func TestBlockStoragesCreateGenericProviderHelpUsesFourSectionLayout(t *testing.T) {
+func TestBlockStoragesCreateProviderHelpUsesCloudAccountGuide(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -88,12 +88,11 @@ func TestBlockStoragesCreateGenericProviderHelpUsesFourSectionLayout(t *testing.
 		"Usage Notes:",
 		"Parameter Sources:",
 		"--cloud-account-id",
-		"--boot-types-id string",
 		"--set stringArray",
 		"--set-json stringArray",
 		"--preview-request",
-		"--cloud-type",
-		"cloud-sync-gateway create --cloud-type huawei",
+		"Usage: hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> [flags]",
+		"cloud-sync-gateway create --cloud-account-id <account_id>",
 		"cloud-sync-gateway detail --id <storage_id>",
 		"cloud-sync-gateway wait --id <storage_id>",
 	} {
@@ -106,7 +105,7 @@ func TestBlockStoragesCreateGenericProviderHelpUsesFourSectionLayout(t *testing.
 			t.Fatalf("generic provider help should not include %q: %q", unwanted, text)
 		}
 	}
-	for _, unwanted := range []string{"target cloud-sync-gateway", "cloud-sync-gateway create huawei"} {
+	for _, unwanted := range []string{"target cloud-sync-gateway", "cloud-sync-gateway create huawei", "--cloud-type string", "--boot-types-id string"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("generic provider help should not include legacy command %q: %q", unwanted, text)
 		}
@@ -150,6 +149,12 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"System disk size in GiB, default 40",
 				"--bandwidth-size",
 				"--hd-control-network",
+				"Optional dynamic parameters:",
+				"--hg-control-network <mode>",
+				"Default: floating_ip_without_proxy",
+				"Allowed values:",
+				"--boot-loader-image-id <image_id>",
+				"--fetch-res win_hd_images",
 				"Create an Alibaba Cloud cloud sync gateway.",
 				"--purpose make_hg",
 				"--image_type=system",
@@ -159,6 +164,11 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 			unwanted: []string{
 				"--region-id string",
 				"--boot-loader-image-id string    引导加载器镜像 ID（必须）",
+				"--hg-control-network string",
+				"--hg-data-network string",
+				"--control-nat-ip string",
+				"--data-nat-ip string",
+				"--boot-loader-flavor-id string",
 				"--cloud-type string",
 			},
 		},
@@ -210,6 +220,12 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"系统盘类型 ID（必须）",
 				"系统盘大小 (GiB)，默认值 40",
 				"创建华为云云同步网关。",
+				"可按需补充以下动态参数：",
+				"--hg-control-network <mode>",
+				"默认值：floating_ip_without_proxy",
+				"可选值：",
+				"--boot-loader-image-id <image_id>",
+				"--fetch-res win_hd_images",
 				"--fetch-res images,system_disk_types",
 				"cloud-sync-gateway detail --id <storage_id>",
 			},
@@ -220,6 +236,10 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"--compute-zone-id string",
 				"--volume-type-id string",
 				"--block-store-zone-id string",
+				"--hg-control-network string",
+				"--hg-data-network string",
+				"--control-nat-ip string",
+				"--data-nat-ip string",
 				"--boot-loader-image-id string",
 				"--boot-loader-flavor-id string",
 				"--project-domain-id string",
@@ -260,6 +280,92 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{
+		"--lang", "zh_cn", "cloud-sync-gateway", "create",
+		"--cloud-type", "aliyun",
+		"--help",
+	}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"--zone-id string               可用区 ID（必须）",
+		"--image-id string              镜像 ID（必须）",
+		"--flavor-id string             规格 ID（必须）",
+		"--network-id string            网络 ID（必须）",
+		"--subnet-id string             子网 ID（必须）",
+		"--system-disk-type-id string   系统盘类型 ID（必须）",
+		"--system-disk-size string      系统盘大小 (GiB)，默认值 40",
+		"可按需补充以下动态参数：",
+		"--hg-control-network <mode>",
+		"网关控制网络方式",
+		"默认值：floating_ip_without_proxy",
+		"可选值：",
+		"      floating_ip_without_proxy",
+		"      fixed_ip_without_proxy",
+		"      floating_ip_with_proxy",
+		"      fixed_ip_with_proxy",
+		"--control-nat-ip <ip>",
+		"--data-nat-ip <ip>",
+		"--boot-loader-flavor-id <flavor_id>",
+		"--boot-loader-image-id <image_id>",
+		"可先查询可用的 Windows 修复镜像：",
+		"hyperbdrctl cloud-resource fetch \\",
+		"--fetch-res win_hd_images \\",
+		"--output json",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{
+		"--region-id string",
+		"--hg-control-network string",
+		"--hg-data-network string",
+		"--control-nat-ip string",
+		"--data-nat-ip string",
+		"--boot-loader-flavor-id string",
+		"--boot-loader-image-id string",
+		"未显式传入 `--hg-control-network`",
+		"如需获取 UI 同等的 Windows 修复镜像",
+	} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("Atomy dynamic parameter should not remain in Flags or base notes %q: %q", unwanted, text)
+		}
+	}
+	if strings.Count(text, "--boot-loader-image-id <image_id>") != 1 {
+		t.Fatalf("boot loader image dynamic parameter should be rendered once: %q", text)
+	}
+	if strings.Index(text, "可按需补充以下动态参数：") > strings.Index(text, "如需先检查最终请求体，可附加下面的参数：") {
+		t.Fatalf("dynamic parameters must appear before preview guidance: %q", text)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if err := Execute([]string{
+		"--lang", "en", "cloud-sync-gateway", "create",
+		"--cloud-type", "openstack",
+		"--help",
+	}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	text = out.String()
+	if strings.Contains(text, "Optional dynamic parameters:") {
+		t.Fatalf("non-Atomy gateway help must not include dynamic parameter group: %q", text)
+	}
+	for _, want := range []string{"--hg-control-network string", "--hg-data-network string", "--boot-loader-image-id string"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("non-Atomy gateway help missing Flags parameter %q: %q", want, text)
+		}
 	}
 }
 
@@ -500,10 +606,8 @@ func TestBlockStoragesCreateAliyunHelpUsesFourSectionLayout(t *testing.T) {
 		"Usage Notes:",
 		"Parameter Sources:",
 		"--cloud-account-id",
-		"--region-id",
 		"--boot-loader-image-id",
 		"cloud-resource fetch",
-		"cloud-resource fetch --help",
 		"cloud-sync-gateway wait --id <storage_id>",
 		"floating_ip_without_proxy",
 		"floating_ip_with_hg_proxy",
@@ -517,7 +621,7 @@ func TestBlockStoragesCreateAliyunHelpUsesFourSectionLayout(t *testing.T) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
 	}
-	for _, unwanted := range []string{"target cloud-sync-gateway", "cloud-sync-gateway create aliyun"} {
+	for _, unwanted := range []string{"target cloud-sync-gateway", "cloud-sync-gateway create aliyun", "--cloud-type string", "--region-id string"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("aliyun create help should not include legacy command %q: %q", unwanted, text)
 		}
@@ -547,7 +651,7 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 		"floating_ip_without_proxy",
 		"cloud-resource fetch",
 		"--preview-request",
-		"cloud-sync-gateway detail --id <storage_id> --output json",
+		"cloud-sync-gateway detail --id <storage_id>",
 		"cloud-sync-gateway wait --id <storage_id>",
 	} {
 		if !strings.Contains(text, want) {
@@ -557,7 +661,7 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 	if strings.Contains(text, "cloud-sync-gateway subnet-config") {
 		t.Fatalf("help should not advertise subnet-config for openstack: %q", text)
 	}
-	for _, unwanted := range []string{"target cloud-sync-gateway", "cloud-sync-gateway create openstack"} {
+	for _, unwanted := range []string{"target cloud-sync-gateway", "cloud-sync-gateway create openstack", "--cloud-type string"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("openstack create help should not include legacy command %q: %q", unwanted, text)
 		}

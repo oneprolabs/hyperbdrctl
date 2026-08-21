@@ -600,8 +600,7 @@ func TestTargetCloudSyncGatewayCreateOpenStackHelpUsesResourceCommandFlow(t *tes
 		"Parameter Sources:",
 		"cloud-resource fetch",
 		"--cloud-account-id <account_id>",
-		"--output json",
-		"--boot-loader-image-id <windows_image_id>",
+		"--boot-loader-image-id",
 		"cloud-sync-gateway wait --id <storage_id>",
 	} {
 		if !strings.Contains(text, want) {
