@@ -32,8 +32,6 @@ Prepare the inputs in this order:
         --cloud-account-id <account_id> \
         --zone-id <zone_id> \
         --flavor-id <flavor_id> \
-        --purpose make_hg \
-        --image_type=system \
         --fetch-res system_volume_types,volume_types
 
     Then query networks and subnets:
