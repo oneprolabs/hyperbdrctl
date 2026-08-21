@@ -454,6 +454,32 @@ func TestCloudAccountCreateStorageHelpShowsProviders(t *testing.T) {
 	}
 }
 
+func TestCloudAccountCreateProviderHelpHidesResolvedSelectionFlags(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	for _, args := range [][]string{
+		{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block", "--help"},
+		{"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block", "--help"},
+		{"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object", "--help"},
+		{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block", "--help"},
+		{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "object", "--help"},
+		{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object", "--help"},
+	} {
+		var out, errOut bytes.Buffer
+		if err := Execute(args, &out, &errOut); err != nil {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
+
+		flagSection := strings.SplitN(out.String(), "\nUsage Notes:", 2)[0]
+		for _, unwanted := range []string{"--cloud-type string", "--storage-type string"} {
+			if strings.Contains(flagSection, unwanted) {
+				t.Fatalf("args=%v provider help should not repeat %q in flags: %q", args, unwanted, flagSection)
+			}
+		}
+	}
+}
+
 func TestTargetCloudSyncGatewayHelpUsesGroupLayout(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

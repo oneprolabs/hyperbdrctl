@@ -1468,7 +1468,13 @@ func bootConfigApplyFlagSpecsForProfile(profile string) []flagHelpSpec {
 	}
 }
 
-func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
+func cloudAccountCreateFlagSpecsForProfile(profile string) (specs []flagHelpSpec) {
+	defer func() {
+		if strings.Contains(profile, "|") {
+			specs = omitCloudAccountCreateSelectionFlags(specs)
+		}
+	}()
+
 	switch profile {
 	case "block|aliyun":
 		return []flagHelpSpec{
@@ -1658,6 +1664,17 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "help"},
 		}
 	}
+}
+
+func omitCloudAccountCreateSelectionFlags(specs []flagHelpSpec) []flagHelpSpec {
+	filtered := make([]flagHelpSpec, 0, len(specs))
+	for _, spec := range specs {
+		if spec.name == "cloud-type" || spec.name == "storage-type" {
+			continue
+		}
+		filtered = append(filtered, spec)
+	}
+	return filtered
 }
 
 func bootConfigFetchProviderFlagSpecs() []flagHelpSpec {
