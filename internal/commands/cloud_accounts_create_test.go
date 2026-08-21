@@ -21,12 +21,7 @@ func TestCloudAccountsCreateHelpShowsRawBodyFlags(t *testing.T) {
 	}
 
 	text := out.String()
-	for _, want := range []string{"--preview-request"} {
-		if !strings.Contains(text, want) {
-			t.Fatalf("help missing %q: %q", want, text)
-		}
-	}
-	for _, unwanted := range []string{"aliyun_bs_block", "create block", "create oss", "--access-key-id", "--auth-url", "--file string", "--body string"} {
+	for _, unwanted := range []string{"aliyun_bs_block", "create block", "create oss", "--access-key-id", "--auth-url", "--file string", "--body string", "--preview-request"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
@@ -51,6 +46,24 @@ func TestParseCloudAccountCreateRawArgsSupportsBody(t *testing.T) {
 	metadata := cloudAccount["metadata"].(map[string]interface{})
 	if metadata["account_name"] != "body-account" {
 		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestCloudAccountsCreateProviderPreviewRequestRemainsAvailable(t *testing.T) {
+	var out, errOut bytes.Buffer
+	err := Execute([]string{
+		"--output", "json",
+		"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--auth-region-id", "cn-beijing",
+		"--preview-request",
+	}, &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "\"cloud_account\"") {
+		t.Fatalf("preview output = %q", out.String())
 	}
 }
 
@@ -378,6 +391,88 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 	}
 }
 
+func TestCloudAccountsCreateHelpDynamicallyAddsSupplementalFlags(t *testing.T) {
+	profiles := [][]string{
+		{"aliyun", "block"},
+		{"huawei", "block"},
+		{"openstack", "block"},
+		{"aliyun", "object"},
+		{"huawei", "object"},
+		{"openstack", "object"},
+	}
+	labels := map[string]struct {
+		overrides string
+		order     string
+		preview   string
+		next      string
+	}{
+		"en": {
+			overrides: "To add more fields, repeat either flag as needed:",
+			order:     "--set-json < --set < explicit create flags",
+			preview:   "To inspect the final request body first, add:",
+			next:      "After creation succeeds",
+		},
+		"zh_cn": {
+			overrides: "如需更多字段，可重复附加：",
+			order:     "--set-json < --set < 显式创建参数",
+			preview:   "如需先检查最终请求体，可附加下面的参数：",
+			next:      "创建成功后",
+		},
+	}
+
+	for lang, label := range labels {
+		for _, profile := range profiles {
+			name := lang + "/" + profile[0] + "/" + profile[1]
+			t.Run(name, func(t *testing.T) {
+				var out, errOut bytes.Buffer
+				args := []string{"--lang", lang, "cloud-account", "create", "--cloud-type", profile[0], "--storage-type", profile[1], "--help"}
+				if err := Execute(args, &out, &errOut); err != nil {
+					t.Fatal(err)
+				}
+
+				text := out.String()
+				for _, want := range []string{label.overrides, label.order, label.preview} {
+					if strings.Count(text, want) != 1 {
+						t.Fatalf("help should contain %q exactly once: %q", want, text)
+					}
+				}
+				overrideIndex := strings.Index(text, label.overrides)
+				previewIndex := strings.Index(text, label.preview)
+				nextIndex := strings.Index(text, label.next)
+				if overrideIndex < 0 || previewIndex <= overrideIndex || nextIndex <= previewIndex {
+					t.Fatalf("supplemental help order is invalid: %q", text)
+				}
+				if strings.Contains(text, "Optional dynamic parameters:") || strings.Contains(text, "可按需补充以下动态参数：") {
+					dynamicIndex := strings.Index(text, "Optional dynamic parameters:")
+					if dynamicIndex < 0 {
+						dynamicIndex = strings.Index(text, "可按需补充以下动态参数：")
+					}
+					if dynamicIndex <= overrideIndex || dynamicIndex >= previewIndex {
+						t.Fatalf("dynamic parameter help must appear before preview: %q", text)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestCloudAccountsCreateSelectorHelpOmitsPreviewRequest(t *testing.T) {
+	for _, args := range [][]string{
+		{"cloud-account", "create", "--help"},
+		{"cloud-account", "create", "--storage-type", "block", "--help"},
+		{"--lang", "zh_cn", "cloud-account", "create", "--help"},
+		{"--lang", "zh_cn", "cloud-account", "create", "--storage-type", "object", "--help"},
+	} {
+		var out, errOut bytes.Buffer
+		if err := Execute(args, &out, &errOut); err != nil {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
+		if strings.Contains(out.String(), "--preview-request") {
+			t.Fatalf("selector help should not include preview-request: %q", out.String())
+		}
+	}
+}
+
 func TestCloudAccountCreateAtomyDynamicParameterHelp(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -557,10 +652,12 @@ func TestCloudAccountArchivedHelpCopyIsLocalized(t *testing.T) {
 			omitEn: []string{"default false"},
 		},
 		{
-			name: "create guide",
-			path: []string{"create"},
-			zh:   []string{"创建云账号", "统一的云账号创建引导入口", "具体创建参数请进入对应云厂商帮助页查看", "--preview-request"},
-			en:   []string{"Create cloud account", "unified cloud account creation guide", "provider-specific help page", "--preview-request"},
+			name:   "create guide",
+			path:   []string{"create"},
+			zh:     []string{"创建云账号", "统一的云账号创建引导入口", "具体创建参数请进入对应云厂商帮助页查看"},
+			en:     []string{"Create cloud account", "unified cloud account creation guide", "provider-specific help page"},
+			omitZh: []string{"--preview-request"},
+			omitEn: []string{"--preview-request"},
 		},
 		{
 			name: "block guide",
@@ -577,8 +674,8 @@ func TestCloudAccountArchivedHelpCopyIsLocalized(t *testing.T) {
 		{
 			name: "aliyun block",
 			path: []string{"create", "--cloud-type", "aliyun", "--storage-type", "block"},
-			zh:   []string{"创建阿里云块存储账号", "参数来源：", "资源获取：", "--set-json < --set < 显式参数"},
-			en:   []string{"Create Alibaba Cloud block-storage account", "Parameter Sources:", "Resource Retrieval:", "--set-json < --set < explicit flags"},
+			zh:   []string{"创建阿里云块存储账号", "参数来源：", "资源获取：", "--set-json < --set < 显式创建参数"},
+			en:   []string{"Create Alibaba Cloud block-storage account", "Parameter Sources:", "Resource Retrieval:", "--set-json < --set < explicit create flags"},
 		},
 		{
 			name: "huawei block",

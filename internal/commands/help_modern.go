@@ -1629,7 +1629,6 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) (specs []flagHelpSpec
 			{name: "storage-type", choices: []string{"block", "object"}},
 			{name: "file"},
 			{name: "body"},
-			{name: "preview-request"},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},

@@ -1216,6 +1216,8 @@ var zhCN = map[string]string{
 	"help.dynamic_parameter.optional":                                         "可按需补充以下动态参数：",
 	"help.dynamic_parameter.default":                                          "默认值：",
 	"help.dynamic_parameter.choices":                                          "可选值：",
+	"help.cloud_account.create.metadata_overrides":                            "如需更多字段，可重复附加：\n  --set path=value\n  --set-json path=<json>\n\n参数覆盖顺序固定为：\n  --set-json < --set < 显式创建参数",
+	"help.cloud_account.create.preview_request":                               "如需先检查最终请求体，可附加下面的参数：\n  --preview-request",
 	"help.dynamic_parameter.account_name":                                     "云账号名称，会写入 metadata.account_name",
 	"help.dynamic_parameter.account_name.legacy":                              "如需保存云账号显示名称，可按需附加：\n  --account-name <name>",
 	"help.dynamic_parameter.hg_control_network":                               "网关控制网络方式",

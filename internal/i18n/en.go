@@ -183,6 +183,8 @@ var en = map[string]string{
 	"help.dynamic_parameter.optional":                                         "Optional dynamic parameters:",
 	"help.dynamic_parameter.default":                                          "Default: ",
 	"help.dynamic_parameter.choices":                                          "Allowed values:",
+	"help.cloud_account.create.metadata_overrides":                            "To add more fields, repeat either flag as needed:\n  --set path=value\n  --set-json path=<json>\n\nThe override order is fixed:\n  --set-json < --set < explicit create flags",
+	"help.cloud_account.create.preview_request":                               "To inspect the final request body first, add:\n  --preview-request",
 	"help.dynamic_parameter.account_name":                                     "Cloud account name; sent as metadata.account_name",
 	"help.dynamic_parameter.account_name.legacy":                              "To save a cloud account display name, optionally add:\n  --account-name <name>",
 	"help.dynamic_parameter.hg_control_network":                               "Gateway control network mode",

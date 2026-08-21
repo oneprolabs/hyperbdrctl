@@ -125,6 +125,9 @@ func resolveCloudAccountCreateProfile(selection cloudAccountCreateSelection) (cl
 
 func renderCloudAccountCreateHelp(ctx *context, cmd *cobra.Command, selection cloudAccountCreateSelection) error {
 	profile := "generic"
+	if selection.PublicStorageType == "" && selection.Provider == "" {
+		addAnnotationValue(cmd, usageNotesAnnotation, removeCloudAccountCreateLegacyPreviewHelp(ctx.loc.T("cmd.cloud_account.create.usage_notes")))
+	}
 	switch {
 	case selection.PublicStorageType == "block" && selection.Provider == "":
 		profile = "block_storage"
@@ -211,24 +214,12 @@ func cloudAccountCreateProviderDirectUsageNotes(ctx *context, profile cloudAccou
 		directKey = "help.cloud_account.object.openstack"
 	}
 	if directKey != "" {
-		return appendDynamicParameterHelp(ctx, ctx.loc.T(directKey), dynamicParameterHelpContext{
-			Command:      dynamicParameterHelpCloudAccountCreate,
-			Provider:     profile.Provider,
-			CloudType:    profile.Entry.CloudType,
-			Architecture: profile.Entry.Architecture,
-			StorageType:  profile.StorageType,
-		})
+		return appendCloudAccountCreateSupplementalHelp(ctx, ctx.loc.T(directKey), profile)
 	}
 	notes := cloudAccountCreateProviderUsageNotes(ctx, profile.Entry, profile.StorageType, profile.Specialized)
 	notes = rewriteCloudAccountCreateDirectCommandRefs(notes, profile.Provider, profile.Entry.CloudType, profile.StorageType)
 	notes = strings.ReplaceAll(notes, "target account", "cloud-account")
-	return appendDynamicParameterHelp(ctx, notes, dynamicParameterHelpContext{
-		Command:      dynamicParameterHelpCloudAccountCreate,
-		Provider:     profile.Provider,
-		CloudType:    profile.Entry.CloudType,
-		Architecture: profile.Entry.Architecture,
-		StorageType:  profile.StorageType,
-	})
+	return appendCloudAccountCreateSupplementalHelp(ctx, notes, profile)
 }
 
 func cloudAccountCreateStorageUsageNotes(ctx *context, storageType string) string {

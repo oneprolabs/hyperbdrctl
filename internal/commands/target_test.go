@@ -167,7 +167,7 @@ func TestCloudAccountLeafHelpUsesFourSectionLayout(t *testing.T) {
 		},
 		{
 			args: []string{"cloud-account", "create", "--help"},
-			want: []string{"Usage Notes:", "--preview-request", "cloud-account create --storage-type block --help"},
+			want: []string{"Usage Notes:", "cloud-account create --storage-type block --help"},
 		},
 		{
 			args: []string{"cloud-account", "delete", "--help"},
@@ -415,8 +415,10 @@ func TestUnifiedFlagDescriptionsInChineseHelp(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(out.String(), "输出请求体，但不发送请求") {
-		t.Fatalf("cloud-account create help missing unified preview-request text: %q", out.String())
+	for _, unwanted := range []string{"--preview-request", "输出请求体，但不发送请求"} {
+		if strings.Contains(out.String(), unwanted) {
+			t.Fatalf("top-level cloud-account create help should omit %q: %q", unwanted, out.String())
+		}
 	}
 }
 
