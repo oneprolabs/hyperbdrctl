@@ -13,18 +13,28 @@ type createFakeAPI struct {
 	postCalls        int
 	postPath         string
 	postBody         interface{}
+	cloudType        string
+	regionID         string
 }
 
 func (f *createFakeAPI) Get(path string, q url.Values) (client.APIResponse, error) {
 	f.getPath = path
 	if path == "/hypermotion/v1/cloud_accounts/account-1" {
 		f.sawAccountDetail = true
+		cloudType := f.cloudType
+		if cloudType == "" {
+			cloudType = "aliyun_bs"
+		}
+		regionID := f.regionID
+		if regionID == "" {
+			regionID = "cn-beijing"
+		}
 		return client.APIResponse{
 			Raw: map[string]interface{}{
 				"cloud_account": map[string]interface{}{
-					"cloud_type":       "aliyun_bs",
-					"region_type_list": "cn-beijing",
-					"auth_region_id":   "cn-beijing",
+					"cloud_type":       cloudType,
+					"region_type_list": regionID,
+					"auth_region_id":   regionID,
 				},
 			},
 		}, nil
@@ -113,5 +123,22 @@ func TestServiceCreateUsesRawCloudAccountDetailForAliyunDefaults(t *testing.T) {
 	}
 	if api.postPath != "/hypermotion/v1/storages/action" {
 		t.Fatalf("post path = %q", api.postPath)
+	}
+}
+
+func TestServicePrepareCreateUsesCloudAccountRegionForHuaweiDefaults(t *testing.T) {
+	api := &createFakeAPI{cloudType: "huawei_bs", regionID: "cn-north-1"}
+	service := NewService(api)
+
+	prepared, err := service.PrepareCreate(CreateSpec{CloudAccountID: "account-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !api.sawAccountDetail {
+		t.Fatalf("account detail was not queried; last get path = %q", api.getPath)
+	}
+	metadata := prepared.Body["create_storage"].(map[string]interface{})["metadata"].(map[string]interface{})
+	if metadata["region_id"] != "cn-north-1" {
+		t.Fatalf("region_id = %#v, want %q", metadata["region_id"], "cn-north-1")
 	}
 }

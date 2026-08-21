@@ -58,7 +58,7 @@ func (s Service) gatewayAccountDefaults(accountID, explicitCloudType, explicitRe
 		CloudType: explicitCloudType,
 		RegionID:  explicitRegionID,
 	}
-	needAccountLookup := defaults.CloudType == "" || (defaults.RegionID == "" && (defaults.CloudType == "" || defaults.CloudType == "aliyun_bs"))
+	needAccountLookup := defaults.CloudType == "" || (defaults.RegionID == "" && gatewayCloudTypeUsesAccountRegion(defaults.CloudType))
 	if !needAccountLookup {
 		return defaults, nil
 	}
@@ -76,10 +76,19 @@ func (s Service) gatewayAccountDefaults(accountID, explicitCloudType, explicitRe
 			return gatewayAccountDefaults{}, fmt.Errorf("cloud-type is required")
 		}
 	}
-	if defaults.RegionID == "" && defaults.CloudType == "aliyun_bs" {
+	if defaults.RegionID == "" && gatewayCloudTypeUsesAccountRegion(defaults.CloudType) {
 		defaults.RegionID = gatewayAccountRegionID(data)
 	}
 	return defaults, nil
+}
+
+func gatewayCloudTypeUsesAccountRegion(cloudType string) bool {
+	switch cloudType {
+	case "aliyun_bs", "huawei_bs":
+		return true
+	default:
+		return false
+	}
 }
 
 func gatewayAccountField(data map[string]interface{}, key string) string {
