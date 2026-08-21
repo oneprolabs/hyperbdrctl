@@ -182,6 +182,7 @@ func renderCloudSyncGatewayCreateHelp(ctx *context, cmd *cobra.Command, selectio
 			return err
 		}
 		addAnnotationValue(cmd, cloudSyncGatewayCreateHelpProfileAnnotation, cloudSyncGatewayCreateAccountHelpProfile(accountProfile))
+		addAnnotationValue(cmd, helpDescriptionAnnotation, cloudSyncGatewayCreateDescription(ctx, accountProfile))
 		addAnnotationValue(cmd, usageLineAnnotation, ctx.loc.T("cmd.cloud_sync_gateway.create.account.usage_line"))
 		addAnnotationValue(cmd, usageNotesAnnotation, cloudSyncGatewayCreateAccountUsageNotes(ctx, accountProfile))
 		return renderHelp(cmd, ctx)
@@ -198,9 +199,23 @@ func renderCloudSyncGatewayCreateHelp(ctx *context, cmd *cobra.Command, selectio
 		return err
 	}
 	addAnnotationValue(cmd, cloudSyncGatewayCreateHelpProfileAnnotation, profile.Kind)
+	addAnnotationValue(cmd, helpDescriptionAnnotation, cloudSyncGatewayCreateDescription(ctx, profile))
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T("cmd.cloud_sync_gateway.create.provider.usage_line"), profile.Provider))
 	addAnnotationValue(cmd, usageNotesAnnotation, cloudSyncGatewayCreateUsageNotes(ctx, profile))
 	return renderHelp(cmd, ctx)
+}
+
+func cloudSyncGatewayCreateDescription(ctx *context, profile cloudSyncGatewayCreateProfile) string {
+	switch profile.Provider {
+	case "aliyun":
+		return ctx.loc.T("cmd.cloud_sync_gateway.create.aliyun.short")
+	case "huawei":
+		return ctx.loc.T("cmd.cloud_sync_gateway.create.huawei.short")
+	case "openstack":
+		return ctx.loc.T("cmd.cloud_sync_gateway.create.openstack.short")
+	default:
+		return ctx.loc.T("cmd.cloud_sync_gateway.create.short")
+	}
 }
 
 func resolveCloudSyncGatewayCreateAccountProfile(ctx *context, accountID string) (cloudSyncGatewayCreateProfile, error) {

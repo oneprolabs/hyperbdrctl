@@ -133,6 +133,7 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"storage_type": "HyperGate",
 			},
 			want: []string{
+				"Create an Alibaba Cloud cloud sync gateway",
 				"Usage: hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> [flags]",
 				"--cloud-account-id",
 				"--region-id",
