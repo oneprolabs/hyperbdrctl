@@ -438,6 +438,8 @@ func addGenericBlockStorageCreateFlags(cmd *cobra.Command, ctx *context) {
 	for _, name := range []string{"cloud-account-id", "project-id", "region-id", "zone-id", "compute-zone-id", "image-id", "flavor-id", "network-id", "subnet-id", "fixed-ip", "system-disk-type-id", "volume-type-id", "system-disk-size", "block-store-zone-id", "boot-loader-image-id", "boot-loader-flavor-id", "project-domain-id", "boot-types-id", "volume-proxy-type", "hg-control-network", "control-nat-ip", "hg-data-network", "data-nat-ip", "bandwidth-size", "hd-control-network"} {
 		addFlagString(cmd, ctx, name)
 	}
+	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))
+	cmd.Flags().StringArray("set-json", nil, ctx.loc.T("flag.set-json"))
 	addFlagBool(cmd, ctx, "preview-request")
 }
 

@@ -1149,11 +1149,18 @@ func objectStorageFlagSpecsForProfile(path, profile string) []flagHelpSpec {
 
 func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	commonGlobal := []flagHelpSpec{
-		{name: "preview-request"},
 		{name: "debug"},
 		{name: "lang"},
 		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 		{name: "help"},
+	}
+	commonCommand := []flagHelpSpec{
+		{name: "set"},
+		{name: "set-json"},
+		{name: "preview-request"},
+	}
+	withCommonCommand := func(specs []flagHelpSpec) []flagHelpSpec {
+		return append(append(specs, commonCommand...), commonGlobal...)
 	}
 	genericProvider := []flagHelpSpec{
 		{name: "cloud-type", required: true},
@@ -1239,13 +1246,13 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			}
 			result = append(result, spec)
 		}
-		return append(result, commonGlobal...)
+		return withCommonCommand(result)
 	}
 	switch profile {
 	case "aliyun":
-		return append(aliyun, commonGlobal...)
+		return withCommonCommand(aliyun)
 	case "aliyun-account":
-		return append([]flagHelpSpec{
+		return withCommonCommand([]flagHelpSpec{
 			{name: "cloud-account-id", required: true},
 			{name: "zone-id", required: true},
 			{name: "image-id", required: true},
@@ -1263,9 +1270,9 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "data-nat-ip"},
 			{name: "bandwidth-size"},
 			{name: "hd-control-network", defaultValue: "floating_ip_with_hg_proxy"},
-		}, commonGlobal...)
+		})
 	case "huawei-account":
-		return append([]flagHelpSpec{
+		return withCommonCommand([]flagHelpSpec{
 			{name: "cloud-account-id", required: true},
 			{name: "zone-id", required: true},
 			{name: "image-id", required: true},
@@ -1282,24 +1289,19 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "data-nat-ip"},
 			{name: "bandwidth-size"},
 			{name: "hd-control-network", defaultValue: "floating_ip_with_hg_proxy"},
-		}, commonGlobal...)
+		})
 	case "provider-account":
 		return accountScoped(genericProvider)
 	case "openstack":
-		return append(openstack, commonGlobal...)
+		return withCommonCommand(openstack)
 	case "openstack-account":
 		return accountScoped(openstack)
 	case "generic":
-		return []flagHelpSpec{
+		return withCommonCommand([]flagHelpSpec{
 			{name: "cloud-account-id"},
-			{name: "preview-request"},
-			{name: "debug"},
-			{name: "lang"},
-			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
-			{name: "help"},
-		}
+		})
 	default:
-		return append(genericProvider, commonGlobal...)
+		return withCommonCommand(genericProvider)
 	}
 }
 

@@ -55,6 +55,8 @@ func TestBlockStoragesCreateHelpShowsCloudAccountGuide(t *testing.T) {
 		"Usage:",
 		"\nFlags:\n",
 		"--cloud-account-id",
+		"--set stringArray",
+		"--set-json stringArray",
 		"Usage Notes:",
 		"hyperbdrctl cloud-account list --storage-type block",
 		"hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> --help",
@@ -87,6 +89,8 @@ func TestBlockStoragesCreateGenericProviderHelpUsesFourSectionLayout(t *testing.
 		"Parameter Sources:",
 		"--cloud-account-id",
 		"--boot-types-id string",
+		"--set stringArray",
+		"--set-json stringArray",
 		"--preview-request",
 		"--cloud-type",
 		"cloud-sync-gateway create --cloud-type huawei",
@@ -296,6 +300,11 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 		"--region-id", "cn-north-4",
 		"--network-id", "network-1",
 		"--boot-loader-image-id", "boot-image-1",
+		"--set-json", `nics=[{"subnet_id":"subnet-json"}]`,
+		"--set", "bandwidth_size=300",
+		"--set", "enabled=true",
+		"--set", "system_disk_size=99",
+		"--system-disk-size", "40",
 		"--preview-request",
 	), &out, &errOut)
 	if err != nil {
@@ -320,6 +329,7 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 		"hg_control_network":   "floating_ip_without_proxy",
 		"hg_data_network":      "floating_ip_without_proxy",
 		"hd_control_network":   "floating_ip_with_hg_proxy",
+		"system_disk_size":     "40",
 	} {
 		if metadata[key] != want {
 			t.Fatalf("metadata[%q] = %#v, want %q", key, metadata[key], want)
@@ -328,6 +338,53 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 	if _, ok := metadata["cloud_type"]; ok {
 		t.Fatalf("metadata should not duplicate cloud_type: %#v", metadata)
 	}
+	if metadata["bandwidth_size"] != float64(300) || metadata["enabled"] != true {
+		t.Fatalf("metadata overrides = %#v", metadata)
+	}
+	nics, ok := metadata["nics"].([]interface{})
+	if !ok || len(nics) != 1 || nics[0].(map[string]interface{})["subnet_id"] != "subnet-json" {
+		t.Fatalf("metadata nics = %#v", metadata["nics"])
+	}
+}
+
+func TestParseBlockStorageCreateArgsValidatesMetadataOverrides(t *testing.T) {
+	parsed, err := parseBlockStorageCreateArgs("cloud-sync-gateway create", []string{
+		"--cloud-account-id", "account-1",
+		"--set-json", `nics=[{"id":"nic-1"}]`,
+		"--set", "enabled=true",
+		"--set", "count=2",
+		"--set", "name=gateway",
+		"--system-disk-size", "40",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(parsed.spec.JSONMetadataOverrides) != 1 || len(parsed.spec.MetadataOverrides) != 3 {
+		t.Fatalf("overrides = %#v / %#v", parsed.spec.JSONMetadataOverrides, parsed.spec.MetadataOverrides)
+	}
+	if parsed.spec.MetadataOverrides[0].Value != true || parsed.spec.MetadataOverrides[1].Value != 2 || parsed.spec.MetadataOverrides[2].Value != "gateway" {
+		t.Fatalf("inferred overrides = %#v", parsed.spec.MetadataOverrides)
+	}
+	if !containsString(parsed.spec.ExplicitMetadataKeys, "system_disk_size") {
+		t.Fatalf("explicit metadata keys = %#v", parsed.spec.ExplicitMetadataKeys)
+	}
+	for _, args := range [][]string{
+		{"--set", "invalid"},
+		{"--set-json", "nics={bad}"},
+	} {
+		if _, err := parseBlockStorageCreateArgs("cloud-sync-gateway create", args); err == nil {
+			t.Fatalf("args %v should fail", args)
+		}
+	}
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
 
 func TestBlockStoragesCreatePreviewRequestInfersCloudTypeFromCloudAccount(t *testing.T) {

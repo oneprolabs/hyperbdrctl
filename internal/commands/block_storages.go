@@ -1,9 +1,13 @@
 package commands
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
 
 	appblockstorage "hyperbdr-client/internal/app/blockstorage"
+	"hyperbdr-client/internal/metaoverride"
+	workflowcreate "hyperbdr-client/internal/workflow/blockstoragecreate"
 )
 
 func runBlockStorages(ctx *context, args []string) error {
@@ -127,6 +131,17 @@ type parsedBlockStorageCreateCommand struct {
 	remainingArgs  []string
 }
 
+type stringListFlag []string
+
+func (f *stringListFlag) String() string {
+	return ""
+}
+
+func (f *stringListFlag) Set(value string) error {
+	*f = append(*f, value)
+	return nil
+}
+
 func parseBlockStorageCreateArgs(commandName string, args []string) (parsedBlockStorageCreateCommand, error) {
 	fs := newFlagSet("target cloud-sync-gateway create")
 	cloudAccountID := fs.String("cloud-account-id", "", "")
@@ -155,38 +170,53 @@ func parseBlockStorageCreateArgs(commandName string, args []string) (parsedBlock
 	dataNATIP := fs.String("data-nat-ip", "", "")
 	bandwidthSize := fs.String("bandwidth-size", "", "")
 	hdControlNetwork := fs.String("hd-control-network", "floating_ip_with_hg_proxy", "")
+	sets := stringListFlag{}
+	setJSONs := stringListFlag{}
+	fs.Var(&sets, "set", "")
+	fs.Var(&setJSONs, "set-json", "")
 	previewRequest := fs.Bool("preview-request", false, "")
 	if err := fs.Parse(args); err != nil {
 		return parsedBlockStorageCreateCommand{}, err
 	}
+	jsonOverrides, err := parseBlockStorageMetadataOverrides(setJSONs, true)
+	if err != nil {
+		return parsedBlockStorageCreateCommand{}, err
+	}
+	metadataOverrides, err := parseBlockStorageMetadataOverrides(sets, false)
+	if err != nil {
+		return parsedBlockStorageCreateCommand{}, err
+	}
 
 	spec := blockStorageCreateSpec{
-		CloudAccountID:     *cloudAccountID,
-		CloudType:          *cloudType,
-		ProjectID:          *projectID,
-		RegionID:           *regionID,
-		ZoneID:             *zoneID,
-		ComputeZoneID:      *computeZoneID,
-		ImageID:            *imageID,
-		FlavorID:           *flavorID,
-		NetworkID:          *networkID,
-		SubnetID:           *subnetID,
-		FixedIP:            *fixedIP,
-		SystemDiskTypeID:   *systemDiskTypeID,
-		VolumeTypeID:       *volumeTypeID,
-		SystemDiskSize:     *systemDiskSize,
-		BlockStoreZoneID:   *blockStoreZoneID,
-		BootLoaderImageID:  *bootLoaderImageID,
-		BootLoaderFlavorID: *bootLoaderFlavorID,
-		ProjectDomainID:    *projectDomainID,
-		BootTypesID:        *bootTypesID,
-		VolumeProxyType:    *volumeProxyType,
-		HGControlNetwork:   *hgControlNetwork,
-		ControlNATIP:       *controlNATIP,
-		HGDataNetwork:      *hgDataNetwork,
-		DataNATIP:          *dataNATIP,
-		BandwidthSize:      *bandwidthSize,
-		HDControlNetwork:   *hdControlNetwork,
+		CloudAccountID:        *cloudAccountID,
+		CloudType:             *cloudType,
+		ProjectID:             *projectID,
+		RegionID:              *regionID,
+		ZoneID:                *zoneID,
+		ComputeZoneID:         *computeZoneID,
+		ImageID:               *imageID,
+		FlavorID:              *flavorID,
+		NetworkID:             *networkID,
+		SubnetID:              *subnetID,
+		FixedIP:               *fixedIP,
+		SystemDiskTypeID:      *systemDiskTypeID,
+		VolumeTypeID:          *volumeTypeID,
+		SystemDiskSize:        *systemDiskSize,
+		BlockStoreZoneID:      *blockStoreZoneID,
+		BootLoaderImageID:     *bootLoaderImageID,
+		BootLoaderFlavorID:    *bootLoaderFlavorID,
+		ProjectDomainID:       *projectDomainID,
+		BootTypesID:           *bootTypesID,
+		VolumeProxyType:       *volumeProxyType,
+		HGControlNetwork:      *hgControlNetwork,
+		ControlNATIP:          *controlNATIP,
+		HGDataNetwork:         *hgDataNetwork,
+		DataNATIP:             *dataNATIP,
+		BandwidthSize:         *bandwidthSize,
+		HDControlNetwork:      *hdControlNetwork,
+		JSONMetadataOverrides: jsonOverrides,
+		MetadataOverrides:     metadataOverrides,
+		ExplicitMetadataKeys:  explicitBlockStorageMetadataKeys(fs),
 	}
 	return parsedBlockStorageCreateCommand{
 		spec:           spec,
@@ -194,6 +224,47 @@ func parseBlockStorageCreateArgs(commandName string, args []string) (parsedBlock
 		cloudTypeSet:   flagWasSet(fs, "cloud-type"),
 		remainingArgs:  fs.Args(),
 	}, nil
+}
+
+func parseBlockStorageMetadataOverrides(values []string, jsonValue bool) ([]workflowcreate.MetadataOverride, error) {
+	overrides := make([]workflowcreate.MetadataOverride, 0, len(values))
+	for _, raw := range values {
+		path, value, err := metaoverride.SplitAssignment(raw)
+		if err != nil {
+			return nil, err
+		}
+		var decoded interface{}
+		if jsonValue {
+			if err := json.Unmarshal([]byte(value), &decoded); err != nil {
+				return nil, fmt.Errorf("invalid JSON for %s: %w", path, err)
+			}
+		} else {
+			decoded = metaoverride.InferValue(value)
+		}
+		overrides = append(overrides, workflowcreate.MetadataOverride{Path: path, Value: decoded})
+	}
+	return overrides, nil
+}
+
+func explicitBlockStorageMetadataKeys(fs *flag.FlagSet) []string {
+	metadataKeys := map[string]string{
+		"project-id": "project_id", "region-id": "region_id", "zone-id": "zone_id", "compute-zone-id": "compute_zone_id",
+		"image-id": "image_id", "flavor-id": "flavor_id", "network-id": "network_id", "subnet-id": "subnet_id",
+		"fixed-ip": "fixed_ip", "system-disk-type-id": "system_disk_type_id", "volume-type-id": "volume_type_id",
+		"system-disk-size": "system_disk_size", "block-store-zone-id": "block_store_zone_id",
+		"boot-loader-image-id": "boot_loader_image_id", "boot-loader-flavor-id": "boot_loader_flavor_id",
+		"project-domain-id": "project_domain_id", "boot-types-id": "boot_types_id", "volume-proxy-type": "volume_proxy_type",
+		"hg-control-network": "hg_control_network", "control-nat-ip": "control_nat_ip",
+		"hg-data-network": "hg_data_network", "data-nat-ip": "data_nat_ip", "bandwidth-size": "bandwidth_size",
+		"hd-control-network": "hd_control_network",
+	}
+	keys := make([]string, 0, len(metadataKeys))
+	fs.Visit(func(f *flag.Flag) {
+		if key, ok := metadataKeys[f.Name]; ok {
+			keys = append(keys, key)
+		}
+	})
+	return keys
 }
 
 func runCreateBlockStorageForProvider(ctx *context, commandName, cloudType string, args []string) error {

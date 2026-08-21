@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"hyperbdr-client/internal/client"
+	workflowcreate "hyperbdr-client/internal/workflow/blockstoragecreate"
 )
 
 type createFakeAPI struct {
@@ -140,5 +141,51 @@ func TestServicePrepareCreateUsesCloudAccountRegionForHuaweiDefaults(t *testing.
 	metadata := prepared.Body["create_storage"].(map[string]interface{})["metadata"].(map[string]interface{})
 	if metadata["region_id"] != "cn-north-1" {
 		t.Fatalf("region_id = %#v, want %q", metadata["region_id"], "cn-north-1")
+	}
+}
+
+func TestApplyCreateMetadataOverridesHonorsPrecedenceAndPaths(t *testing.T) {
+	body := map[string]interface{}{
+		"create_storage": map[string]interface{}{
+			"type":               "HyperGate",
+			"cloud_type":         "huawei_bs",
+			"cloud_account_uuid": "account-1",
+			"metadata": map[string]interface{}{
+				"system_disk_size": "40",
+				"nics":             []interface{}{map[string]interface{}{"subnet_id": "subnet-1"}},
+			},
+		},
+	}
+	spec := CreateSpec{
+		JSONMetadataOverrides: []workflowcreate.MetadataOverride{
+			{Path: "system_disk_size", Value: "20"},
+			{Path: "nics", Value: []interface{}{map[string]interface{}{"subnet_id": "subnet-json"}}},
+		},
+		MetadataOverrides: []workflowcreate.MetadataOverride{
+			{Path: "system_disk_size", Value: 30},
+			{Path: "enabled", Value: true},
+			{Path: "nics[0].subnet_id", Value: "subnet-set"},
+		},
+		ExplicitMetadataKeys: []string{"system_disk_size"},
+	}
+	if err := applyCreateMetadataOverrides(body, spec); err != nil {
+		t.Fatal(err)
+	}
+	createStorage := body["create_storage"].(map[string]interface{})
+	metadata := createStorage["metadata"].(map[string]interface{})
+	if metadata["system_disk_size"] != "40" || metadata["enabled"] != true {
+		t.Fatalf("metadata = %#v", metadata)
+	}
+	nics := metadata["nics"].([]interface{})
+	if nics[0].(map[string]interface{})["subnet_id"] != "subnet-set" {
+		t.Fatalf("metadata nics = %#v", nics)
+	}
+	if createStorage["type"] != "HyperGate" || createStorage["cloud_type"] != "huawei_bs" || createStorage["cloud_account_uuid"] != "account-1" {
+		t.Fatalf("create storage root changed: %#v", createStorage)
+	}
+
+	spec.MetadataOverrides = []workflowcreate.MetadataOverride{{Path: "nics[1].subnet_id", Value: "invalid"}}
+	if err := applyCreateMetadataOverrides(body, spec); err == nil {
+		t.Fatal("out-of-range array path should fail")
 	}
 }

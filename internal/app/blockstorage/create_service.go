@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"hyperbdr-client/internal/client"
+	"hyperbdr-client/internal/metaoverride"
 	workflowcreate "hyperbdr-client/internal/workflow/blockstoragecreate"
 )
 
@@ -42,10 +43,56 @@ func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
 	if err != nil {
 		return PreparedCreateRequest{}, err
 	}
+	if err := applyCreateMetadataOverrides(body, spec); err != nil {
+		return PreparedCreateRequest{}, err
+	}
 	return PreparedCreateRequest{
 		Path: path,
 		Body: body,
 	}, nil
+}
+
+type metadataSnapshot struct {
+	value   interface{}
+	present bool
+}
+
+func applyCreateMetadataOverrides(body map[string]interface{}, spec CreateSpec) error {
+	if len(spec.JSONMetadataOverrides) == 0 && len(spec.MetadataOverrides) == 0 {
+		return nil
+	}
+	createStorage, ok := body["create_storage"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("create_storage is missing from create request")
+	}
+	metadata, ok := createStorage["metadata"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("create_storage.metadata is missing from create request")
+	}
+
+	explicit := make(map[string]metadataSnapshot, len(spec.ExplicitMetadataKeys))
+	for _, key := range spec.ExplicitMetadataKeys {
+		value, present := metadata[key]
+		explicit[key] = metadataSnapshot{value: value, present: present}
+	}
+	for _, override := range spec.JSONMetadataOverrides {
+		if err := metaoverride.ApplyPathValue(metadata, override.Path, override.Value); err != nil {
+			return err
+		}
+	}
+	for _, override := range spec.MetadataOverrides {
+		if err := metaoverride.ApplyPathValue(metadata, override.Path, override.Value); err != nil {
+			return err
+		}
+	}
+	for key, snapshot := range explicit {
+		if snapshot.present {
+			metadata[key] = snapshot.value
+		} else {
+			delete(metadata, key)
+		}
+	}
+	return nil
 }
 
 type gatewayAccountDefaults struct {

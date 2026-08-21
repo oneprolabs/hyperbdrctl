@@ -49,6 +49,13 @@ const (
 
 省略 --system-disk-size 时，系统盘大小默认使用 40 GiB。
 
+如需覆盖 metadata 字段，可重复附加：
+  --set path=value
+  --set-json path=<json>
+
+路径相对 create_storage.metadata。覆盖顺序固定为：
+  --set-json < --set < 显式创建参数
+
 如需先检查最终请求体，可附加下面的参数：
   --preview-request
 
@@ -104,6 +111,13 @@ const (
 
 省略 --system-disk-size 时，系统盘大小默认使用 40 GiB。
 
+如需覆盖 metadata 字段，可重复附加：
+  --set path=value
+  --set-json path=<json>
+
+路径相对 create_storage.metadata。覆盖顺序固定为：
+  --set-json < --set < 显式创建参数
+
 如需先检查最终请求体，可附加下面的参数：
   --preview-request
 
@@ -153,6 +167,13 @@ const (
     --subnet-id <subnet_id> \
     --volume-type-id <volume_type_id> \
     --block-store-zone-id <block_store_zone_id>
+
+如需覆盖 metadata 字段，可重复附加：
+  --set path=value
+  --set-json path=<json>
+
+路径相对 create_storage.metadata。覆盖顺序固定为：
+  --set-json < --set < 显式创建参数
 
 如需先检查最终请求体，可附加下面的参数：
   --preview-request
@@ -210,6 +231,13 @@ The minimum create command is:
 
 The system disk size defaults to 40 GiB when omitted.
 
+To override metadata fields, repeat either flag as needed:
+  --set path=value
+  --set-json path=<json>
+
+Paths are relative to create_storage.metadata. The override order is:
+  --set-json < --set < explicit create flags
+
 To inspect the final request body first, add:
   --preview-request
 
@@ -265,6 +293,13 @@ The minimum create command is:
 
 The system disk size defaults to 40 GiB when omitted.
 
+To override metadata fields, repeat either flag as needed:
+  --set path=value
+  --set-json path=<json>
+
+Paths are relative to create_storage.metadata. The override order is:
+  --set-json < --set < explicit create flags
+
 To inspect the final request body first, add:
   --preview-request
 
@@ -314,6 +349,13 @@ After adding the key fields from the resource flow, run:
     --subnet-id <subnet_id> \
     --volume-type-id <volume_type_id> \
     --block-store-zone-id <block_store_zone_id>
+
+To override metadata fields, repeat either flag as needed:
+  --set path=value
+  --set-json path=<json>
+
+Paths are relative to create_storage.metadata. The override order is:
+  --set-json < --set < explicit create flags
 
 To inspect the final request body first, add:
   --preview-request
