@@ -65,6 +65,17 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("cloud-type cannot be used with %s", commandName)
 		case "storage-type":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("storage-type cannot be used with %s", commandName)
+		case "region-id", "region-name":
+			if cloudType == "aliyun_bs" {
+				return parsedCloudAccountCreateCommand{}, fmt.Errorf("%s cannot be used with %s; use --auth-region-id", name, commandName)
+			}
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedCloudAccountCreateCommand{}, err
+			}
+			applyCreateCloudAccountSpecValue(&spec, name, v)
+			assignments = append(assignments, metadataAssignment{key: createCloudAccountDynamicMetadataKey(name), value: v})
+			i = next
 		case "cloud-account-username", "cloud-account-password":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
 		case "cloud-auth-type":
@@ -191,7 +202,7 @@ func createBlockExplicitFlagAllowed(cloudType, name string) bool {
 	switch cloudType {
 	case "aliyun_bs":
 		switch name {
-		case "access-key-id", "access-key-secret", "region-id", "region-name", "account-name", "auth-region-id":
+		case "access-key-id", "access-key-secret", "account-name", "auth-region-id":
 			return true
 		}
 	case "openstack":

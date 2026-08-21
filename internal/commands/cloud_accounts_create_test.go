@@ -99,8 +99,6 @@ func TestCloudAccountsCreateBlockAliyunUsesValidatedWorkflow(t *testing.T) {
 		"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
-		"--region-id", "cn-qingdao",
-		"--region-name", "North China 1 (Qingdao)",
 		"--auth-region-id", "cn-qingdao",
 	})
 
@@ -110,6 +108,68 @@ func TestCloudAccountsCreateBlockAliyunUsesValidatedWorkflow(t *testing.T) {
 	cloudAccount := body["cloud_account"].(map[string]interface{})
 	if cloudAccount["cloud_type"] != "aliyun_bs" || cloudAccount["cloud_auth_type"] != "aksk" {
 		t.Fatalf("cloud_account = %+v", cloudAccount)
+	}
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if len(metadata) != 3 || metadata["access_key_id"] != "ak" || metadata["access_key_secret"] != "sk" || metadata["auth_region_id"] != "cn-qingdao" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestCloudAccountsCreateBlockAliyunRequiresAuthRegionID(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+	), &out, &errOut)
+	if err == nil || err.Error() != "auth-region-id is required" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCloudAccountsCreateBlockAliyunRejectsLegacyRegionFlags(t *testing.T) {
+	for _, flag := range []string{"region-id", "region-name"} {
+		t.Run(flag, func(t *testing.T) {
+			dir := t.TempDir()
+			setUserDirs(t, dir)
+
+			var out, errOut bytes.Buffer
+			err := Execute(withHost(t, "https://example.invalid",
+				"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block",
+				"--access-key-id", "ak",
+				"--access-key-secret", "sk",
+				"--auth-region-id", "cn-beijing",
+				"--"+flag, "legacy-region",
+			), &out, &errOut)
+			if err == nil || !strings.Contains(err.Error(), "use --auth-region-id") {
+				t.Fatalf("err = %v", err)
+			}
+		})
+	}
+}
+
+func TestCloudAccountsCreateBlockAliyunHelpUsesAuthRegionID(t *testing.T) {
+	for _, args := range [][]string{
+		{"cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block", "--help"},
+		{"--lang", "zh_cn", "cloud-account", "create", "--cloud-type", "aliyun", "--storage-type", "block", "--help"},
+	} {
+		var out, errOut bytes.Buffer
+		if err := Execute(args, &out, &errOut); err != nil {
+			t.Fatalf("args=%v err=%v", args, err)
+		}
+
+		text := out.String()
+		if !strings.Contains(text, "--auth-region-id string") {
+			t.Fatalf("args=%v help missing auth region flag: %q", args, text)
+		}
+		for _, unwanted := range []string{"--region-id string", "--region-name string"} {
+			if strings.Contains(text, unwanted) {
+				t.Fatalf("args=%v help should not include %q: %q", args, unwanted, text)
+			}
+		}
 	}
 }
 

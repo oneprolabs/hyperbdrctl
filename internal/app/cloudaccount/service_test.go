@@ -43,8 +43,7 @@ func TestServiceCreateBuildsAndPostsRequest(t *testing.T) {
 		CloudType:       "aliyun_bs",
 		AccessKeyID:     "ak",
 		AccessKeySecret: "sk",
-		RegionID:        "cn-beijing",
-		RegionName:      "Beijing",
+		AuthRegionID:    "cn-beijing",
 		OnlyVerify:      boolPtr(true),
 	})
 	if err != nil {
@@ -66,7 +65,7 @@ func TestServicePrepareCreateRetainsBlockRequestOverrides(t *testing.T) {
 		CloudType:       "aliyun_bs",
 		AccessKeyID:     "ak",
 		AccessKeySecret: "sk",
-		RegionID:        "cn-beijing",
+		AuthRegionID:    "cn-beijing",
 		RequestOverrides: map[string]interface{}{
 			"only_verify": true,
 		},

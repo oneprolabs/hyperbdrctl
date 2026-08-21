@@ -9,8 +9,8 @@ func buildAliyunBlock(spec Spec) (string, map[string]interface{}, error) {
 	if spec.AccessKeySecret == "" {
 		return "", nil, fmt.Errorf("access-key-secret is required")
 	}
-	if spec.RegionID == "" {
-		return "", nil, fmt.Errorf("region-id is required")
+	if spec.AuthRegionID == "" {
+		return "", nil, fmt.Errorf("auth-region-id is required")
 	}
 
 	body := map[string]interface{}{
@@ -18,18 +18,9 @@ func buildAliyunBlock(spec Spec) (string, map[string]interface{}, error) {
 			"cloud_type":      "aliyun_bs",
 			"cloud_auth_type": "aksk",
 			"metadata": map[string]interface{}{
-				"access_key_id":         spec.AccessKeyID,
-				"access_key_secret":     spec.AccessKeySecret,
-				"skip_driver_fix":       "false",
-				"skip_driver_fix_name":  yesLabel,
-				"region_type":           "1",
-				"region_type_name":      autoRegionLabel,
-				"region_type_list":      spec.RegionID,
-				"region_type_list_name": valueOrNil(spec.RegionName),
-				"region_type_input":     "",
-				"region_text":           "",
-				"account_name":          valueOrNil(spec.AccountName),
-				"auth_region_id":        firstNonEmptyString(spec.AuthRegionID, spec.RegionID),
+				"access_key_id":     spec.AccessKeyID,
+				"access_key_secret": spec.AccessKeySecret,
+				"auth_region_id":    spec.AuthRegionID,
 			},
 			"storage_type": nil,
 		},
