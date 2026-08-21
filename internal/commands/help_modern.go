@@ -1245,7 +1245,25 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 	case "aliyun":
 		return append(aliyun, commonGlobal...)
 	case "aliyun-account":
-		return accountScoped(aliyun)
+		return append([]flagHelpSpec{
+			{name: "cloud-account-id", required: true},
+			{name: "zone-id", required: true},
+			{name: "image-id", required: true},
+			{name: "flavor-id", required: true},
+			{name: "network-id", required: true},
+			{name: "subnet-id", required: true},
+			{name: "system-disk-type-id", required: true},
+			{name: "system-disk-size", defaultValue: "40"},
+			{name: "fixed-ip"},
+			{name: "boot-loader-image-id"},
+			{name: "volume-proxy-type", defaultValue: "s3"},
+			{name: "hg-control-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
+			{name: "control-nat-ip"},
+			{name: "hg-data-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
+			{name: "data-nat-ip"},
+			{name: "bandwidth-size"},
+			{name: "hd-control-network", defaultValue: "floating_ip_with_hg_proxy"},
+		}, commonGlobal...)
 	case "huawei-account", "provider-account":
 		return accountScoped(genericProvider)
 	case "openstack":

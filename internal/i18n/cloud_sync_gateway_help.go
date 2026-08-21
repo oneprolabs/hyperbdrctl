@@ -39,16 +39,15 @@ const (
       --fetch-res networks,subnets
 
 最小创建命令如下：
-  hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id>
-
-按流程补充关键字段后，可执行：
   hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> \
     --zone-id <zone_id> \
-    --flavor-id <flavor_id> \
     --image-id <image_id> \
-    --system-disk-type-id <system_disk_type_id> \
+    --flavor-id <flavor_id> \
     --network-id <network_id> \
-    --subnet-id <subnet_id>
+    --subnet-id <subnet_id> \
+    --system-disk-type-id <system_disk_type_id>
+
+省略 --system-disk-size 时，系统盘大小默认使用 40 GiB。
 
 如需先检查最终请求体，可附加下面的参数：
   --preview-request
@@ -200,16 +199,15 @@ Resource Discovery:
       --fetch-res networks,subnets
 
 The minimum create command is:
-  hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id>
-
-After adding the key fields from the resource flow, run:
   hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> \
     --zone-id <zone_id> \
-    --flavor-id <flavor_id> \
     --image-id <image_id> \
-    --system-disk-type-id <system_disk_type_id> \
+    --flavor-id <flavor_id> \
     --network-id <network_id> \
-    --subnet-id <subnet_id>
+    --subnet-id <subnet_id> \
+    --system-disk-type-id <system_disk_type_id>
+
+The system disk size defaults to 40 GiB when omitted.
 
 To inspect the final request body first, add:
   --preview-request
