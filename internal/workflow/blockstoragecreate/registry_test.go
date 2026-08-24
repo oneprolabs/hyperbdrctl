@@ -21,7 +21,7 @@ func (noopFetcher) FetchOpenStackCloudInfo(accountID string) (map[string]interfa
 
 func TestBuildRequestGenericProviderFallsBackToGenericBuilder(t *testing.T) {
 	path, body, err := BuildRequest(noopFetcher{}, Spec{
-		CloudType:          "huawei_bs",
+		CloudType:          "custom_bs",
 		CloudAccountID:     "account-1",
 		RegionID:           "cn-north-4",
 		NetworkID:          "network-1",
@@ -39,7 +39,7 @@ func TestBuildRequestGenericProviderFallsBackToGenericBuilder(t *testing.T) {
 		t.Fatalf("path = %q", path)
 	}
 	createStorage := body["create_storage"].(map[string]interface{})
-	if createStorage["cloud_type"] != "huawei_bs" || createStorage["cloud_account_uuid"] != "account-1" || createStorage["type"] != "HyperGate" {
+	if createStorage["cloud_type"] != "custom_bs" || createStorage["cloud_account_uuid"] != "account-1" || createStorage["type"] != "HyperGate" {
 		t.Fatalf("create_storage = %#v", createStorage)
 	}
 	metadata := createStorage["metadata"].(map[string]interface{})

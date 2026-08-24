@@ -44,12 +44,13 @@ type dynamicParameterHelpGroup struct {
 }
 
 type dynamicParameterHelpAttachment struct {
-	GroupKey     string
-	Command      string
-	Provider     string
-	CloudType    string
-	Architecture string
-	StorageType  string
+	GroupKey         string
+	Command          string
+	Provider         string
+	ExcludedProvider string
+	CloudType        string
+	Architecture     string
+	StorageType      string
 }
 
 var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
@@ -154,6 +155,40 @@ var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
 			},
 		},
 	},
+	"huawei-cloud-sync-gateway-advanced": {
+		Key:      "huawei-cloud-sync-gateway-advanced",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{
+				Flag:           "hd-control-network",
+				Placeholder:    "<mode>",
+				DescriptionKey: "help.dynamic_parameter.hd_control_network",
+				DefaultValue:   "floating_ip_with_hg_proxy",
+				Choices: []string{
+					"floating_ip_without_proxy",
+					"fixed_ip_without_proxy",
+					"floating_ip_with_hg_proxy",
+					"fixed_ip_with_hg_proxy",
+				},
+			},
+			{
+				Flag:           "fixed-ip",
+				Placeholder:    "<ip>",
+				DescriptionKey: "help.dynamic_parameter.fixed_ip",
+				SourceKey:      "help.dynamic_parameter.fixed_ip.source",
+			},
+			{
+				Flag:           "system-disk-size",
+				Placeholder:    "<size_gib>",
+				DescriptionKey: "help.dynamic_parameter.system_disk_size",
+			},
+			{
+				Flag:           "bandwidth-size",
+				Placeholder:    "<size_mbps>",
+				DescriptionKey: "help.dynamic_parameter.bandwidth_size",
+			},
+		},
+	},
 }
 
 var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
@@ -175,14 +210,21 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		StorageType: "block",
 	},
 	{
-		GroupKey:     "atomy-v2-cloud-sync-gateway",
-		Command:      dynamicParameterHelpCloudSyncGatewayCreate,
-		Architecture: catalog.AtomyV2,
+		GroupKey:         "atomy-v2-cloud-sync-gateway",
+		Command:          dynamicParameterHelpCloudSyncGatewayCreate,
+		ExcludedProvider: "huawei",
+		Architecture:     catalog.AtomyV2,
 	},
 	{
 		GroupKey:    "aliyun-cloud-sync-gateway-advanced",
 		Command:     dynamicParameterHelpCloudSyncGatewayCreate,
 		Provider:    "aliyun",
+		StorageType: "block",
+	},
+	{
+		GroupKey:    "huawei-cloud-sync-gateway-advanced",
+		Command:     dynamicParameterHelpCloudSyncGatewayCreate,
+		Provider:    "huawei",
 		StorageType: "block",
 	},
 }
@@ -341,7 +383,9 @@ func matchingDynamicParameterHelpGroups(helpContext dynamicParameterHelpContext)
 }
 
 func dynamicParameterHelpAttachmentMatches(attachment dynamicParameterHelpAttachment, helpContext dynamicParameterHelpContext) bool {
-	return dynamicParameterHelpFieldMatches(attachment.Command, helpContext.Command) &&
+	excludedProvider := strings.TrimSpace(attachment.ExcludedProvider)
+	return (excludedProvider == "" || !strings.EqualFold(excludedProvider, strings.TrimSpace(helpContext.Provider))) &&
+		dynamicParameterHelpFieldMatches(attachment.Command, helpContext.Command) &&
 		dynamicParameterHelpFieldMatches(attachment.Provider, helpContext.Provider) &&
 		dynamicParameterHelpFieldMatches(attachment.CloudType, helpContext.CloudType) &&
 		dynamicParameterHelpFieldMatches(attachment.Architecture, helpContext.Architecture) &&

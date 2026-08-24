@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"net/url"
 
 	appblockstorage "hyperbdr-client/internal/app/blockstorage"
@@ -25,6 +26,9 @@ func executeGatewaySubnetConfig(ctx *context, accountID, cloudType, regionID, zo
 }
 
 func executeBlockStorageCreateSpec(ctx *context, spec blockStorageCreateSpec, previewRequest bool) error {
+	if spec.CloudType == "huawei_bs" && createMetadataKeyPresent(spec.ExplicitMetadataKeys, "region_id") {
+		return errors.New(ctx.loc.T("error.cloud_sync_gateway.create.huawei.region_id"))
+	}
 	service := appblockstorage.NewService(commandAPIAdapter{ctx: ctx})
 	if previewRequest {
 		prepared, err := service.PrepareCreate(spec)
@@ -38,4 +42,13 @@ func executeBlockStorageCreateSpec(ctx *context, spec blockStorageCreateSpec, pr
 		return err
 	}
 	return writeResponse(ctx, resp, "", nil)
+}
+
+func createMetadataKeyPresent(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }

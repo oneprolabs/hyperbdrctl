@@ -17,6 +17,7 @@ var en = map[string]string{
 	"error.missing_region_id":                              "region-id is required",
 	"error.missing_zone_id":                                "zone-id is required",
 	"error.missing_network_id":                             "network-id is required",
+	"error.cloud_sync_gateway.create.huawei.region_id":     "region-id cannot be used with Huawei cloud-sync-gateway create; the region is read from cloud account metadata",
 	"error.missing_connection_uuid":                        "connection-uuid is required",
 	"error.missing_connection_type":                        "connection-type is required",
 	"error.need_login":                                     "authentication failed, automatic login did not succeed",

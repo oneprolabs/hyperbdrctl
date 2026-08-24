@@ -2,6 +2,7 @@ package blockstorage
 
 import (
 	"net/url"
+	"strings"
 	"testing"
 
 	"hyperbdr-client/internal/client"
@@ -10,6 +11,7 @@ import (
 
 type createFakeAPI struct {
 	getPath          string
+	getQuery         url.Values
 	sawAccountDetail bool
 	postCalls        int
 	postPath         string
@@ -20,6 +22,7 @@ type createFakeAPI struct {
 
 func (f *createFakeAPI) Get(path string, q url.Values) (client.APIResponse, error) {
 	f.getPath = path
+	f.getQuery = q
 	if path == "/hypermotion/v1/cloud_accounts/account-1" {
 		f.sawAccountDetail = true
 		cloudType := f.cloudType
@@ -41,13 +44,16 @@ func (f *createFakeAPI) Get(path string, q url.Values) (client.APIResponse, erro
 		}, nil
 	}
 	if path == "/api/v3/getCloudInfo" {
-		return client.APIResponse{Data: map[string]interface{}{
-			"cloud_info": map[string]interface{}{
-				"images": []interface{}{
-					map[string]interface{}{"image_id": "boot-img-1", "image_name": "Windows 2016"},
-				},
+		cloudInfo := map[string]interface{}{
+			"images": []interface{}{
+				map[string]interface{}{"image_id": "boot-img-1", "image_name": "Windows 2016"},
 			},
-		}}, nil
+		}
+		if f.cloudType == "huawei_bs" && strings.Contains(q.Get("fetch_res"), "system_volume_types") {
+			cloudInfo["images"] = []interface{}{map[string]interface{}{"id": "img-1", "name": "ubuntu", "os_type": "linux"}}
+			cloudInfo["system_volume_types"] = []interface{}{map[string]interface{}{"id": "cloud_essd_entry"}}
+		}
+		return client.APIResponse{Data: map[string]interface{}{"cloud_info": cloudInfo}}, nil
 	}
 	return client.APIResponse{Data: map[string]interface{}{"ok": true}}, nil
 }
@@ -59,15 +65,19 @@ func (f *createFakeAPI) Post(path string, body interface{}) (client.APIResponse,
 	if path == "/hypermotion/v1/cloud_accounts/account-1/action" {
 		switch f.postCalls {
 		case 1:
+			regionID := f.regionID
+			if regionID == "" {
+				regionID = "cn-beijing"
+			}
 			return client.APIResponse{Data: map[string]interface{}{
 				"cloud_info": map[string]interface{}{
 					"domain": map[string]interface{}{
 						"regions": []interface{}{
-							map[string]interface{}{"region_id": "cn-beijing", "region_name": "North China 2 (Beijing)"},
+							map[string]interface{}{"region_id": regionID, "region_name": regionID},
 						},
 					},
 					"zones": []interface{}{
-						map[string]interface{}{"id": "cn-beijing-l", "display_name": "Beijing Zone L"},
+						map[string]interface{}{"id": regionID + "a", "display_name": regionID + "a"},
 					},
 				},
 			}}, nil
@@ -75,19 +85,29 @@ func (f *createFakeAPI) Post(path string, body interface{}) (client.APIResponse,
 			return client.APIResponse{Data: map[string]interface{}{
 				"cloud_info": map[string]interface{}{
 					"flavors": []interface{}{
-						map[string]interface{}{"id": "ecs.e-c1m2.large", "name": "2C4G", "is_recommend": 1},
+						map[string]interface{}{"id": "ecs.e-c1m2.large", "name": "2C4G", "vcpus": 2, "ram_GB": 4, "is_recommend": 1},
 					},
 				},
 			}}, nil
 		case 3:
+			if f.cloudType == "huawei_bs" {
+				return client.APIResponse{Data: map[string]interface{}{
+					"cloud_info": map[string]interface{}{
+						"networks": []interface{}{map[string]interface{}{"id": "net-1", "name": "vpc-a"}},
+						"subnets":  []interface{}{map[string]interface{}{"id": "subnet-1", "name": "subnet-a", "network_id": "net-1"}},
+					},
+				}}, nil
+			}
+			diskKey := "system_disk_types"
+			if f.cloudType == "huawei_bs" {
+				diskKey = "system_volume_types"
+			}
 			return client.APIResponse{Data: map[string]interface{}{
 				"cloud_info": map[string]interface{}{
 					"images": []interface{}{
 						map[string]interface{}{"id": "img-1", "name": "ubuntu", "os_type": "linux"},
 					},
-					"system_disk_types": []interface{}{
-						map[string]interface{}{"id": "cloud_essd_entry"},
-					},
+					diskKey: []interface{}{map[string]interface{}{"id": "cloud_essd_entry"}},
 				},
 			}}, nil
 		case 4:

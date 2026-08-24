@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"hyperbdr-client/internal/client"
 	"hyperbdr-client/internal/metaoverride"
@@ -35,7 +36,7 @@ func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
 	}
 	spec.CloudType = defaults.CloudType
 	spec.RegionID = defaults.RegionID
-	if spec.CloudType == "aliyun_bs" && spec.RegionID == "" {
+	if (spec.CloudType == "aliyun_bs" || spec.CloudType == "huawei_bs") && spec.RegionID == "" {
 		return PreparedCreateRequest{}, fmt.Errorf("region-id is required")
 	}
 
@@ -214,6 +215,51 @@ func (r runtimeAdapter) FetchGatewayCloudInfo(accountID string, resources []stri
 	return data, nil
 }
 
+// FetchHuaweiGatewayCloudInfo uses the Huawei cloud-info query endpoint for
+// resources that are not returned by the gateway action endpoint.  In
+// particular, Huawei exposes system_volume_types through this GET API.
+func (r runtimeAdapter) FetchHuaweiGatewayCloudInfo(accountID string, resources []string, regionID, zoneID, flavorID, purpose string) (map[string]interface{}, error) {
+	q := url.Values{}
+	q.Set("cloud_account_id", accountID)
+	q.Set("cloud_type", "huawei_bs")
+	q.Set("storage_type", "HyperGate")
+	q.Set("fetch_res", strings.Join(resources, ","))
+	q.Set("rt_flatten", "1")
+	if regionID != "" {
+		q.Set("region_id", regionID)
+	}
+	if zoneID != "" {
+		q.Set("zone_id", zoneID)
+	}
+	if flavorID != "" {
+		q.Set("flavor_id", flavorID)
+	}
+	if purpose != "" {
+		q.Set("purpose", purpose)
+	}
+	q.Set("image_type", "system")
+
+	resp, err := r.api.Get("/api/v3/getCloudInfo", q)
+	if err != nil {
+		return nil, err
+	}
+	data := responseMap(resp)
+	if data == nil {
+		return nil, fmt.Errorf("cloud_info is missing from Huawei gateway resource response")
+	}
+	if nestedMap(data, "cloud_info") != nil {
+		return data, nil
+	}
+	// Some versions of getCloudInfo flatten the requested resources directly
+	// under the response data instead of nesting them under cloud_info.
+	for _, resource := range resources {
+		if _, ok := data[resource]; ok {
+			return map[string]interface{}{"cloud_info": data}, nil
+		}
+	}
+	return nil, fmt.Errorf("cloud_info is missing from Huawei gateway resource response")
+}
+
 func (r runtimeAdapter) FetchGatewayTransitionImages(accountID, cloudType, regionID, zoneID, purpose, imageType, osType, bootMode string) (map[string]interface{}, error) {
 	q := url.Values{}
 	q.Set("cloud_account_id", accountID)
@@ -343,6 +389,13 @@ func buildGatewayResourcesRequest(resources []string, regionID, zoneID, flavorID
 			}
 		case "system_disk_types":
 			resourceOptions["system_disk_types"] = map[string]interface{}{
+				"zone_id":   zoneID,
+				"flavor_id": flavorID,
+				"purpose":   purpose,
+				"support":   true,
+			}
+		case "system_volume_types":
+			resourceOptions["system_volume_types"] = map[string]interface{}{
 				"zone_id":   zoneID,
 				"flavor_id": flavorID,
 				"purpose":   purpose,

@@ -71,8 +71,6 @@ const (
     来自下面命令的返回结果：
       hyperbdrctl cloud-account create --cloud-type huawei --storage-type block
 
-    云账号中保存的区域会自动用于创建请求，无需传入 --region-id。
-
 资源获取：
   先查询可用区：
     hyperbdrctl cloud-resource fetch \
@@ -84,6 +82,7 @@ const (
       --cloud-account-id <account_id> \
       --zone-id <zone_id> \
       --fetch-res flavors \
+      --purpose make_hg \
       --flavor-vcpus 2 \
       --flavor-ram 4
 
@@ -92,7 +91,9 @@ const (
       --cloud-account-id <account_id> \
       --zone-id <zone_id> \
       --flavor-id <flavor_id> \
-      --fetch-res images,system_disk_types
+      --purpose make_hg \
+      --image_type=system \
+      --fetch-res images,system_volume_types
 
   再查询网络和子网：
     hyperbdrctl cloud-resource fetch \
@@ -108,8 +109,6 @@ const (
     --network-id <network_id> \
     --subnet-id <subnet_id> \
     --system-disk-type-id <system_disk_type_id>
-
-省略 --system-disk-size 时，系统盘大小默认使用 40 GiB。
 
 如需覆盖 metadata 字段，可重复附加：
   --set path=value
@@ -253,8 +252,6 @@ Parameter Sources:
     Comes from the result of:
       hyperbdrctl cloud-account create --cloud-type huawei --storage-type block
 
-    The saved cloud-account region is used automatically; do not pass --region-id.
-
 Resource Discovery:
   Query zones first:
     hyperbdrctl cloud-resource fetch \
@@ -266,6 +263,7 @@ Resource Discovery:
       --cloud-account-id <account_id> \
       --zone-id <zone_id> \
       --fetch-res flavors \
+      --purpose make_hg \
       --flavor-vcpus 2 \
       --flavor-ram 4
 
@@ -274,7 +272,9 @@ Resource Discovery:
       --cloud-account-id <account_id> \
       --zone-id <zone_id> \
       --flavor-id <flavor_id> \
-      --fetch-res images,system_disk_types
+      --purpose make_hg \
+      --image_type=system \
+      --fetch-res images,system_volume_types
 
   Then query networks and subnets:
     hyperbdrctl cloud-resource fetch \
@@ -290,8 +290,6 @@ The minimum create command is:
     --network-id <network_id> \
     --subnet-id <subnet_id> \
     --system-disk-type-id <system_disk_type_id>
-
-The system disk size defaults to 40 GiB when omitted.
 
 To override metadata fields, repeat either flag as needed:
   --set path=value

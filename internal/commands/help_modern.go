@@ -1279,12 +1279,8 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "network-id", required: true},
 			{name: "subnet-id", required: true},
 			{name: "system-disk-type-id", required: true},
-			{name: "system-disk-size", defaultValue: "40"},
+			{name: "system-disk-size"},
 			{name: "fixed-ip"},
-			{name: "hg-control-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
-			{name: "control-nat-ip"},
-			{name: "hg-data-network", choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}, defaultValue: "floating_ip_without_proxy"},
-			{name: "data-nat-ip"},
 			{name: "bandwidth-size"},
 			{name: "hd-control-network", defaultValue: "floating_ip_with_hg_proxy"},
 		})

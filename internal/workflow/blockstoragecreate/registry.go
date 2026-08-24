@@ -8,6 +8,13 @@ type Fetcher interface {
 	FetchOpenStackCloudInfo(accountID string) (map[string]interface{}, error)
 }
 
+// HuaweiGatewayCloudInfoFetcher is implemented by the runtime adapter for
+// Huawei's block-storage resource endpoint.  It is intentionally optional so
+// the workflow remains easy to unit-test with the generic fetcher contract.
+type HuaweiGatewayCloudInfoFetcher interface {
+	FetchHuaweiGatewayCloudInfo(accountID string, resources []string, regionID, zoneID, flavorID, purpose string) (map[string]interface{}, error)
+}
+
 type adapter struct {
 	key   string
 	build func(Fetcher, Spec) (string, map[string]interface{}, error)
@@ -17,6 +24,10 @@ var adapters = map[string]adapter{
 	workflow.BlockStorageCreateKey("aliyun_bs").String(): {
 		key:   workflow.BlockStorageCreateKey("aliyun_bs").String(),
 		build: buildAliyun,
+	},
+	workflow.BlockStorageCreateKey("huawei_bs").String(): {
+		key:   workflow.BlockStorageCreateKey("huawei_bs").String(),
+		build: buildHuawei,
 	},
 	workflow.BlockStorageCreateKey("openstack").String(): {
 		key:   workflow.BlockStorageCreateKey("openstack").String(),

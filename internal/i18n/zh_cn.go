@@ -17,6 +17,7 @@ var zhCN = map[string]string{
 	"error.missing_region_id":                              "缺少 region-id",
 	"error.missing_zone_id":                                "缺少 zone-id",
 	"error.missing_network_id":                             "缺少 network-id",
+	"error.cloud_sync_gateway.create.huawei.region_id":     "创建华为云云同步网关时不能使用 region-id；地域从云账号 metadata 中读取",
 	"error.missing_connection_uuid":                        "缺少 connection-uuid",
 	"error.missing_connection_type":                        "缺少 connection-type",
 	"error.need_login":                                     "认证失败，自动登录未成功",

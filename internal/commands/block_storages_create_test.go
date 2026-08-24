@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -235,18 +236,15 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"网络 ID（必须）",
 				"子网 ID（必须）",
 				"系统盘类型 ID（必须）",
-				"系统盘大小 (GiB)，默认值 40",
-				"--fixed-ip string",
-				"--bandwidth-size string",
-				"--hd-control-network string",
 				"创建华为云云同步网关。",
 				"可按需补充以下动态参数：",
-				"--hg-control-network <mode>",
-				"默认值：floating_ip_without_proxy",
+				"--hd-control-network <mode>",
+				"默认值：floating_ip_with_hg_proxy",
 				"可选值：",
-				"--boot-loader-image-id <image_id>",
-				"--fetch-res win_hd_images",
-				"--fetch-res images,system_disk_types",
+				"--fixed-ip <ip>",
+				"--system-disk-size <size_gib>",
+				"--bandwidth-size <size_mbps>",
+				"--fetch-res images,system_volume_types",
 				"cloud-sync-gateway detail --id <storage_id>",
 			},
 			unwanted: []string{
@@ -264,10 +262,9 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"--boot-loader-flavor-id string",
 				"--project-domain-id string",
 				"--boot-types-id string",
-				"--hd-control-network <mode>",
-				"--fixed-ip <ip>",
-				"--system-disk-size <size_gib>",
-				"--bandwidth-size <size_mbps>",
+				"--hg-control-network <mode>",
+				"--boot-loader-image-id <image_id>",
+				"--fetch-res win_hd_images",
 			},
 		},
 	}
@@ -456,19 +453,78 @@ func TestBlockStoragesCreateRejectsVolumeProxyType(t *testing.T) {
 	}
 }
 
-func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T) {
+type huaweiCreateHTTPState struct {
+	accountPath string
+	actionCalls int
+	createBody  map[string]interface{}
+}
+
+func newHuaweiCreateTestServer(t *testing.T) (*httptest.Server, *huaweiCreateHTTPState) {
+	t.Helper()
+	state := &huaweiCreateHTTPState{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/hypermotion/v1/cloud_accounts/account-1":
+			state.accountPath = r.URL.Path
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000",
+				"data": map[string]interface{}{
+					"cloud_type": "huawei_bs", "storage_type": "HyperGate", "region_id": "cn-north-4",
+				},
+			})
+		case "/hypermotion/v1/cloud_accounts/account-1/action":
+			state.actionCalls++
+			cloudInfo := map[string]interface{}{}
+			switch state.actionCalls {
+			case 1:
+				cloudInfo = map[string]interface{}{
+					"domain": map[string]interface{}{"regions": []map[string]interface{}{{"region_id": "cn-north-4", "region_name": "cn-north-4"}}},
+					"zones":  []map[string]interface{}{{"id": "cn-north-4a", "name": "cn-north-4a"}},
+				}
+			case 2:
+				cloudInfo = map[string]interface{}{"flavors": []map[string]interface{}{{"id": "flavor-1", "name": "2C4G", "vcpus": 2, "ram_GB": 4, "is_recommend": 1}}}
+			case 3:
+				cloudInfo = map[string]interface{}{
+					"networks": []map[string]interface{}{{"id": "network-1", "name": "vpc-a"}},
+					"subnets":  []map[string]interface{}{{"id": "subnet-1", "name": "subnet-a", "network_id": "network-1"}},
+				}
+			case 4:
+				cloudInfo = map[string]interface{}{
+					"networks": []map[string]interface{}{{"id": "network-1", "name": "vpc-a"}},
+					"subnets":  []map[string]interface{}{{"id": "subnet-1", "name": "subnet-a", "network_id": "network-1"}},
+				}
+			default:
+				t.Fatalf("unexpected Huawei resource action call %d", state.actionCalls)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"cloud_info": cloudInfo}})
+		case "/api/v3/getCloudInfo":
+			cloudInfo := map[string]interface{}{
+				"images": []map[string]interface{}{{"image_id": "boot-image-1", "image_name": "Windows repair"}},
+			}
+			if strings.Contains(r.URL.Query().Get("fetch_res"), "system_volume_types") {
+				cloudInfo["images"] = []map[string]interface{}{{"id": "image-1", "name": "Ubuntu"}}
+				cloudInfo["system_volume_types"] = []map[string]interface{}{{"id": "disk-type-1", "name": "SAS"}}
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"code": "00000000", "data": map[string]interface{}{"cloud_info": cloudInfo},
+			})
+		case "/hypermotion/v1/storages/action":
+			if err := json.NewDecoder(r.Body).Decode(&state.createBody); err != nil {
+				t.Fatal(err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": "00000000", "data": map[string]interface{}{"uuid": "storage-1"}})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	}))
+	return srv, state
+}
+
+func TestBlockStoragesCreateHuaweiPreviewRequestBuildsDedicatedBody(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code": "00000000",
-			"data": map[string]interface{}{
-				"cloud_type":   "huawei_bs",
-				"storage_type": "HyperGate",
-			},
-		})
-	}))
+	srv, state := newHuaweiCreateTestServer(t)
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
@@ -476,9 +532,16 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 		"--output", "json",
 		"cloud-sync-gateway", "create", "--cloud-type", "huawei",
 		"--cloud-account-id", "account-1",
-		"--region-id", "cn-north-4",
+		"--zone-id", "cn-north-4a",
+		"--flavor-id", "flavor-1",
+		"--image-id", "image-1",
 		"--network-id", "network-1",
+		"--subnet-id", "subnet-1",
+		"--system-disk-type-id", "disk-type-1",
 		"--boot-loader-image-id", "boot-image-1",
+		"--boot-loader-flavor-id", "boot-flavor-1",
+		"--hg-control-network", "fixed_ip_without_proxy",
+		"--control-nat-ip", "192.0.2.10",
 		"--set-json", `nics=[{"subnet_id":"subnet-json"}]`,
 		"--set", "bandwidth_size=300",
 		"--set", "enabled=true",
@@ -503,10 +566,11 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 		"region_id":              "cn-north-4",
 		"network_id":             "network-1",
 		"boot_loader_image_id":   "boot-image-1",
-		"boot_types_id":          "boot_from_volume",
+		"boot_loader_flavor_id":  "boot-flavor-1",
 		"volume_proxy_type":      "s3",
 		"volume_proxy_type_name": "S3Block",
-		"hg_control_network":     "floating_ip_without_proxy",
+		"hg_control_network":     "fixed_ip_without_proxy",
+		"control_nat_ip":         "192.0.2.10",
 		"hg_data_network":        "floating_ip_without_proxy",
 		"hd_control_network":     "floating_ip_with_hg_proxy",
 		"system_disk_size":       "40",
@@ -524,6 +588,121 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 	nics, ok := metadata["nics"].([]interface{})
 	if !ok || len(nics) != 1 || nics[0].(map[string]interface{})["subnet_id"] != "subnet-json" {
 		t.Fatalf("metadata nics = %#v", metadata["nics"])
+	}
+	if state.actionCalls != 3 {
+		t.Fatalf("action calls = %d", state.actionCalls)
+	}
+}
+
+func TestBlockStoragesCreateHuaweiPreviewMatchesPostedBody(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	previewServer, _ := newHuaweiCreateTestServer(t)
+	var previewOut, previewErr bytes.Buffer
+	if err := Execute(withHost(t, previewServer.URL,
+		"--output", "json",
+		"cloud-sync-gateway", "create",
+		"--cloud-account-id", "account-1",
+		"--system-disk-size", "40",
+		"--bandwidth-size", "300",
+		"--fixed-ip", "10.0.0.8",
+		"--preview-request",
+	), &previewOut, &previewErr); err != nil {
+		previewServer.Close()
+		t.Fatal(err)
+	}
+	previewServer.Close()
+
+	var previewBody map[string]interface{}
+	if err := json.Unmarshal(previewOut.Bytes(), &previewBody); err != nil {
+		t.Fatal(err)
+	}
+
+	createServer, state := newHuaweiCreateTestServer(t)
+	defer createServer.Close()
+	var createOut, createErr bytes.Buffer
+	if err := Execute(withHost(t, createServer.URL,
+		"--output", "json",
+		"cloud-sync-gateway", "create",
+		"--cloud-account-id", "account-1",
+		"--system-disk-size", "40",
+		"--bandwidth-size", "300",
+		"--fixed-ip", "10.0.0.8",
+	), &createOut, &createErr); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(previewBody, state.createBody) {
+		t.Fatalf("preview body = %#v, posted body = %#v", previewBody, state.createBody)
+	}
+}
+
+func TestBlockStoragesCreateHuaweiRejectsExplicitRegionID(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv, state := newHuaweiCreateTestServer(t)
+	defer srv.Close()
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"cloud-sync-gateway", "create",
+		"--cloud-account-id", "account-1",
+		"--region-id", "cn-north-4",
+		"--preview-request",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "region-id cannot be used with Huawei") {
+		t.Fatalf("err = %v", err)
+	}
+	if state.actionCalls != 0 {
+		t.Fatalf("resource API must not run after rejected region-id; calls = %d", state.actionCalls)
+	}
+}
+
+func TestBlockStoragesCreateHuaweiHelpUsesDedicatedDynamicParametersInEnglish(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{
+		"--lang", "en",
+		"cloud-sync-gateway", "create",
+		"--cloud-type", "huawei",
+		"--help",
+	}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	text := out.String()
+	for _, want := range []string{
+		"Cloud account ID (required)",
+		"Zone ID (required)",
+		"Image ID (required)",
+		"Flavor ID (required)",
+		"Network ID (required)",
+		"Subnet ID (required)",
+		"System disk type ID (required)",
+		"Optional dynamic parameters:",
+		"--hd-control-network <mode>",
+		"Default: floating_ip_with_hg_proxy",
+		"--fixed-ip <ip>",
+		"--system-disk-size <size_gib>",
+		"--bandwidth-size <size_mbps>",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("Huawei help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{
+		"--region-id string",
+		"--hg-control-network string",
+		"--hg-control-network <mode>",
+		"--control-nat-ip",
+		"--boot-loader-image-id",
+		"Default: 40",
+		"default to 100 Mbps",
+	} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("Huawei help must omit %q: %q", unwanted, text)
+		}
 	}
 }
 
@@ -571,17 +750,7 @@ func TestBlockStoragesCreatePreviewRequestInfersCloudTypeFromCloudAccount(t *tes
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	var gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code": "00000000",
-			"data": map[string]interface{}{
-				"cloud_type":   "huawei_bs",
-				"storage_type": "HyperGate",
-			},
-		})
-	}))
+	srv, state := newHuaweiCreateTestServer(t)
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
@@ -589,7 +758,6 @@ func TestBlockStoragesCreatePreviewRequestInfersCloudTypeFromCloudAccount(t *tes
 		"--output", "json",
 		"cloud-sync-gateway", "create",
 		"--cloud-account-id", "account-1",
-		"--region-id", "cn-north-4",
 		"--network-id", "network-1",
 		"--boot-loader-image-id", "boot-image-1",
 		"--preview-request",
@@ -597,8 +765,8 @@ func TestBlockStoragesCreatePreviewRequestInfersCloudTypeFromCloudAccount(t *tes
 	if err != nil {
 		t.Fatal(err)
 	}
-	if gotPath != "/hypermotion/v1/cloud_accounts/account-1" {
-		t.Fatalf("path=%q", gotPath)
+	if state.accountPath != "/hypermotion/v1/cloud_accounts/account-1" {
+		t.Fatalf("path=%q", state.accountPath)
 	}
 
 	var body map[string]interface{}
@@ -615,15 +783,7 @@ func TestBlockStoragesCreatePreviewRequestPrefersCloudAccountOverExplicitCloudTy
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code": "00000000",
-			"data": map[string]interface{}{
-				"cloud_type":   "huawei_bs",
-				"storage_type": "HyperGate",
-			},
-		})
-	}))
+	srv, _ := newHuaweiCreateTestServer(t)
 	defer srv.Close()
 
 	var out, errOut bytes.Buffer
@@ -632,7 +792,6 @@ func TestBlockStoragesCreatePreviewRequestPrefersCloudAccountOverExplicitCloudTy
 		"cloud-sync-gateway", "create",
 		"--cloud-account-id", "account-1",
 		"--cloud-type", "openstack",
-		"--region-id", "cn-north-4",
 		"--network-id", "network-1",
 		"--boot-loader-image-id", "boot-image-1",
 		"--preview-request",
