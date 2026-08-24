@@ -69,7 +69,6 @@ func buildOpenStack(fetcher Fetcher, spec Spec) (string, map[string]interface{},
 
 	computeZoneID := firstNonEmptyString(computeZone["id"], computeZone["name"])
 	bootTypesID := firstNonEmptyString(spec.BootTypesID, "boot_from_volume")
-	volumeProxyType := firstNonEmptyString(spec.VolumeProxyType, "s3")
 	hgControlNetwork := firstNonEmptyString(spec.HGControlNetwork, "floating_ip_without_proxy")
 	hgDataNetwork := firstNonEmptyString(spec.HGDataNetwork, "floating_ip_without_proxy")
 
@@ -97,8 +96,8 @@ func buildOpenStack(fetcher Fetcher, spec Spec) (string, map[string]interface{},
 		"boot_loader_image_name":  firstNonEmptyString(bootLoaderImage["name"], bootLoaderImage["id"]),
 		"boot_types_id":           bootTypesID,
 		"boot_types_id_name":      openStackBootTypeName(bootTypesID),
-		"volume_proxy_type":       volumeProxyType,
-		"volume_proxy_type_name":  openStackVolumeProxyTypeName(volumeProxyType),
+		"volume_proxy_type":       defaultVolumeProxyType,
+		"volume_proxy_type_name":  defaultVolumeProxyTypeName,
 		"hg_control_network":      hgControlNetwork,
 		"hg_control_network_name": openStackGatewayNetworkName(hgControlNetwork),
 		"control_nat_ip":          valueOrNil(spec.ControlNATIP),

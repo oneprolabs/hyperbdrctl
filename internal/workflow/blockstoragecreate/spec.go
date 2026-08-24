@@ -1,5 +1,10 @@
 package blockstoragecreate
 
+const (
+	defaultVolumeProxyType     = "s3"
+	defaultVolumeProxyTypeName = "S3Block"
+)
+
 // MetadataOverride applies a value to a path relative to create_storage.metadata.
 type MetadataOverride struct {
 	Path  string
@@ -26,7 +31,6 @@ type Spec struct {
 	BootLoaderFlavorID    string
 	ProjectDomainID       string
 	BootTypesID           string
-	VolumeProxyType       string
 	HGControlNetwork      string
 	ControlNATIP          string
 	HGDataNetwork         string

@@ -80,7 +80,6 @@ func buildAliyun(fetcher Fetcher, spec Spec) (string, map[string]interface{}, er
 		return "", nil, fmt.Errorf("boot-loader-image-id: %w", err)
 	}
 
-	volumeProxyType := firstNonEmptyString(spec.VolumeProxyType, "s3")
 	hgControlNetwork := firstNonEmptyString(spec.HGControlNetwork, "floating_ip_without_proxy")
 	hgDataNetwork := firstNonEmptyString(spec.HGDataNetwork, "floating_ip_without_proxy")
 	hdControlNetwork := firstNonEmptyString(spec.HDControlNetwork, "floating_ip_with_hg_proxy")
@@ -111,8 +110,8 @@ func buildAliyun(fetcher Fetcher, spec Spec) (string, map[string]interface{}, er
 		"system_disk_type_id":     firstNonEmptyString(systemDiskTypeRow["id"], systemDiskTypeRow["system_disk_type_id"]),
 		"system_disk_type_name":   firstNonEmptyString(systemDiskTypeRow["id"], systemDiskTypeRow["system_disk_type_id"], systemDiskTypeRow["display_name"], systemDiskTypeRow["name"]),
 		"system_disk_size":        systemDiskSize,
-		"volume_proxy_type":       volumeProxyType,
-		"volume_proxy_type_name":  aliyunGatewayVolumeProxyTypeName(volumeProxyType),
+		"volume_proxy_type":       defaultVolumeProxyType,
+		"volume_proxy_type_name":  defaultVolumeProxyTypeName,
 		"dest_device_type":        "vbd",
 		"dest_device_type_name":   "23",
 		"hg_control_network":      hgControlNetwork,

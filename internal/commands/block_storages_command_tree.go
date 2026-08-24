@@ -408,7 +408,7 @@ func newBlockStorageCreateProviderCommand(ctx *context, entry catalog.CloudEntry
 
 func newAliyunBlockStorageCreateCommand(ctx *context) *cobra.Command {
 	cmd := newRawLeafCommand(ctx, "aliyun", "cmd.block_storages.create.aliyun.short", "cmd.block_storages.create.aliyun.long", "cmd.block_storages.create.aliyun.examples", "cmd.block_storages.create.aliyun.notes", func(cmd *cobra.Command) {
-		for _, name := range []string{"cloud-account-id", "region-id", "zone-id", "image-id", "flavor-id", "network-id", "subnet-id", "fixed-ip", "system-disk-type-id", "system-disk-size", "boot-loader-image-id", "volume-proxy-type", "hg-control-network", "control-nat-ip", "hg-data-network", "data-nat-ip", "bandwidth-size", "hd-control-network"} {
+		for _, name := range []string{"cloud-account-id", "region-id", "zone-id", "image-id", "flavor-id", "network-id", "subnet-id", "fixed-ip", "system-disk-type-id", "system-disk-size", "boot-loader-image-id", "hg-control-network", "control-nat-ip", "hg-data-network", "data-nat-ip", "bandwidth-size", "hd-control-network"} {
 			addFlagString(cmd, ctx, name)
 		}
 		addFlagBool(cmd, ctx, "preview-request")
@@ -423,7 +423,7 @@ func newAliyunBlockStorageCreateCommand(ctx *context) *cobra.Command {
 
 func newOpenStackBlockStorageCreateCommand(ctx *context) *cobra.Command {
 	cmd := newRawLeafCommand(ctx, "openstack", "cmd.block_storages.create.openstack.short", "cmd.block_storages.create.openstack.long", "cmd.block_storages.create.openstack.examples", "cmd.block_storages.create.openstack.notes", func(cmd *cobra.Command) {
-		for _, name := range []string{"cloud-account-id", "project-id", "region-id", "compute-zone-id", "image-id", "flavor-id", "network-id", "subnet-id", "fixed-ip", "volume-type-id", "system-disk-size", "block-store-zone-id", "boot-loader-image-id", "boot-loader-flavor-id", "project-domain-id", "boot-types-id", "volume-proxy-type", "hg-control-network", "control-nat-ip", "hg-data-network", "data-nat-ip"} {
+		for _, name := range []string{"cloud-account-id", "project-id", "region-id", "compute-zone-id", "image-id", "flavor-id", "network-id", "subnet-id", "fixed-ip", "volume-type-id", "system-disk-size", "block-store-zone-id", "boot-loader-image-id", "boot-loader-flavor-id", "project-domain-id", "boot-types-id", "hg-control-network", "control-nat-ip", "hg-data-network", "data-nat-ip"} {
 			addFlagString(cmd, ctx, name)
 		}
 		addFlagBool(cmd, ctx, "preview-request")
@@ -460,7 +460,7 @@ func newGenericBlockStorageCreateCommand(ctx *context, entry catalog.CloudEntry)
 }
 
 func addGenericBlockStorageCreateFlags(cmd *cobra.Command, ctx *context) {
-	for _, name := range []string{"cloud-account-id", "project-id", "region-id", "zone-id", "compute-zone-id", "image-id", "flavor-id", "network-id", "subnet-id", "fixed-ip", "system-disk-type-id", "volume-type-id", "system-disk-size", "block-store-zone-id", "boot-loader-image-id", "boot-loader-flavor-id", "project-domain-id", "boot-types-id", "volume-proxy-type", "hg-control-network", "control-nat-ip", "hg-data-network", "data-nat-ip", "bandwidth-size", "hd-control-network"} {
+	for _, name := range []string{"cloud-account-id", "project-id", "region-id", "zone-id", "compute-zone-id", "image-id", "flavor-id", "network-id", "subnet-id", "fixed-ip", "system-disk-type-id", "volume-type-id", "system-disk-size", "block-store-zone-id", "boot-loader-image-id", "boot-loader-flavor-id", "project-domain-id", "boot-types-id", "hg-control-network", "control-nat-ip", "hg-data-network", "data-nat-ip", "bandwidth-size", "hd-control-network"} {
 		addFlagString(cmd, ctx, name)
 	}
 	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))

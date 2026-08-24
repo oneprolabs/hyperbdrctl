@@ -163,7 +163,6 @@ func parseBlockStorageCreateArgs(commandName string, args []string) (parsedBlock
 	bootLoaderFlavorID := fs.String("boot-loader-flavor-id", "", "")
 	projectDomainID := fs.String("project-domain-id", "", "")
 	bootTypesID := fs.String("boot-types-id", "boot_from_volume", "")
-	volumeProxyType := fs.String("volume-proxy-type", "s3", "")
 	hgControlNetwork := fs.String("hg-control-network", "floating_ip_without_proxy", "")
 	controlNATIP := fs.String("control-nat-ip", "", "")
 	hgDataNetwork := fs.String("hg-data-network", "floating_ip_without_proxy", "")
@@ -207,7 +206,6 @@ func parseBlockStorageCreateArgs(commandName string, args []string) (parsedBlock
 		BootLoaderFlavorID:    *bootLoaderFlavorID,
 		ProjectDomainID:       *projectDomainID,
 		BootTypesID:           *bootTypesID,
-		VolumeProxyType:       *volumeProxyType,
 		HGControlNetwork:      *hgControlNetwork,
 		ControlNATIP:          *controlNATIP,
 		HGDataNetwork:         *hgDataNetwork,
@@ -253,7 +251,7 @@ func explicitBlockStorageMetadataKeys(fs *flag.FlagSet) []string {
 		"fixed-ip": "fixed_ip", "system-disk-type-id": "system_disk_type_id", "volume-type-id": "volume_type_id",
 		"system-disk-size": "system_disk_size", "block-store-zone-id": "block_store_zone_id",
 		"boot-loader-image-id": "boot_loader_image_id", "boot-loader-flavor-id": "boot_loader_flavor_id",
-		"project-domain-id": "project_domain_id", "boot-types-id": "boot_types_id", "volume-proxy-type": "volume_proxy_type",
+		"project-domain-id": "project_domain_id", "boot-types-id": "boot_types_id",
 		"hg-control-network": "hg_control_network", "control-nat-ip": "control_nat_ip",
 		"hg-data-network": "hg_data_network", "data-nat-ip": "data_nat_ip", "bandwidth-size": "bandwidth_size",
 		"hd-control-network": "hd_control_network",

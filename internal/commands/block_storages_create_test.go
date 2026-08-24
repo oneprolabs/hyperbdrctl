@@ -63,7 +63,7 @@ func TestBlockStoragesCreateHelpShowsCloudAccountGuide(t *testing.T) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"--cloud-type", "--set stringArray", "--set-json stringArray", "--preview-request", "Providers:", "aliyun", "openstack", "huawei", "\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+	for _, unwanted := range []string{"--cloud-type", "--volume-proxy-type", "--set stringArray", "--set-json stringArray", "--preview-request", "Providers:", "aliyun", "openstack", "huawei", "\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
@@ -95,7 +95,7 @@ func TestBlockStoragesCreateProviderHelpUsesCloudAccountGuide(t *testing.T) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"--set stringArray", "--set-json stringArray", "--preview-request"} {
+	for _, unwanted := range []string{"--volume-proxy-type", "--set stringArray", "--set-json stringArray", "--preview-request"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("provider help should not expose %q: %q", unwanted, text)
 		}
@@ -329,6 +329,7 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 	}
 	for _, unwanted := range []string{
 		"--region-id string",
+		"--volume-proxy-type",
 		"--hg-control-network string",
 		"--hg-data-network string",
 		"--control-nat-ip string",
@@ -383,6 +384,22 @@ func TestBlockStoragesCreateRejectsBackendCloudType(t *testing.T) {
 	}
 }
 
+func TestBlockStoragesCreateRejectsVolumeProxyType(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute([]string{
+		"cloud-sync-gateway", "create",
+		"--cloud-type", "huawei",
+		"--cloud-account-id", "account-1",
+		"--volume-proxy-type", "custom",
+	}, &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined: -volume-proxy-type") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -427,15 +444,16 @@ func TestBlockStoragesCreateGenericProviderPreviewRequestBuildsBody(t *testing.T
 	}
 	metadata := createStorage["metadata"].(map[string]interface{})
 	for key, want := range map[string]string{
-		"region_id":            "cn-north-4",
-		"network_id":           "network-1",
-		"boot_loader_image_id": "boot-image-1",
-		"boot_types_id":        "boot_from_volume",
-		"volume_proxy_type":    "s3",
-		"hg_control_network":   "floating_ip_without_proxy",
-		"hg_data_network":      "floating_ip_without_proxy",
-		"hd_control_network":   "floating_ip_with_hg_proxy",
-		"system_disk_size":     "40",
+		"region_id":              "cn-north-4",
+		"network_id":             "network-1",
+		"boot_loader_image_id":   "boot-image-1",
+		"boot_types_id":          "boot_from_volume",
+		"volume_proxy_type":      "s3",
+		"volume_proxy_type_name": "S3Block",
+		"hg_control_network":     "floating_ip_without_proxy",
+		"hg_data_network":        "floating_ip_without_proxy",
+		"hd_control_network":     "floating_ip_with_hg_proxy",
+		"system_disk_size":       "40",
 	} {
 		if metadata[key] != want {
 			t.Fatalf("metadata[%q] = %#v, want %q", key, metadata[key], want)
@@ -647,7 +665,6 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 		"--boot-loader-image-id",
 		"--boot-types-id string",
 		"boot_from_volume",
-		"default s3",
 		"floating_ip_without_proxy",
 		"cloud-resource fetch",
 		"cloud-sync-gateway detail --id <storage_id>",
@@ -657,7 +674,7 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"--set stringArray", "--set-json stringArray", "--preview-request"} {
+	for _, unwanted := range []string{"--volume-proxy-type", "--set stringArray", "--set-json stringArray", "--preview-request"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("openstack help should not expose %q: %q", unwanted, text)
 		}

@@ -28,7 +28,8 @@ func buildGeneric(spec Spec) (string, map[string]interface{}, error) {
 	putMetadataString(metadata, "boot_loader_flavor_id", spec.BootLoaderFlavorID)
 	putMetadataString(metadata, "project_domain_id", spec.ProjectDomainID)
 	putMetadataString(metadata, "boot_types_id", spec.BootTypesID)
-	putMetadataString(metadata, "volume_proxy_type", spec.VolumeProxyType)
+	metadata["volume_proxy_type"] = defaultVolumeProxyType
+	metadata["volume_proxy_type_name"] = defaultVolumeProxyTypeName
 	putMetadataString(metadata, "hg_control_network", spec.HGControlNetwork)
 	putMetadataString(metadata, "control_nat_ip", spec.ControlNATIP)
 	putMetadataString(metadata, "hg_data_network", spec.HGDataNetwork)

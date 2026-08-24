@@ -384,15 +384,6 @@ func formatAliyunGatewayRAM(value interface{}) string {
 	}
 }
 
-func aliyunGatewayVolumeProxyTypeName(proxyType string) string {
-	switch proxyType {
-	case "s3":
-		return "S3Block"
-	default:
-		return proxyType
-	}
-}
-
 func aliyunGatewayControlNetworkName(mode string) string {
 	switch mode {
 	case "floating_ip_without_proxy", "floating_ip_with_hg_proxy":
@@ -545,15 +536,6 @@ func openStackBootTypeName(bootTypeID string) string {
 		return "\u955c\u50cf\u542f\u52a8"
 	default:
 		return bootTypeID
-	}
-}
-
-func openStackVolumeProxyTypeName(proxyType string) string {
-	switch proxyType {
-	case "s3":
-		return "S3Block"
-	default:
-		return proxyType
 	}
 }
 

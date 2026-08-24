@@ -26,7 +26,6 @@ func TestBuildRequestGenericProviderFallsBackToGenericBuilder(t *testing.T) {
 		RegionID:           "cn-north-4",
 		NetworkID:          "network-1",
 		BootTypesID:        "boot_from_volume",
-		VolumeProxyType:    "s3",
 		HGControlNetwork:   "floating_ip_without_proxy",
 		HGDataNetwork:      "floating_ip_without_proxy",
 		HDControlNetwork:   "floating_ip_with_hg_proxy",
@@ -45,15 +44,16 @@ func TestBuildRequestGenericProviderFallsBackToGenericBuilder(t *testing.T) {
 	}
 	metadata := createStorage["metadata"].(map[string]interface{})
 	for key, want := range map[string]string{
-		"region_id":             "cn-north-4",
-		"network_id":            "network-1",
-		"boot_types_id":         "boot_from_volume",
-		"volume_proxy_type":     "s3",
-		"hg_control_network":    "floating_ip_without_proxy",
-		"hg_data_network":       "floating_ip_without_proxy",
-		"hd_control_network":    "floating_ip_with_hg_proxy",
-		"boot_loader_image_id":  "boot-image-1",
-		"boot_loader_flavor_id": "boot-flavor-1",
+		"region_id":              "cn-north-4",
+		"network_id":             "network-1",
+		"boot_types_id":          "boot_from_volume",
+		"volume_proxy_type":      "s3",
+		"volume_proxy_type_name": "S3Block",
+		"hg_control_network":     "floating_ip_without_proxy",
+		"hg_data_network":        "floating_ip_without_proxy",
+		"hd_control_network":     "floating_ip_with_hg_proxy",
+		"boot_loader_image_id":   "boot-image-1",
+		"boot_loader_flavor_id":  "boot-flavor-1",
 	} {
 		if metadata[key] != want {
 			t.Fatalf("metadata[%q] = %#v, want %q", key, metadata[key], want)
