@@ -1160,13 +1160,8 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 		{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 		{name: "help"},
 	}
-	commonCommand := []flagHelpSpec{
-		{name: "set"},
-		{name: "set-json"},
-		{name: "preview-request"},
-	}
 	withCommonCommand := func(specs []flagHelpSpec) []flagHelpSpec {
-		return append(append(specs, commonCommand...), commonGlobal...)
+		return append(specs, commonGlobal...)
 	}
 	genericProvider := []flagHelpSpec{
 		{name: "cloud-type", required: true},

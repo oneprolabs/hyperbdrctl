@@ -55,8 +55,6 @@ func TestBlockStoragesCreateHelpShowsCloudAccountGuide(t *testing.T) {
 		"Usage:",
 		"\nFlags:\n",
 		"--cloud-account-id",
-		"--set stringArray",
-		"--set-json stringArray",
 		"Usage Notes:",
 		"hyperbdrctl cloud-account list --storage-type block",
 		"hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> --help",
@@ -65,7 +63,7 @@ func TestBlockStoragesCreateHelpShowsCloudAccountGuide(t *testing.T) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"--cloud-type", "Providers:", "aliyun", "openstack", "huawei", "\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+	for _, unwanted := range []string{"--cloud-type", "--set stringArray", "--set-json stringArray", "--preview-request", "Providers:", "aliyun", "openstack", "huawei", "\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("help should not include %q: %q", unwanted, text)
 		}
@@ -88,9 +86,6 @@ func TestBlockStoragesCreateProviderHelpUsesCloudAccountGuide(t *testing.T) {
 		"Usage Notes:",
 		"Parameter Sources:",
 		"--cloud-account-id",
-		"--set stringArray",
-		"--set-json stringArray",
-		"--preview-request",
 		"Usage: hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> [flags]",
 		"cloud-sync-gateway create --cloud-account-id <account_id>",
 		"cloud-sync-gateway detail --id <storage_id>",
@@ -98,6 +93,11 @@ func TestBlockStoragesCreateProviderHelpUsesCloudAccountGuide(t *testing.T) {
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"--set stringArray", "--set-json stringArray", "--preview-request"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("provider help should not expose %q: %q", unwanted, text)
 		}
 	}
 	for _, unwanted := range []string{"\nCommands:\n", "\nWorkflow:\n", "\nMinimum Flags:\n", "\nCommon Optional Flags:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
@@ -345,8 +345,8 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 	if strings.Count(text, "--boot-loader-image-id <image_id>") != 1 {
 		t.Fatalf("boot loader image dynamic parameter should be rendered once: %q", text)
 	}
-	if strings.Index(text, "可按需补充以下动态参数：") > strings.Index(text, "如需先检查最终请求体，可附加下面的参数：") {
-		t.Fatalf("dynamic parameters must appear before preview guidance: %q", text)
+	if strings.Contains(text, "如需先检查最终请求体，可附加下面的参数：") || strings.Contains(text, "--preview-request") {
+		t.Fatalf("gateway help must not advertise request preview: %q", text)
 	}
 
 	out.Reset()
@@ -650,12 +650,16 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 		"default s3",
 		"floating_ip_without_proxy",
 		"cloud-resource fetch",
-		"--preview-request",
 		"cloud-sync-gateway detail --id <storage_id>",
 		"cloud-sync-gateway wait --id <storage_id>",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{"--set stringArray", "--set-json stringArray", "--preview-request"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("openstack help should not expose %q: %q", unwanted, text)
 		}
 	}
 	if strings.Contains(text, "cloud-sync-gateway subnet-config") {

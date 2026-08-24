@@ -49,16 +49,6 @@ const (
 
 省略 --system-disk-size 时，系统盘大小默认使用 40 GiB。
 
-如需覆盖 metadata 字段，可重复附加：
-  --set path=value
-  --set-json path=<json>
-
-路径相对 create_storage.metadata。覆盖顺序固定为：
-  --set-json < --set < 显式创建参数
-
-如需先检查最终请求体，可附加下面的参数：
-  --preview-request
-
 创建返回云同步网关 ID 后，等待任务完成：
   hyperbdrctl cloud-sync-gateway wait --id <storage_id>
 
@@ -111,16 +101,6 @@ const (
 
 省略 --system-disk-size 时，系统盘大小默认使用 40 GiB。
 
-如需覆盖 metadata 字段，可重复附加：
-  --set path=value
-  --set-json path=<json>
-
-路径相对 create_storage.metadata。覆盖顺序固定为：
-  --set-json < --set < 显式创建参数
-
-如需先检查最终请求体，可附加下面的参数：
-  --preview-request
-
 创建返回云同步网关 ID 后，等待任务完成：
   hyperbdrctl cloud-sync-gateway wait --id <storage_id>
 
@@ -167,16 +147,6 @@ const (
     --subnet-id <subnet_id> \
     --volume-type-id <volume_type_id> \
     --block-store-zone-id <block_store_zone_id>
-
-如需覆盖 metadata 字段，可重复附加：
-  --set path=value
-  --set-json path=<json>
-
-路径相对 create_storage.metadata。覆盖顺序固定为：
-  --set-json < --set < 显式创建参数
-
-如需先检查最终请求体，可附加下面的参数：
-  --preview-request
 
 创建返回云同步网关 ID 后，等待任务完成：
   hyperbdrctl cloud-sync-gateway wait --id <storage_id>
@@ -231,16 +201,6 @@ The minimum create command is:
 
 The system disk size defaults to 40 GiB when omitted.
 
-To override metadata fields, repeat either flag as needed:
-  --set path=value
-  --set-json path=<json>
-
-Paths are relative to create_storage.metadata. The override order is:
-  --set-json < --set < explicit create flags
-
-To inspect the final request body first, add:
-  --preview-request
-
 After create returns a cloud sync gateway ID, wait for the task to complete:
   hyperbdrctl cloud-sync-gateway wait --id <storage_id>
 
@@ -293,16 +253,6 @@ The minimum create command is:
 
 The system disk size defaults to 40 GiB when omitted.
 
-To override metadata fields, repeat either flag as needed:
-  --set path=value
-  --set-json path=<json>
-
-Paths are relative to create_storage.metadata. The override order is:
-  --set-json < --set < explicit create flags
-
-To inspect the final request body first, add:
-  --preview-request
-
 After create returns a cloud sync gateway ID, wait for the task to complete:
   hyperbdrctl cloud-sync-gateway wait --id <storage_id>
 
@@ -349,16 +299,6 @@ After adding the key fields from the resource flow, run:
     --subnet-id <subnet_id> \
     --volume-type-id <volume_type_id> \
     --block-store-zone-id <block_store_zone_id>
-
-To override metadata fields, repeat either flag as needed:
-  --set path=value
-  --set-json path=<json>
-
-Paths are relative to create_storage.metadata. The override order is:
-  --set-json < --set < explicit create flags
-
-To inspect the final request body first, add:
-  --preview-request
 
 After create returns a cloud sync gateway ID, wait for the task to complete:
   hyperbdrctl cloud-sync-gateway wait --id <storage_id>

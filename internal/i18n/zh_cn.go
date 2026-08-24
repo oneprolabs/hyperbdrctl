@@ -391,7 +391,7 @@ var zhCN = map[string]string{
 	"cmd.cloud_sync_gateway.create.openstack.short":                    "创建 OpenStack 云同步网关",
 	"cmd.cloud_sync_gateway.create.usage_line":                         "hyperbdrctl cloud-sync-gateway create [参数]",
 	"cmd.cloud_sync_gateway.create.examples":                           "./hyperbdrctl cloud-sync-gateway create --cloud-type aliyun --cloud-account-id <account_id>\n./hyperbdrctl cloud-sync-gateway create --cloud-type openstack --cloud-account-id <account_id> --boot-loader-image-id <windows_image_id>",
-	"cmd.cloud_sync_gateway.create.usage_notes":                        "云同步网关创建引导入口，用于根据云账号查看对应创建参数。\n\n先查询可用云账号：\n  hyperbdrctl cloud-account list --storage-type block\n\n使用云账号 ID 查看对应创建参数：\n  hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> --help\n\n如需覆盖 metadata 路径，可重复附加：\n  --set path=value\n  --set-json path=<json>\n\n路径相对 create_storage.metadata。覆盖顺序固定为：\n  --set-json < --set < 显式创建参数\n\n可附加下面的参数检查最终请求体：\n  --preview-request",
+	"cmd.cloud_sync_gateway.create.usage_notes":                        "云同步网关创建引导入口，用于根据云账号查看对应创建参数。\n\n先查询可用云账号：\n  hyperbdrctl cloud-account list --storage-type block\n\n使用云账号 ID 查看对应创建参数：\n  hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> --help",
 	"cmd.cloud_sync_gateway.create.account.usage_line":                 "hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> [参数]",
 	"cmd.cloud_sync_gateway.create.provider.usage_line":                "hyperbdrctl cloud-sync-gateway create --cloud-type %s [参数]",
 	"help.cloud_sync_gateway.create.aliyun":                            cloudSyncGatewayCreateAliyunZH,
