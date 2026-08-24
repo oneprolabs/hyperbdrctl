@@ -325,7 +325,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "block huawei generic",
 			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--auth-region-id string", "Optional dynamic parameters:", "--account-name <name>", "--auth-project-id <project_id>", "--set stringArray", "--set-json stringArray", "cloud-resource fetch --cloud-type huawei --storage-type block", "cloud-account wait --id <account_id>"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--auth-region-id string", "Optional dynamic parameters:", "--account-name <name>", "Cloud account name", "--auth-project-id <project_id>", "Subproject ID", "--set stringArray", "--set-json stringArray", "cloud-resource fetch --cloud-type huawei --storage-type block", "cloud-account wait --id <account_id>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -549,7 +549,7 @@ func TestCloudAccountCreateAtomyDynamicParameterHelp(t *testing.T) {
 			for _, want := range []string{
 				"Optional dynamic parameters:",
 				"--account-name <name>",
-				"Cloud account name; sent as metadata.account_name",
+				"Cloud account name",
 			} {
 				if !strings.Contains(text, want) {
 					t.Fatalf("help missing %q: %q", want, text)
@@ -558,8 +558,8 @@ func TestCloudAccountCreateAtomyDynamicParameterHelp(t *testing.T) {
 			if strings.Contains(text, "--account-name string") {
 				t.Fatalf("dynamic parameter must not be rendered in Flags: %q", text)
 			}
-			if strings.Contains(text, "metadata.account_name.") {
-				t.Fatalf("dynamic parameter description must not end with a period: %q", text)
+			if strings.Contains(text, "metadata.account_name") {
+				t.Fatalf("dynamic parameter description must not expose metadata path: %q", text)
 			}
 			if strings.Count(text, "--account-name <name>") != 1 {
 				t.Fatalf("dynamic parameter should be rendered once: %q", text)
@@ -582,7 +582,9 @@ func TestCloudAccountCreateAtomyDynamicParameterHelp(t *testing.T) {
 		for _, want := range []string{
 			"可按需补充以下动态参数：",
 			"--account-name <name>",
-			"云账号名称，会写入 metadata.account_name",
+			"云账号名称",
+			"--auth-project-id <project_id>",
+			"子项目 ID",
 		} {
 			if !strings.Contains(text, want) {
 				t.Fatalf("help missing %q: %q", want, text)
@@ -591,8 +593,8 @@ func TestCloudAccountCreateAtomyDynamicParameterHelp(t *testing.T) {
 		if strings.Contains(text, "--account-name string") || strings.Count(text, "--account-name <name>") != 1 {
 			t.Fatalf("localized dynamic parameter placement is invalid: %q", text)
 		}
-		if strings.Contains(text, "metadata.account_name。") {
-			t.Fatalf("localized dynamic parameter description must not end with a full stop: %q", text)
+		if strings.Contains(text, "metadata.account_name") {
+			t.Fatalf("localized dynamic parameter description must not expose metadata path: %q", text)
 		}
 	})
 
