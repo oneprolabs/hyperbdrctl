@@ -95,9 +95,9 @@ func TestBlockStoragesCreateProviderHelpUsesCloudAccountGuide(t *testing.T) {
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"--volume-proxy-type", "--set stringArray", "--set-json stringArray", "--preview-request"} {
-		if strings.Contains(text, unwanted) {
-			t.Fatalf("provider help should not expose %q: %q", unwanted, text)
+	for _, want := range []string{"--set stringArray", "--set-json stringArray", "--preview-request"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("provider help should retain %q: %q", want, text)
 		}
 	}
 	for _, unwanted := range []string{"\nCommands:\n", "\nWorkflow:\n", "\nMinimum Flags:\n", "\nCommon Optional Flags:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
@@ -203,6 +203,10 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"--boot-types-id string",
 				"Usage: hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> [flags]",
 				"--fetch-res regions,compute_zones,projects",
+				"--set stringArray",
+				"--set-json stringArray",
+				"--preview-request",
+				"To inspect the final request body first, add:",
 				"cloud-sync-gateway wait --id <storage_id>",
 			},
 			unwanted: []string{
@@ -398,8 +402,8 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 		}
 		lastIndex = index
 	}
-	if strings.Contains(text, "如需先检查最终请求体，可附加下面的参数：") || strings.Contains(text, "--preview-request") {
-		t.Fatalf("gateway help must not advertise request preview: %q", text)
+	if strings.Index(text, "可按需补充以下动态参数：") > strings.Index(text, "如需先检查最终请求体，可附加下面的参数：") {
+		t.Fatalf("dynamic parameters must appear before preview guidance: %q", text)
 	}
 
 	out.Reset()
@@ -726,9 +730,9 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 			t.Fatalf("help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"--volume-proxy-type", "--set stringArray", "--set-json stringArray", "--preview-request"} {
-		if strings.Contains(text, unwanted) {
-			t.Fatalf("openstack help should not expose %q: %q", unwanted, text)
+	for _, want := range []string{"--set stringArray", "--set-json stringArray", "--preview-request"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("openstack help should retain %q: %q", want, text)
 		}
 	}
 	if strings.Contains(text, "cloud-sync-gateway subnet-config") {

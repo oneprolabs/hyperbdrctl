@@ -578,7 +578,7 @@ func TestTargetCloudSyncGatewayCreateHelpUsesAccountGuideLayout(t *testing.T) {
 			t.Fatalf("cloud-sync-gateway create help missing %q: %q", want, text)
 		}
 	}
-	for _, unwanted := range []string{"--cloud-type", "--set stringArray", "--set-json stringArray", "--preview-request", "Providers:", "aliyun", "openstack", "huawei", "\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
+	for _, unwanted := range []string{"--cloud-type", "Providers:", "aliyun", "openstack", "huawei", "\nCommands:\n", "\nExamples:\n", "\nNotes:\n", "\nWorkflow:\n", "\nRelated Commands:\n", "\nNext Steps:\n"} {
 		if strings.Contains(text, unwanted) {
 			t.Fatalf("cloud-sync-gateway create help should not include %q: %q", unwanted, text)
 		}
