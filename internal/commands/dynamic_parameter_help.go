@@ -61,6 +61,13 @@ var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
 			{Flag: "account-name", Placeholder: "<name>", DescriptionKey: "help.dynamic_parameter.account_name"},
 		},
 	},
+	"huawei-block-cloud-account-auth-project": {
+		Key:      "huawei-block-cloud-account-auth-project",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{Flag: "auth-project-id", Placeholder: "<project_id>", DescriptionKey: "help.dynamic_parameter.auth_project_id"},
+		},
+	},
 	"atomy-v2-cloud-sync-gateway": {
 		Key:      "atomy-v2-cloud-sync-gateway",
 		TitleKey: "help.dynamic_parameter.optional",
@@ -107,6 +114,12 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		GroupKey:     "atomy-v2-cloud-account",
 		Command:      dynamicParameterHelpCloudAccountCreate,
 		Architecture: catalog.AtomyV2,
+	},
+	{
+		GroupKey:    "huawei-block-cloud-account-auth-project",
+		Command:     dynamicParameterHelpCloudAccountCreate,
+		Provider:    "huawei",
+		StorageType: "block",
 	},
 	{
 		GroupKey:     "atomy-v2-cloud-sync-gateway",
@@ -159,8 +172,15 @@ func prepareDynamicParameterHelp(ctx *context, notes string, helpContext dynamic
 
 func renderDynamicParameterHelp(ctx *context, groups []dynamicParameterHelpGroup) string {
 	var text strings.Builder
+	lastTitleKey := ""
 	for _, group := range groups {
-		text.WriteString(ctx.loc.T(group.TitleKey))
+		if group.TitleKey != lastTitleKey {
+			if text.Len() > 0 {
+				text.WriteString("\n\n")
+			}
+			text.WriteString(ctx.loc.T(group.TitleKey))
+			lastTitleKey = group.TitleKey
+		}
 		for index, parameter := range group.Parameters {
 			if index > 0 {
 				text.WriteString("\n")

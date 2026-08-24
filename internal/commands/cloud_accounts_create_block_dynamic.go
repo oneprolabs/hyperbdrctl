@@ -66,7 +66,7 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 		case "storage-type":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("storage-type cannot be used with %s", commandName)
 		case "region-id", "region-name":
-			if cloudType == "aliyun_bs" {
+			if cloudType == "aliyun_bs" || cloudType == "huawei_bs" {
 				return parsedCloudAccountCreateCommand{}, fmt.Errorf("%s cannot be used with %s; use --auth-region-id", name, commandName)
 			}
 			v, next, err := strictFlagValue(args, i, value, hasInline)

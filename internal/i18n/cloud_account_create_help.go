@@ -45,11 +45,8 @@ const (
   --access-key-secret string
     使用华为云账号的 Access Key Secret。
 
-  --region-id string
-    创建云账号前需要先确认目标区域 ID。
-
-  --region-name string
-    只有在需要保存地域显示名称时，才按需补充。
+  --auth-region-id string
+    创建云账号前需要先确认认证地域 ID。
 
 资源获取：
   先查询区域列表：
@@ -63,7 +60,7 @@ const (
   hyperbdrctl cloud-account create --cloud-type huawei --storage-type block \
     --access-key-id <ak> \
     --access-key-secret <sk> \
-    --region-id <region_id>
+    --auth-region-id <auth_region_id>
 
 如需保存云账号显示名称，可按需附加：
   --account-name <name>

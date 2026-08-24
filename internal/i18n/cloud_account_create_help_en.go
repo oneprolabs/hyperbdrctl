@@ -42,11 +42,8 @@ Parameter Sources:
   --access-key-secret string
     Use the Access Key Secret from the Huawei Cloud account.
 
-  --region-id string
-    Confirm the target region ID before creating the cloud account.
-
-  --region-name string
-    Add this only when you need to save the region display name.
+  --auth-region-id string
+    Confirm the authentication region ID before creating the cloud account.
 
 Resource Retrieval:
   Query the region list first:
@@ -60,7 +57,7 @@ The minimum create command is:
   hyperbdrctl cloud-account create --cloud-type huawei --storage-type block \
     --access-key-id <ak> \
     --access-key-secret <sk> \
-    --region-id <region_id>
+    --auth-region-id <auth_region_id>
 
 To save a cloud account display name, optionally add:
   --account-name <name>

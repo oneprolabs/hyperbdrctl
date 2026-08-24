@@ -186,6 +186,49 @@ func TestCloudAccountsCreateBlockAliyunHelpUsesAuthRegionID(t *testing.T) {
 	}
 }
 
+func TestCloudAccountsCreateBlockHuaweiUsesAuthRegionAndProjectID(t *testing.T) {
+	path, body := executeCloudAccountCreateAtPath(t, []string{
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--auth-region-id", "cn-north-4",
+		"--auth-project-id", "project-1",
+	})
+	if path != "/hypermotion/v1/cloud_accounts" {
+		t.Fatalf("path = %q", path)
+	}
+	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	if metadata["auth_region_id"] != "cn-north-4" || metadata["auth_project_id"] != "project-1" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+	for _, key := range []string{"region_id", "region_name"} {
+		if _, ok := metadata[key]; ok {
+			t.Fatalf("metadata must not contain %s: %+v", key, metadata)
+		}
+	}
+}
+
+func TestCloudAccountsCreateBlockHuaweiRejectsLegacyRegionFlags(t *testing.T) {
+	for _, flag := range []string{"region-id", "region-name"} {
+		t.Run(flag, func(t *testing.T) {
+			dir := t.TempDir()
+			setUserDirs(t, dir)
+
+			var out, errOut bytes.Buffer
+			err := Execute(withHost(t, "https://example.invalid",
+				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
+				"--access-key-id", "ak",
+				"--access-key-secret", "sk",
+				"--auth-region-id", "cn-north-4",
+				"--"+flag, "legacy-region",
+			), &out, &errOut)
+			if err == nil || !strings.Contains(err.Error(), "use --auth-region-id") {
+				t.Fatalf("err = %v", err)
+			}
+		})
+	}
+}
+
 func TestCloudAccountsCreateBlockOpenStackUsesValidatedWorkflow(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block",
@@ -282,7 +325,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "block huawei generic",
 			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--region-id string", "Optional dynamic parameters:", "--account-name <name>", "--set stringArray", "--set-json stringArray", "cloud-resource fetch --cloud-type huawei --storage-type block", "cloud-account wait --id <account_id>"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--auth-region-id string", "Optional dynamic parameters:", "--account-name <name>", "--auth-project-id <project_id>", "--set stringArray", "--set-json stringArray", "cloud-resource fetch --cloud-type huawei --storage-type block", "cloud-account wait --id <account_id>"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -297,6 +340,8 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				"--password <password>",
 				"--access-id <ak>",
 				"--access-secret <sk>",
+				"--region-id string",
+				"--region-name string",
 				"If both AK/SK-style and username/password-style flags are present",
 			},
 			orderWant: []string{"Usage:", "\nFlags:\n", "Usage Notes:"},
@@ -680,8 +725,8 @@ func TestCloudAccountArchivedHelpCopyIsLocalized(t *testing.T) {
 		{
 			name: "huawei block",
 			path: []string{"create", "--cloud-type", "huawei", "--storage-type", "block"},
-			zh:   []string{"创建华为云块存储账号", "区域 ID（必须）", "cloud-resource fetch --cloud-type huawei --storage-type block", "--account-name <name>"},
-			en:   []string{"Create Huawei Cloud block-storage account", "Region ID (required)", "cloud-resource fetch --cloud-type huawei --storage-type block", "--account-name <name>"},
+			zh:   []string{"创建华为云块存储账号", "认证地域 ID（必须）", "cloud-resource fetch --cloud-type huawei --storage-type block", "--auth-project-id <project_id>"},
+			en:   []string{"Create Huawei Cloud block-storage account", "Authentication region ID (required)", "cloud-resource fetch --cloud-type huawei --storage-type block", "--auth-project-id <project_id>"},
 		},
 		{
 			name: "openstack block",
@@ -821,7 +866,7 @@ func TestCloudAccountsCreateBlockGenericProviderFallsBackToGenericBuilder(t *tes
 		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
-		"--region-id", "cn-north-1",
+		"--auth-region-id", "cn-north-1",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -838,7 +883,7 @@ func TestCloudAccountsCreateBlockGenericProviderInfersAKSKFromAliasFlags(t *test
 		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--access-id", "ak",
 		"--access-secret", "sk",
-		"--region-id", "cn-north-1",
+		"--auth-region-id", "cn-north-1",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -918,7 +963,7 @@ func TestCloudAccountsCreateHuaweiBlockRejectsCloudAuthType(t *testing.T) {
 	}
 }
 
-func TestCloudAccountsCreateHuaweiBlockRequiresRegionID(t *testing.T) {
+func TestCloudAccountsCreateHuaweiBlockRequiresAuthRegionID(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
 
@@ -928,7 +973,7 @@ func TestCloudAccountsCreateHuaweiBlockRequiresRegionID(t *testing.T) {
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 	), &out, &errOut)
-	if err == nil || err.Error() != "region-id is required" {
+	if err == nil || err.Error() != "auth-region-id is required" {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -964,7 +1009,7 @@ func TestCloudAccountsCreateBlockGenericFileSetAndFlagOverrides(t *testing.T) {
 		"--account-name", "flag-name",
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
-		"--region-id", "cn-north-1",
+		"--auth-region-id", "cn-north-1",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -1135,7 +1180,7 @@ func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetada
 				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 				"--access-key-id", "ak",
 				"--access-key-secret", "sk",
-				"--region-id", "cn-north-1",
+				"--auth-region-id", "cn-north-1",
 				"--host", "https://legacy.invalid",
 			},
 			wantKey: "host",
@@ -1249,7 +1294,7 @@ func TestCloudAccountsCreateBlockGenericAliasValidationKeepsFieldErrors(t *testi
 	err := Execute(withHost(t, "https://example.invalid",
 		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "block",
 		"--access-id", "ak",
-		"--region-id", "cn-north-1",
+		"--auth-region-id", "cn-north-1",
 	), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "access-secret is required") {
 		t.Fatalf("err = %v", err)

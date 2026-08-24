@@ -8,7 +8,7 @@ func TestBuildRequestFallsBackToGenericBlock(t *testing.T) {
 		StorageType:     "block",
 		AccessKeyID:     "ak",
 		AccessKeySecret: "sk",
-		RegionID:        "cn-north-1",
+		AuthRegionID:    "cn-north-1",
 	})
 	if err != nil {
 		t.Fatalf("err = %v", err)
@@ -87,7 +87,7 @@ func TestBuildRequestUsesAccessAliasMetadataWhenProvided(t *testing.T) {
 		StorageType:  "block",
 		AccessID:     "ak",
 		AccessSecret: "sk",
-		RegionID:     "cn-north-1",
+		AuthRegionID: "cn-north-1",
 	})
 	if err != nil {
 		t.Fatalf("err = %v", err)
@@ -105,14 +105,14 @@ func TestBuildRequestUsesAccessAliasMetadataWhenProvided(t *testing.T) {
 	}
 }
 
-func TestBuildRequestRequiresRegionForHuaweiBlock(t *testing.T) {
+func TestBuildRequestRequiresAuthRegionForHuaweiBlock(t *testing.T) {
 	_, _, err := BuildRequest(Spec{
 		CloudType:       "huawei_bs",
 		StorageType:     "block",
 		AccessKeyID:     "ak",
 		AccessKeySecret: "sk",
 	})
-	if err == nil || err.Error() != "region-id is required" {
+	if err == nil || err.Error() != "auth-region-id is required" {
 		t.Fatalf("err = %v", err)
 	}
 }
