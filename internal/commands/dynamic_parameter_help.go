@@ -68,6 +68,17 @@ var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
 			{Flag: "auth-project-id", Placeholder: "<project_id>", DescriptionKey: "help.dynamic_parameter.auth_project_id"},
 		},
 	},
+	"openstack-block-cloud-account-image-access": {
+		Key:      "openstack-block-cloud-account-image-access",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{Flag: "ssh-port", Placeholder: "<port>", DescriptionKey: "help.target_account_create_block_openstack.flag.ssh-port", DefaultValue: "22"},
+			{Flag: "ssh-pass", Placeholder: "<password>", DescriptionKey: "help.target_account_create_block_openstack.flag.ssh-pass"},
+			{Flag: "linux-hd-username", Placeholder: "<username>", DescriptionKey: "help.target_account_create_block_openstack.flag.linux-hd-username"},
+			{Flag: "linux-hd-password", Placeholder: "<password>", DescriptionKey: "help.target_account_create_block_openstack.flag.linux-hd-password"},
+			{Flag: "linux-hd-port", Placeholder: "<port>", DescriptionKey: "help.target_account_create_block_openstack.flag.linux-hd-port", DefaultValue: "10729"},
+		},
+	},
 	"atomy-v2-cloud-sync-gateway": {
 		Key:      "atomy-v2-cloud-sync-gateway",
 		TitleKey: "help.dynamic_parameter.optional",
@@ -119,6 +130,12 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		GroupKey:    "huawei-block-cloud-account-auth-project",
 		Command:     dynamicParameterHelpCloudAccountCreate,
 		Provider:    "huawei",
+		StorageType: "block",
+	},
+	{
+		GroupKey:    "openstack-block-cloud-account-image-access",
+		Command:     dynamicParameterHelpCloudAccountCreate,
+		Provider:    "openstack",
 		StorageType: "block",
 	},
 	{

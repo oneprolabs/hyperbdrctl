@@ -610,9 +610,80 @@ func TestCloudAccountCreateAtomyDynamicParameterHelp(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if text := out.String(); strings.Contains(text, "Optional dynamic parameters:") || strings.Contains(text, "--account-name <name>") {
-				t.Fatalf("non-Atomy help must not include Atomy dynamic parameter: %q", text)
+			if text := out.String(); strings.Contains(text, "--account-name <name>") || strings.Contains(text, "--account-name string") {
+				t.Fatalf("non-Atomy help must not include the Atomy account-name parameter: %q", text)
 			}
+		})
+	}
+}
+
+func TestCloudAccountCreateOpenStackBlockImageAccessDynamicParameterHelp(t *testing.T) {
+	cases := []struct {
+		name     string
+		language string
+		want     []string
+	}{
+		{
+			name:     "english",
+			language: "en",
+			want: []string{
+				"Optional dynamic parameters:",
+				"--ssh-port <port>", "Cloud-sync-gateway image SSH port", "Default: 22",
+				"--ssh-pass <password>", "Cloud-sync-gateway image SSH root password",
+				"--linux-hd-username <username>", "Transition host image username",
+				"--linux-hd-password <password>", "Transition host image password",
+				"--linux-hd-port <port>", "Transition host image communication port", "Default: 10729",
+			},
+		},
+		{
+			name:     "chinese",
+			language: "zh_cn",
+			want: []string{
+				"可按需补充以下动态参数：",
+				"--ssh-port <port>", "云同步网关镜像 SSH 端口", "默认值：22",
+				"--ssh-pass <password>", "云同步网关镜像 SSH root 密码",
+				"--linux-hd-username <username>", "过渡主机镜像用户名",
+				"--linux-hd-password <password>", "过渡主机镜像密码",
+				"--linux-hd-port <port>", "过渡主机镜像通讯端口", "默认值：10729",
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			err := Execute([]string{
+				"--lang", tt.language, "cloud-account", "create",
+				"--cloud-type", "openstack",
+				"--storage-type", "block",
+				"--help",
+			}, &out, &errOut)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			text := out.String()
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			for _, flag := range []string{"ssh-port", "ssh-pass", "linux-hd-username", "linux-hd-password", "linux-hd-port"} {
+				if strings.Contains(text, "--"+flag+" string") {
+					t.Fatalf("dynamic parameter --%s must not be rendered in Flags: %q", flag, text)
+				}
+			}
+			if strings.Count(text, tt.want[0]) != 1 {
+				t.Fatalf("dynamic parameter title must be rendered once: %q", text)
+			}
+			assertContainsInOrder(t, text,
+				"--ssh-port <port>",
+				"--ssh-pass <password>",
+				"--linux-hd-username <username>",
+				"--linux-hd-password <password>",
+				"--linux-hd-port <port>",
+				"--preview-request",
+			)
 		})
 	}
 }
@@ -733,8 +804,8 @@ func TestCloudAccountArchivedHelpCopyIsLocalized(t *testing.T) {
 		{
 			name: "openstack block",
 			path: []string{"create", "--cloud-type", "openstack", "--storage-type", "block"},
-			zh:   []string{"创建 OpenStack 块存储账号", "OpenStack RC 文件", "创建本身不依赖前置资源查询", "--linux-hd-port string"},
-			en:   []string{"Create OpenStack block-storage account", "OpenStack RC File", "does not require a resource query first", "--linux-hd-port string"},
+			zh:   []string{"创建 OpenStack 块存储账号", "OpenStack RC 文件", "创建本身不依赖前置资源查询", "--linux-hd-port <port>"},
+			en:   []string{"Create OpenStack block-storage account", "OpenStack RC File", "does not require a resource query first", "--linux-hd-port <port>"},
 		},
 		{
 			name: "aliyun object",
