@@ -125,9 +125,6 @@ func resolveCloudAccountCreateProfile(selection cloudAccountCreateSelection) (cl
 
 func renderCloudAccountCreateHelp(ctx *context, cmd *cobra.Command, selection cloudAccountCreateSelection) error {
 	profile := "generic"
-	if selection.PublicStorageType == "" && selection.Provider == "" {
-		addAnnotationValue(cmd, usageNotesAnnotation, removeCloudAccountCreateLegacyPreviewHelp(ctx.loc.T("cmd.cloud_account.create.usage_notes")))
-	}
 	switch {
 	case selection.PublicStorageType == "block" && selection.Provider == "":
 		profile = "block_storage"

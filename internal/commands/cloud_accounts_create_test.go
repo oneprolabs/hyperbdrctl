@@ -439,7 +439,7 @@ func TestCloudAccountsCreateHelpDynamicallyAddsSupplementalFlags(t *testing.T) {
 				overrideIndex := strings.Index(text, label.overrides)
 				previewIndex := strings.Index(text, label.preview)
 				nextIndex := strings.Index(text, label.next)
-				if overrideIndex < 0 || previewIndex <= overrideIndex || nextIndex <= previewIndex {
+				if nextIndex < 0 || overrideIndex <= nextIndex || previewIndex <= overrideIndex {
 					t.Fatalf("supplemental help order is invalid: %q", text)
 				}
 				if strings.Contains(text, "Optional dynamic parameters:") || strings.Contains(text, "可按需补充以下动态参数：") {

@@ -134,9 +134,17 @@ func dynamicParameterHelpContextFromCommand(cmd *cobra.Command) dynamicParameter
 }
 
 func appendDynamicParameterHelp(ctx *context, notes string, helpContext dynamicParameterHelpContext) string {
+	notes, dynamicText := prepareDynamicParameterHelp(ctx, notes, helpContext)
+	return insertDynamicParameterHelpBeforePreview(notes, dynamicText)
+}
+
+// prepareDynamicParameterHelp removes legacy copies of matching dynamic help and
+// renders the matching groups. Callers that own a structured usage-note layout
+// can append the returned text at an explicit position.
+func prepareDynamicParameterHelp(ctx *context, notes string, helpContext dynamicParameterHelpContext) (string, string) {
 	groups := matchingDynamicParameterHelpGroups(helpContext)
 	if len(groups) == 0 {
-		return notes
+		return notes, ""
 	}
 
 	for _, group := range groups {
@@ -146,8 +154,7 @@ func appendDynamicParameterHelp(ctx *context, notes string, helpContext dynamicP
 			notes = strings.ReplaceAll(notes, legacy, "")
 		}
 	}
-	dynamicText := renderDynamicParameterHelp(ctx, groups)
-	return insertDynamicParameterHelpBeforePreview(notes, dynamicText)
+	return notes, renderDynamicParameterHelp(ctx, groups)
 }
 
 func renderDynamicParameterHelp(ctx *context, groups []dynamicParameterHelpGroup) string {
