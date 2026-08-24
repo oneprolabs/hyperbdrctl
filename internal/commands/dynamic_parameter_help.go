@@ -118,6 +118,42 @@ var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
 			},
 		},
 	},
+	"aliyun-cloud-sync-gateway-advanced": {
+		Key:      "aliyun-cloud-sync-gateway-advanced",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{
+				Flag:           "hd-control-network",
+				Placeholder:    "<mode>",
+				DescriptionKey: "help.dynamic_parameter.hd_control_network",
+				DefaultValue:   "floating_ip_with_hg_proxy",
+				Choices: []string{
+					"floating_ip_without_proxy",
+					"fixed_ip_without_proxy",
+					"floating_ip_with_hg_proxy",
+					"fixed_ip_with_hg_proxy",
+				},
+			},
+			{
+				Flag:           "fixed-ip",
+				Placeholder:    "<ip>",
+				DescriptionKey: "help.dynamic_parameter.fixed_ip",
+				SourceKey:      "help.dynamic_parameter.fixed_ip.source",
+			},
+			{
+				Flag:           "system-disk-size",
+				Placeholder:    "<size_gib>",
+				DescriptionKey: "help.dynamic_parameter.system_disk_size",
+				DefaultValue:   "40",
+			},
+			{
+				Flag:           "bandwidth-size",
+				Placeholder:    "<size_mbps>",
+				DescriptionKey: "help.dynamic_parameter.bandwidth_size",
+				SourceKey:      "help.dynamic_parameter.bandwidth_size.source",
+			},
+		},
+	},
 }
 
 var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
@@ -142,6 +178,12 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		GroupKey:     "atomy-v2-cloud-sync-gateway",
 		Command:      dynamicParameterHelpCloudSyncGatewayCreate,
 		Architecture: catalog.AtomyV2,
+	},
+	{
+		GroupKey:    "aliyun-cloud-sync-gateway-advanced",
+		Command:     dynamicParameterHelpCloudSyncGatewayCreate,
+		Provider:    "aliyun",
+		StorageType: "block",
 	},
 }
 

@@ -47,8 +47,6 @@ const (
     --subnet-id <subnet_id> \
     --system-disk-type-id <system_disk_type_id>
 
-省略 --system-disk-size 时，系统盘大小默认使用 40 GiB。
-
 创建返回云同步网关 ID 后，等待任务完成：
   hyperbdrctl cloud-sync-gateway wait --id <storage_id>
 
@@ -198,8 +196,6 @@ The minimum create command is:
     --network-id <network_id> \
     --subnet-id <subnet_id> \
     --system-disk-type-id <system_disk_type_id>
-
-The system disk size defaults to 40 GiB when omitted.
 
 After create returns a cloud sync gateway ID, wait for the task to complete:
   hyperbdrctl cloud-sync-gateway wait --id <storage_id>

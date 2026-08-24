@@ -146,15 +146,24 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"Network ID (required)",
 				"Subnet ID (required)",
 				"System disk type ID (required)",
-				"System disk size in GiB, default 40",
-				"--bandwidth-size",
-				"--hd-control-network",
 				"Optional dynamic parameters:",
 				"--hg-control-network <mode>",
 				"Default: floating_ip_without_proxy",
 				"Allowed values:",
 				"--boot-loader-image-id <image_id>",
 				"--fetch-res win_hd_images",
+				"--hd-control-network <mode>",
+				"Driver adaptation network mode",
+				"Default: floating_ip_with_hg_proxy",
+				"fixed_ip_with_hg_proxy",
+				"--fixed-ip <ip>",
+				"otherwise the cloud platform assigns one automatically",
+				"--system-disk-size <size_gib>",
+				"System disk size in GiB",
+				"Default: 40",
+				"--bandwidth-size <size_mbps>",
+				"floating-IP gateway modes default to 100 Mbps",
+				"fixed-IP gateway modes default to 50 Mbps",
 				"Create an Alibaba Cloud cloud sync gateway.",
 				"--purpose make_hg",
 				"--image_type=system",
@@ -169,6 +178,10 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"--control-nat-ip string",
 				"--data-nat-ip string",
 				"--boot-loader-flavor-id string",
+				"--fixed-ip string",
+				"--system-disk-size string",
+				"--bandwidth-size string",
+				"--hd-control-network string",
 				"--cloud-type string",
 			},
 		},
@@ -219,6 +232,9 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"子网 ID（必须）",
 				"系统盘类型 ID（必须）",
 				"系统盘大小 (GiB)，默认值 40",
+				"--fixed-ip string",
+				"--bandwidth-size string",
+				"--hd-control-network string",
 				"创建华为云云同步网关。",
 				"可按需补充以下动态参数：",
 				"--hg-control-network <mode>",
@@ -244,6 +260,10 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"--boot-loader-flavor-id string",
 				"--project-domain-id string",
 				"--boot-types-id string",
+				"--hd-control-network <mode>",
+				"--fixed-ip <ip>",
+				"--system-disk-size <size_gib>",
+				"--bandwidth-size <size_mbps>",
 			},
 		},
 	}
@@ -304,7 +324,6 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 		"--network-id string            网络 ID（必须）",
 		"--subnet-id string             子网 ID（必须）",
 		"--system-disk-type-id string   系统盘类型 ID（必须）",
-		"--system-disk-size string      系统盘大小 (GiB)，默认值 40",
 		"可按需补充以下动态参数：",
 		"--hg-control-network <mode>",
 		"网关控制网络方式",
@@ -322,6 +341,19 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 		"hyperbdrctl cloud-resource fetch \\",
 		"--fetch-res win_hd_images \\",
 		"--output json",
+		"--hd-control-network <mode>",
+		"驱动适配网络方式",
+		"默认值：floating_ip_with_hg_proxy",
+		"      floating_ip_with_hg_proxy",
+		"      fixed_ip_with_hg_proxy",
+		"--fixed-ip <ip>",
+		"省略时由云平台自动分配",
+		"--system-disk-size <size_gib>",
+		"系统盘大小 (GiB)",
+		"默认值：40",
+		"--bandwidth-size <size_mbps>",
+		"浮动 IP 网关模式默认使用 100 Mbps",
+		"固定 IP 网关模式默认使用 50 Mbps",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("help missing %q: %q", want, text)
@@ -336,6 +368,10 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 		"--data-nat-ip string",
 		"--boot-loader-flavor-id string",
 		"--boot-loader-image-id string",
+		"--fixed-ip string",
+		"--system-disk-size string",
+		"--bandwidth-size string",
+		"--hd-control-network string",
 		"未显式传入 `--hg-control-network`",
 		"如需获取 UI 同等的 Windows 修复镜像",
 	} {
@@ -345,6 +381,22 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 	}
 	if strings.Count(text, "--boot-loader-image-id <image_id>") != 1 {
 		t.Fatalf("boot loader image dynamic parameter should be rendered once: %q", text)
+	}
+	lastIndex := -1
+	for _, parameter := range []string{
+		"--hd-control-network <mode>",
+		"--fixed-ip <ip>",
+		"--system-disk-size <size_gib>",
+		"--bandwidth-size <size_mbps>",
+	} {
+		if strings.Count(text, parameter) != 1 {
+			t.Fatalf("Aliyun dynamic parameter %q should be rendered once: %q", parameter, text)
+		}
+		index := strings.Index(text, parameter)
+		if index <= lastIndex {
+			t.Fatalf("Aliyun dynamic parameter %q is out of order: %q", parameter, text)
+		}
+		lastIndex = index
 	}
 	if strings.Contains(text, "如需先检查最终请求体，可附加下面的参数：") || strings.Contains(text, "--preview-request") {
 		t.Fatalf("gateway help must not advertise request preview: %q", text)
