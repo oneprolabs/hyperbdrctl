@@ -102,6 +102,9 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			dynamicParameterHelpContextFromCommand(cmd),
 		)
 	}
+	if path == "hyperbdrctl production-site create" {
+		return productionSiteCreateFlagSpecsForProfile(cmd.Annotations[productionSiteCreateHelpProfileAnnotation])
+	}
 	if path == "hyperbdrctl cloud-resource fetch" {
 		return cloudResourceFetchFlagSpecsForProfile(cmd.Annotations[cloudResourceFetchHelpProfileAnnotation])
 	}
@@ -585,21 +588,6 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	case "hyperbdrctl sync-proxy delete":
 		return []flagHelpSpec{
 			{name: "id", required: true},
-			{name: "debug"},
-			{name: "lang"},
-			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
-			{name: "help"},
-		}
-	case "hyperbdrctl production-site create":
-		return []flagHelpSpec{
-			{name: "type", required: true, choices: []string{"vmware", "aws"}},
-			{name: "synch-node-id"},
-			{name: "synch-node-ids"},
-			{name: "auth-url"},
-			{name: "auth-key"},
-			{name: "auth-cert"},
-			{name: "region-id"},
-			{name: "preview-request"},
 			{name: "debug"},
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},

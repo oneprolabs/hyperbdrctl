@@ -215,22 +215,16 @@ func newProductionSiteCommand(ctx *context) *cobra.Command {
 		}),
 	)
 
-	createCmd := newRawLeafCommand(ctx, "create", "cmd.production_site.create.short", "cmd.production_site.create.long", "cmd.production_site.create.examples", "cmd.production_site.create.notes", func(cmd *cobra.Command) {
-		cmd.Flags().String("type", "", ctx.loc.T("flag.production-site-type"))
-		for _, name := range []string{"synch-node-id", "synch-node-ids", "auth-url", "auth-key", "auth-cert", "region-id"} {
-			addFlagString(cmd, ctx, name)
-		}
-		addFlagBool(cmd, ctx, "preview-request")
-	}, func(args []string) error {
-		return runSources(ctx, append([]string{"create"}, args...))
-	})
+	createCmd := newProductionSiteCreateCommand(ctx)
 	cmd.AddCommand(createCmd)
 	for _, child := range cmd.Commands() {
+		if child.Name() == "create" {
+			continue
+		}
 		addHelpLayout(child, helpLayoutFourSection)
 		addUsageLine(child, ctx, "cmd.production_site."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_line")
 		addUsageNotes(child, ctx, "cmd.production_site."+strings.ReplaceAll(child.Name(), "-", "_")+".usage_notes")
-		switch child.Name() {
-		case "create", "vm-list":
+		if child.Name() == "vm-list" {
 			addHelpDescription(child, ctx, "cmd.production_site."+strings.ReplaceAll(child.Name(), "-", "_")+".help_title")
 		}
 	}

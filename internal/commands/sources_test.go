@@ -671,7 +671,7 @@ func TestSourceLeafHelpUsesFourSectionLayout(t *testing.T) {
 		},
 		{
 			args: []string{"production-site", "create", "--help"},
-			want: []string{"Usage Notes:", "--type", "--synch-node-id", "--synch-node-ids", "--preview-request", "hyperbdrctl sync-proxy list"},
+			want: []string{"Usage Notes:", "--type", "production-site create --type vmware --help", "production-site create --type aws --help"},
 		},
 		{
 			args: []string{"production-site", "delete", "--help"},
@@ -704,6 +704,80 @@ func TestSourceLeafHelpUsesFourSectionLayout(t *testing.T) {
 			}
 		}
 		assertNoHelpFooter(t, text)
+	}
+}
+
+func TestProductionSiteCreateHelpUsesTypeProfiles(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	cases := []struct {
+		name     string
+		args     []string
+		want     []string
+		unwanted []string
+	}{
+		{
+			name:     "selector zh_cn",
+			args:     []string{"--lang", "zh_cn", "production-site", "create", "--help"},
+			want:     []string{"创建生产站点", "生产站点类型，可选值 vmware / aws", "--type vmware --help", "--type aws --help"},
+			unwanted: []string{"--synch-node-id string", "--auth-url string", "--region-id string", "--preview-request"},
+		},
+		{
+			name:     "vmware zh_cn",
+			args:     []string{"--lang", "zh_cn", "production-site", "create", "--type", "vmware", "--help"},
+			want:     []string{"创建 VMware 生产站点", "用法: hyperbdrctl production-site create --type vmware", "VMware vCenter 鉴权地址（必须）", "VMware vCenter 用户名（必须）", "VMware vCenter 密码（必须）", "`--synch-node-id` 和 `--synch-node-ids` 至少提供一个。", "--type vmware --binding-status binding"},
+			unwanted: []string{"      --type string", "--region-id string", "AWS Secret Access Key"},
+		},
+		{
+			name:     "aws zh_cn equals syntax",
+			args:     []string{"--lang", "zh_cn", "production-site", "create", "--type=aws", "--help"},
+			want:     []string{"创建 AWS 生产站点", "用法: hyperbdrctl production-site create --type aws", "AWS Access Key ID（必须）", "AWS Secret Access Key（必须）", "区域 ID（必须）", "--synch-node-ids <node_id_1,node_id_2>", "--type aws --binding-status binding"},
+			unwanted: []string{"      --type string", "VMware vCenter"},
+		},
+		{
+			name:     "vmware en help first",
+			args:     []string{"--lang", "en", "production-site", "create", "--help", "--type", "vmware"},
+			want:     []string{"Create VMware production site", "Usage: hyperbdrctl production-site create --type vmware", "VMware vCenter authentication URL (required)", "Provide at least one of `--synch-node-id` and `--synch-node-ids`.", "--type vmware --binding-status binding"},
+			unwanted: []string{"      --type string", "--region-id string"},
+		},
+		{
+			name:     "aws en",
+			args:     []string{"--lang", "en", "production-site", "create", "--type", "aws", "-h"},
+			want:     []string{"Create AWS production site", "Usage: hyperbdrctl production-site create --type aws", "AWS Access Key ID (required)", "AWS Secret Access Key (required)", "Region ID (required)", "--type aws --binding-status binding"},
+			unwanted: []string{"      --type string", "VMware vCenter"},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute(tt.args, &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+			text := normalizeHelpText(out.String())
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			for _, unwanted := range tt.unwanted {
+				if strings.Contains(text, unwanted) {
+					t.Fatalf("help should not include %q: %q", unwanted, text)
+				}
+			}
+		})
+	}
+}
+
+func TestProductionSiteCreateHelpRejectsUnknownType(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute([]string{"production-site", "create", "--type", "azure", "--help"}, &out, &errOut)
+	if err == nil || err.Error() != "type must be one of vmware, aws" {
+		t.Fatalf("err = %v", err)
 	}
 }
 
@@ -828,7 +902,7 @@ func TestSourceSplitHelpUsesDirectPaths(t *testing.T) {
 	}{
 		{
 			args:     []string{"--lang", "en", "production-site", "create", "--help"},
-			want:     []string{"Usage: hyperbdrctl production-site create", "--type", "--synch-node-id", "hyperbdrctl sync-proxy list", "hyperbdrctl production-site list"},
+			want:     []string{"Usage: hyperbdrctl production-site create", "--type", "production-site create --type vmware --help", "production-site create --type aws --help"},
 			unwanted: []string{"hyperbdrctl source", "source create"},
 		},
 		{
@@ -916,8 +990,8 @@ func TestSourceSplitHelpMatchesArchivedCopyInBothLanguages(t *testing.T) {
 		{
 			name: "production-site create",
 			path: []string{"production-site", "create"},
-			zh:   []string{"创建生产站点", "生产站点类型（必须），可选值 vmware / aws", "多个同步节点 ID 使用英文逗号分隔。", "--type vmware --binding-status binding"},
-			en:   []string{"Create production site", "Production site type (required), allowed values", "vmware / aws", "Separate multiple sync node IDs with commas.", "--type vmware --binding-status binding"},
+			zh:   []string{"创建生产站点", "生产站点类型，可选值 vmware / aws", "具体创建参数请进入对应类型帮助页查看。", "--type vmware --help", "--type aws --help"},
+			en:   []string{"Create production site", "Production site type, allowed values", "vmware / aws", "Open the help page for the selected type", "--type vmware --help", "--type aws --help"},
 		},
 		{
 			name: "sync-proxy group",
