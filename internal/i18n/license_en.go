@@ -1,0 +1,28 @@
+package i18n
+
+var licenseEN = map[string]string{
+	"cmd.licenses.short":                "License queries and activation",
+	"cmd.licenses.long":                 "List licenses, fetch the registration code, or activate a license after the CLI auto-loads the current registration code.",
+	"cmd.licenses.examples":             "./hyperbdrctl license list\n./hyperbdrctl license reg-code\n./hyperbdrctl license activate --ddty <activation_code>",
+	"cmd.licenses.usage_line":           "hyperbdrctl license <command> [flags]",
+	"cmd.licenses.usage_notes":          "View the current license status:\n  hyperbdrctl license list\n\nGet the registration code for the current environment:\n  hyperbdrctl license reg-code\n\nAfter using the registration code to generate an activation code, submit the activation:\n  hyperbdrctl license activate --ddty <activation_code>",
+	"cmd.licenses.notes":                "- `list` and `reg-code` are read-only operations.\n- `activate` mutates the server-side license state.",
+	"cmd.licenses.list.short":           "List licenses",
+	"cmd.licenses.list.long":            "Query licenses with pagination and show operator-friendly summary columns.",
+	"cmd.licenses.list.examples":        "./hyperbdrctl license list --page 1 --page-size 10",
+	"cmd.licenses.list.usage_line":      "hyperbdrctl license list [flags]",
+	"cmd.licenses.list.usage_notes":     "View paginated license summaries on the current platform.\n\nView the default page:\n  hyperbdrctl license list\n\nSpecify pagination parameters:\n  hyperbdrctl license list --page 1 --page-size 10\n\nOutput JSON for other tools:\n  hyperbdrctl license list --output json",
+	"cmd.licenses.list.notes":           "- Unknown flags are passed through as query parameters.\n- Use JSON output when you need the untouched API response.",
+	"cmd.licenses.reg_code.short":       "Get the license registration code",
+	"cmd.licenses.reg_code.long":        "Fetch the registration code used by the activation workflow.",
+	"cmd.licenses.reg_code.examples":    "./hyperbdrctl license reg-code",
+	"cmd.licenses.reg_code.usage_line":  "hyperbdrctl license reg-code [flags]",
+	"cmd.licenses.reg_code.usage_notes": "Read the registration code required to activate the license in the current environment.\n\nGet the registration code:\n  hyperbdrctl license reg-code\n\nThis command only reads the registration code and does not modify server-side state.\n\nAfter using the registration code to generate an activation code, continue with:\n  hyperbdrctl license activate --ddty <activation_code>",
+	"cmd.licenses.reg_code.notes":       "- Unknown flags are passed through as query parameters.\n- Do not write registration codes into shared reports.",
+	"cmd.licenses.activate.short":       "Activate a license",
+	"cmd.licenses.activate.long":        "Fetch the current environment registration code automatically, then submit the activation code.",
+	"cmd.licenses.activate.examples":    "./hyperbdrctl license activate --ddty <activation_code>",
+	"cmd.licenses.activate.usage_line":  "hyperbdrctl license activate [flags]",
+	"cmd.licenses.activate.usage_notes": "Submit a license activation code to activate the license in the current environment.\n\nParameter Sources:\n  --ddty string\n    Use the license activation code generated from the registration code.\n\nBefore activation, get the registration code for the current environment:\n  hyperbdrctl license reg-code\n\nAfter using the registration code to generate an activation code, run:\n  hyperbdrctl license activate --ddty <activation_code>\n\nAfter activation, view the license status:\n  hyperbdrctl license list",
+	"cmd.licenses.activate.notes":       "- Mutating command.\n- Avoid printing activation data into shared logs or reports.",
+}

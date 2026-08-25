@@ -1,0 +1,28 @@
+package i18n
+
+var licenseZH = map[string]string{
+	"cmd.licenses.short":                "许可证查询与激活",
+	"cmd.licenses.long":                 "列出许可证、读取注册码，或在自动获取注册码后提交激活码完成许可证激活。",
+	"cmd.licenses.examples":             "./hyperbdrctl license list\n./hyperbdrctl license reg-code\n./hyperbdrctl license activate --ddty <activation_code>",
+	"cmd.licenses.usage_line":           "hyperbdrctl license <命令> [参数]",
+	"cmd.licenses.usage_notes":          "查看当前许可证状态：\n  hyperbdrctl license list\n\n获取当前环境的注册码：\n  hyperbdrctl license reg-code\n\n使用注册码生成激活码后，提交激活：\n  hyperbdrctl license activate --ddty <activation_code>",
+	"cmd.licenses.notes":                "- `list` 与 `reg-code` 为只读操作。\n- `activate` 会对服务端许可证状态产生修改。",
+	"cmd.licenses.list.short":           "列出许可证",
+	"cmd.licenses.list.long":            "按分页查询许可证，并展示适合操作员查看的摘要列。",
+	"cmd.licenses.list.examples":        "./hyperbdrctl license list --page 1 --page-size 10",
+	"cmd.licenses.list.usage_line":      "hyperbdrctl license list [参数]",
+	"cmd.licenses.list.usage_notes":     "按分页查看当前平台上的许可证摘要。\n\n查看默认分页结果：\n  hyperbdrctl license list\n\n指定分页参数：\n  hyperbdrctl license list --page 1 --page-size 10\n\n输出 JSON 供其他工具处理：\n  hyperbdrctl license list --output json",
+	"cmd.licenses.list.notes":           "- 未识别参数会透传为查询参数。\n- 需要完整 API 响应时请使用 JSON 输出。",
+	"cmd.licenses.reg_code.short":       "获取许可证注册码",
+	"cmd.licenses.reg_code.long":        "读取许可证激活流程所需的注册码。",
+	"cmd.licenses.reg_code.examples":    "./hyperbdrctl license reg-code",
+	"cmd.licenses.reg_code.usage_line":  "hyperbdrctl license reg-code [参数]",
+	"cmd.licenses.reg_code.usage_notes": "读取当前环境许可证激活所需的注册码。\n\n获取注册码：\n  hyperbdrctl license reg-code\n\n该命令只读取注册码，不会修改服务端状态。\n\n使用注册码生成激活码后，继续执行：\n  hyperbdrctl license activate --ddty <activation_code>",
+	"cmd.licenses.reg_code.notes":       "- 未识别参数会透传为查询参数。\n- 不要把注册码写入共享报告。",
+	"cmd.licenses.activate.short":       "激活许可证",
+	"cmd.licenses.activate.long":        "自动查询当前环境注册码，并提交激活码完成许可证激活。",
+	"cmd.licenses.activate.examples":    "./hyperbdrctl license activate --ddty <activation_code>",
+	"cmd.licenses.activate.usage_line":  "hyperbdrctl license activate [参数]",
+	"cmd.licenses.activate.usage_notes": "提交许可证激活码，完成当前环境的许可证激活。\n\n参数来源：\n  --ddty string\n    使用基于注册码生成的许可证激活码。\n\n执行前，先获取当前环境的注册码：\n  hyperbdrctl license reg-code\n\n使用注册码生成激活码后，执行：\n  hyperbdrctl license activate --ddty <activation_code>\n\n激活完成后，查看许可证状态：\n  hyperbdrctl license list",
+	"cmd.licenses.activate.notes":       "- 写操作。\n- 避免把激活数据写入共享日志或报告。",
+}
