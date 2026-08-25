@@ -29,11 +29,18 @@ func addCloudAccountCreateAllFlags(cmd *cobra.Command, ctx *context) {
 	for _, name := range []string{
 		"cloud-type", "storage-type", "file", "body", "cloud-auth-type",
 		"access-key-id", "access-key-secret", "region-id", "region-name", "account-name", "auth-region-id",
+		"auth-project-id", "control-access-ip",
 		"auth-url", "username", "password", "user-domain-id", "project-domain-id", "project-id", "project-name",
 		"use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "boot-loader-flavor-id",
 		"linux-boot-image-id", "windows-boot-image-id", "linux-uefi-boot-image-id", "windows-uefi-boot-image-id",
 		"custom-name", "disk-bus-type-id", "disk-bus-type-name",
 		"ssh-port", "ssh-pass", "linux-hd-username", "linux-hd-password", "linux-hd-port",
+		"linux-boot-image-host-config-zone-id", "linux-boot-image-host-config-zone-name",
+		"linux-boot-image-host-config-flavor-id", "linux-boot-image-host-config-flavor-name",
+		"linux-boot-image-host-config-network-id", "linux-boot-image-host-config-network-name",
+		"linux-boot-image-host-config-subnet-id", "linux-boot-image-host-config-subnet-name",
+		"linux-boot-image-host-config-image-id", "linux-boot-image-host-config-image-name",
+		"linux-boot-image-host-config-system-disk-type-id", "linux-boot-image-host-config-system-disk-type-name",
 	} {
 		addFlagString(cmd, ctx, name)
 	}
@@ -149,7 +156,7 @@ func renderCloudAccountCreateHelp(ctx *context, cmd *cobra.Command, selection cl
 }
 
 func applyCloudAccountCreateProviderHelp(ctx *context, cmd *cobra.Command, profile cloudAccountCreateProfile) {
-	if profile.StorageType == "objectstorage" && (profile.Provider == "aliyun" || profile.Provider == "openstack") {
+	if profile.StorageType == "objectstorage" && (profile.Provider == "aliyun" || profile.Provider == "openstack" || profile.Provider == "huawei") {
 		overrideFlagUsage(cmd, ctx, "use-internal-ip", "flag.cloud-account.use-internal-ip")
 	}
 	setDynamicParameterHelpContext(cmd, dynamicParameterHelpContext{

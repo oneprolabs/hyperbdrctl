@@ -12,6 +12,7 @@ import (
 
 type metadataAssignment struct {
 	key   string
+	path  string
 	value interface{}
 }
 
@@ -87,11 +88,14 @@ func parseCloudAccountCreateOSSArgs(commandName, cloudType string, specialized b
 				return parsedCloudAccountCreateCommand{}, err
 			}
 			spec.CustomName = v
-			assignments = append(assignments, metadataAssignment{key: "custom_name", value: v})
+			assignments = append(assignments, metadataAssignment{path: "custom_name", value: v})
 			i = next
 		case "auto-upload-images", "upload-uefi-image", "only-verify":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
 		default:
+			if cloudType == "huawei_obs" && huaweiObjectUnsupportedCreateFlag(name) {
+				return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
+			}
 			if handled, err := parseSpecializedOSSFlag(name, args, i, value, hasInline, cloudType, &spec, &assignments); handled {
 				if err != nil {
 					return parsedCloudAccountCreateCommand{}, err
@@ -111,7 +115,7 @@ func parseCloudAccountCreateOSSArgs(commandName, cloudType string, specialized b
 			if err := validateCreateCloudAccountDynamicMetadataKey(name, key); err != nil {
 				return parsedCloudAccountCreateCommand{}, err
 			}
-			assignments = append(assignments, metadataAssignment{key: key, value: v})
+			assignments = append(assignments, metadataAssignment{path: key, value: v})
 			i = next
 		}
 	}
@@ -143,7 +147,13 @@ func parseCloudAccountCreateOSSArgs(commandName, cloudType string, specialized b
 		}
 	}
 	for _, assignment := range assignments {
-		metadata[assignment.key] = assignment.value
+		path := assignment.path
+		if path == "" {
+			path = assignment.key
+		}
+		if err := metaoverride.ApplyPathValue(metadata, path, assignment.value); err != nil {
+			return parsedCloudAccountCreateCommand{}, err
+		}
 	}
 
 	spec.MetadataOverrides = metadata
@@ -157,6 +167,18 @@ func parseCloudAccountCreateOSSArgs(commandName, cloudType string, specialized b
 	}, nil
 }
 
+func huaweiObjectUnsupportedCreateFlag(name string) bool {
+	switch name {
+	case "auth-url", "username", "password", "user-domain-id", "project-domain-id", "project-id", "project-name",
+		"linux-boot-image-id", "windows-boot-image-id", "linux-uefi-boot-image-id", "windows-uefi-boot-image-id",
+		"boot-image-source", "skip-driver-fix", "control-access-ip-radio",
+		"linux-boot-image-host-config-bandwidth-id", "linux-boot-image-host-config-bandwidth-name":
+		return true
+	default:
+		return false
+	}
+}
+
 func parseSpecializedOSSFlag(name string, args []string, idx int, inline string, hasInline bool, cloudType string, spec *cloudAccountCreateSpec, assignments *[]metadataAssignment) (bool, error) {
 	if !createOSSExplicitFlagAllowed(cloudType, name) {
 		return false, nil
@@ -166,8 +188,22 @@ func parseSpecializedOSSFlag(name string, args []string, idx int, inline string,
 		return true, err
 	}
 	applyCreateCloudAccountSpecValue(spec, name, value)
+	if cloudType == "huawei_obs" {
+		switch name {
+		case "access-key-id":
+			*assignments = append(*assignments, metadataAssignment{path: "access_id", value: value})
+			return true, nil
+		case "access-key-secret":
+			*assignments = append(*assignments, metadataAssignment{path: "access_secret", value: value})
+			return true, nil
+		}
+	}
+	if field, ok := huaweiLinuxBootImageHostConfigField(cloudType, name); ok {
+		*assignments = append(*assignments, metadataAssignment{path: "linux_boot_image_host_config." + field, value: value})
+		return true, nil
+	}
 	if metadataKey, ok := createCloudAccountMetadataKey(name); ok {
-		*assignments = append(*assignments, metadataAssignment{key: metadataKey, value: value})
+		*assignments = append(*assignments, metadataAssignment{path: metadataKey, value: value})
 	}
 	return true, nil
 }
@@ -182,6 +218,19 @@ func createOSSExplicitFlagAllowed(cloudType, name string) bool {
 	case "openstack":
 		switch name {
 		case "auth-url", "username", "password", "user-domain-id", "project-domain-id", "project-id", "project-name", "region-id", "region-name", "use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "linux-boot-image-id", "windows-boot-image-id", "disk-bus-type-id", "disk-bus-type-name":
+			return true
+		}
+	case "huawei_obs":
+		switch name {
+		case "access-key-id", "access-key-secret", "region-id", "region-name", "custom-name",
+			"auth-project-id", "use-internal-ip", "control-access-ip",
+			"linux-boot-image-host-config-zone-id", "linux-boot-image-host-config-zone-name",
+			"linux-boot-image-host-config-flavor-id", "linux-boot-image-host-config-flavor-name",
+			"linux-boot-image-host-config-network-id", "linux-boot-image-host-config-network-name",
+			"linux-boot-image-host-config-subnet-id", "linux-boot-image-host-config-subnet-name",
+			"linux-boot-image-host-config-image-id", "linux-boot-image-host-config-image-name",
+			"linux-boot-image-host-config-system-disk-type-id", "linux-boot-image-host-config-system-disk-type-name",
+			"boot-loader-image-id", "boot-loader-image-name", "boot-loader-flavor-id":
 			return true
 		}
 	}
@@ -206,6 +255,8 @@ func applyCreateCloudAccountSpecValue(spec *cloudAccountCreateSpec, name, value 
 		spec.AccountName = value
 	case "auth-region-id":
 		spec.AuthRegionID = value
+	case "auth-project-id":
+		spec.AuthProjectID = value
 	case "region-id":
 		spec.RegionID = value
 	case "region-name":
@@ -238,6 +289,8 @@ func applyCreateCloudAccountSpecValue(spec *cloudAccountCreateSpec, name, value 
 		spec.LinuxHDPort = value
 	case "use-internal-ip":
 		spec.UseInternalIP = value
+	case "control-access-ip":
+		spec.ControlAccessIP = value
 	case "boot-loader-image-id":
 		spec.BootLoaderImageID = value
 	case "boot-loader-image-name":
@@ -256,6 +309,30 @@ func applyCreateCloudAccountSpecValue(spec *cloudAccountCreateSpec, name, value 
 		spec.DiskBusTypeID = value
 	case "disk-bus-type-name":
 		spec.DiskBusTypeName = value
+	case "linux-boot-image-host-config-zone-id":
+		spec.LinuxBootImageHostConfig.ZoneID = value
+	case "linux-boot-image-host-config-zone-name":
+		spec.LinuxBootImageHostConfig.ZoneName = value
+	case "linux-boot-image-host-config-flavor-id":
+		spec.LinuxBootImageHostConfig.FlavorID = value
+	case "linux-boot-image-host-config-flavor-name":
+		spec.LinuxBootImageHostConfig.FlavorName = value
+	case "linux-boot-image-host-config-network-id":
+		spec.LinuxBootImageHostConfig.NetworkID = value
+	case "linux-boot-image-host-config-network-name":
+		spec.LinuxBootImageHostConfig.NetworkName = value
+	case "linux-boot-image-host-config-subnet-id":
+		spec.LinuxBootImageHostConfig.SubnetID = value
+	case "linux-boot-image-host-config-subnet-name":
+		spec.LinuxBootImageHostConfig.SubnetName = value
+	case "linux-boot-image-host-config-image-id":
+		spec.LinuxBootImageHostConfig.ImageID = value
+	case "linux-boot-image-host-config-image-name":
+		spec.LinuxBootImageHostConfig.ImageName = value
+	case "linux-boot-image-host-config-system-disk-type-id":
+		spec.LinuxBootImageHostConfig.SystemDiskTypeID = value
+	case "linux-boot-image-host-config-system-disk-type-name":
+		spec.LinuxBootImageHostConfig.SystemDiskTypeName = value
 	}
 }
 
@@ -269,11 +346,27 @@ func createCloudAccountMetadataKey(name string) (string, bool) {
 		return "auth_url", true
 	case "use-internal-ip":
 		return "use_internal_ip_for_control", true
+	case "auth-project-id":
+		return "auth_project_id", true
+	case "control-access-ip":
+		return "control_access_ip", true
 	}
 	if name == "" {
 		return "", false
 	}
 	return strings.ReplaceAll(name, "-", "_"), true
+}
+
+func huaweiLinuxBootImageHostConfigField(cloudType, name string) (string, bool) {
+	if cloudType != "huawei_obs" {
+		return "", false
+	}
+	const prefix = "linux-boot-image-host-config-"
+	if !strings.HasPrefix(name, prefix) {
+		return "", false
+	}
+	field := strings.ReplaceAll(strings.TrimPrefix(name, prefix), "-", "_")
+	return field, field != ""
 }
 
 func createCloudAccountDynamicMetadataKey(name string) string {

@@ -13,6 +13,7 @@ func NormalizeSpec(spec Spec) Spec {
 	spec.RegionName = firstNonEmptyString(spec.RegionName, overrideStringValue(metadata, "region_name"))
 	spec.AccountName = firstNonEmptyString(spec.AccountName, overrideStringValue(metadata, "account_name"))
 	spec.AuthRegionID = firstNonEmptyString(spec.AuthRegionID, overrideStringValue(metadata, "auth_region_id"))
+	spec.AuthProjectID = firstNonEmptyString(spec.AuthProjectID, overrideStringValue(metadata, "auth_project_id"))
 	spec.AuthURL = firstNonEmptyString(spec.AuthURL, overrideStringValue(metadata, "auth_url"))
 	spec.CloudAccountUsername = firstNonEmptyString(spec.CloudAccountUsername, overrideStringValue(metadata, "username", "cloud_account_username"))
 	spec.CloudAccountPassword = firstNonEmptyString(spec.CloudAccountPassword, overrideStringValue(metadata, "password", "cloud_account_password"))
@@ -21,6 +22,7 @@ func NormalizeSpec(spec Spec) Spec {
 	spec.ProjectID = firstNonEmptyString(spec.ProjectID, overrideStringValue(metadata, "project_id"))
 	spec.ProjectName = firstNonEmptyString(spec.ProjectName, overrideStringValue(metadata, "project_name"))
 	spec.UseInternalIP = firstNonEmptyString(spec.UseInternalIP, overrideStringValue(metadata, "use_internal_ip_for_control"))
+	spec.ControlAccessIP = firstNonEmptyString(spec.ControlAccessIP, overrideStringValue(metadata, "control_access_ip"))
 	spec.BootLoaderImageID = firstNonEmptyString(spec.BootLoaderImageID, overrideStringValue(metadata, "boot_loader_image_id"))
 	spec.BootLoaderImageName = firstNonEmptyString(spec.BootLoaderImageName, overrideStringValue(metadata, "boot_loader_image_name"))
 	spec.BootLoaderFlavorID = firstNonEmptyString(spec.BootLoaderFlavorID, overrideStringValue(metadata, "boot_loader_flavor_id"))
@@ -36,6 +38,7 @@ func NormalizeSpec(spec Spec) Spec {
 	spec.LinuxHDUsername = firstNonEmptyString(spec.LinuxHDUsername, overrideStringValue(metadata, "linux_hd_username"))
 	spec.LinuxHDPassword = firstNonEmptyString(spec.LinuxHDPassword, overrideStringValue(metadata, "linux_hd_password"))
 	spec.LinuxHDPort = firstNonEmptyString(spec.LinuxHDPort, overrideStringValue(metadata, "linux_hd_port"))
+	normalizeLinuxBootImageHostConfig(&spec, metadata)
 
 	if spec.AutoUploadImages == nil {
 		if value, ok := overrideIntValue(spec.RequestOverrides, "auto_upload_images"); ok {
@@ -54,6 +57,39 @@ func NormalizeSpec(spec Spec) Spec {
 	}
 
 	return spec
+}
+
+func normalizeLinuxBootImageHostConfig(spec *Spec, metadata map[string]interface{}) {
+	value, ok := metadata["linux_boot_image_host_config"]
+	if !ok {
+		return
+	}
+	host, ok := value.(map[string]interface{})
+	if !ok {
+		return
+	}
+	cfg := &spec.LinuxBootImageHostConfig
+	cfg.ZoneID = firstNonEmptyString(cfg.ZoneID, overrideStringValue(host, "zone_id"))
+	cfg.ZoneName = firstNonEmptyString(cfg.ZoneName, overrideStringValue(host, "zone_name"))
+	cfg.FlavorID = firstNonEmptyString(cfg.FlavorID, overrideStringValue(host, "flavor_id"))
+	cfg.FlavorName = firstNonEmptyString(cfg.FlavorName, overrideStringValue(host, "flavor_name"))
+	cfg.NetworkID = firstNonEmptyString(cfg.NetworkID, overrideStringValue(host, "network_id"))
+	cfg.NetworkName = firstNonEmptyString(cfg.NetworkName, overrideStringValue(host, "network_name"))
+	cfg.SubnetID = firstNonEmptyString(cfg.SubnetID, overrideStringValue(host, "subnet_id"))
+	cfg.SubnetName = firstNonEmptyString(cfg.SubnetName, overrideStringValue(host, "subnet_name"))
+	cfg.ImageID = firstNonEmptyString(cfg.ImageID, overrideStringValue(host, "image_id"))
+	cfg.ImageName = firstNonEmptyString(cfg.ImageName, overrideStringValue(host, "image_name"))
+	cfg.SystemDiskTypeID = firstNonEmptyString(cfg.SystemDiskTypeID, overrideStringValue(host, "system_disk_type_id"))
+	cfg.SystemDiskTypeName = firstNonEmptyString(cfg.SystemDiskTypeName, overrideStringValue(host, "system_disk_type_name"))
+	if len(cfg.FlavorIDArr) == 0 {
+		if values, ok := host["flavor_id_arr"].([]interface{}); ok {
+			for _, value := range values {
+				if text, ok := value.(string); ok && text != "" {
+					cfg.FlavorIDArr = append(cfg.FlavorIDArr, text)
+				}
+			}
+		}
+	}
 }
 
 func normalizeAccessKeySpec(spec Spec, metadata map[string]interface{}) Spec {

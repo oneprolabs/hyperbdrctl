@@ -156,58 +156,12 @@ const (
   --region-id string
     创建云账号前需要先确认目标区域 ID。
 
-  --custom-name string
-    只有在希望保存自定义名称时，才按需补充。
-
 资源获取：
-  先查询区域列表：
+  如需确认可用的 region-id，可先查询华为云地域列表：
     hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
       --access-key-id <ak> \
       --access-key-secret <sk> \
       --fetch-res regions \
-      --output json
-
-  再查询可用区：
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --fetch-res zones \
-      --output json
-
-  再按需查询规格：
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --zone-id <zone_id> \
-      --fetch-res flavors \
-      --flavor-vcpus 2 \
-      --flavor-ram 4 \
-      --output json
-
-  再按需查询网络和子网：
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --fetch-res networks,subnets \
-      --output json
-
-  再按需查询镜像和系统盘类型：
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --fetch-res images \
-      --output json
-
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --zone-id <zone_id> \
-      --fetch-res system_volume_types \
       --output json
 
 最小创建命令如下：

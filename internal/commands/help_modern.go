@@ -301,7 +301,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "help"},
 		}
 	case strings.HasPrefix(path, "hyperbdrctl target account create-oss "):
-		return []flagHelpSpec{
+		return omitDynamicParameterHelpFlags([]flagHelpSpec{
 			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
 			{name: "custom-name"},
 			{name: "file"},
@@ -312,7 +312,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
-		}
+		}, dynamicParameterHelpContextFromCommand(cmd))
 	}
 
 	if strings.HasPrefix(path, "hyperbdrctl target cloud-sync-gateway create ") && path != "hyperbdrctl target cloud-sync-gateway create openstack" {
@@ -1580,7 +1580,19 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) (specs []flagHelpSpec
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},
 			{name: "region-id", required: true},
+			{name: "region-name"},
 			{name: "custom-name"},
+			{name: "auth-project-id"},
+			{name: "use-internal-ip", choices: []string{"0", "1"}},
+			{name: "control-access-ip"},
+			{name: "linux-boot-image-host-config-zone-id"},
+			{name: "linux-boot-image-host-config-flavor-id"},
+			{name: "linux-boot-image-host-config-network-id"},
+			{name: "linux-boot-image-host-config-subnet-id"},
+			{name: "linux-boot-image-host-config-image-id"},
+			{name: "linux-boot-image-host-config-system-disk-type-id"},
+			{name: "boot-loader-image-id"},
+			{name: "boot-loader-flavor-id"},
 			{name: "file"},
 			{name: "set"},
 			{name: "set-json"},

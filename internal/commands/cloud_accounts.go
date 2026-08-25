@@ -433,6 +433,8 @@ func enrichCreateCloudAccountSpec(ctx *context, spec cloudAccountCreateSpec) (cl
 	switch {
 	case spec.CloudType == "aliyun_obs" && spec.StorageType == "objectstorage":
 		return enrichAliyunObjectCloudAccountSpec(ctx, spec)
+	case spec.CloudType == "huawei_obs" && spec.StorageType == "objectstorage":
+		return enrichHuaweiObjectCloudAccountSpec(ctx, spec)
 	case spec.CloudType == "openstack" && spec.StorageType == "objectstorage":
 		return enrichOpenStackObjectCloudAccountSpec(ctx, spec)
 	case spec.StorageType == "objectstorage":

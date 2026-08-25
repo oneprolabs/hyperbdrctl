@@ -384,7 +384,7 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 		{
 			name: "oss huawei generic",
 			args: []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object", "--help"},
-			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--region-id string", "--custom-name string", "cloud-resource fetch --cloud-type huawei --storage-type object", "--set stringArray", "--set-json stringArray"},
+			want: []string{"Usage:", "\nFlags:\n", "Usage Notes:", "--access-key-id string", "--access-key-secret string", "--region-id string", "Resource Retrieval:", "--fetch-res regions", "Optional dynamic parameters:", "--custom-name <name>", "--set stringArray", "--set-json stringArray"},
 			unwanted: []string{
 				"\nExamples:\n",
 				"\nNotes:\n",
@@ -432,6 +432,143 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 				last = idx
 			}
 			assertNoHelpFooter(t, text)
+		})
+	}
+}
+
+func TestCloudAccountCreateHuaweiObjectDynamicParameterHelp(t *testing.T) {
+	cases := []struct {
+		name       string
+		lang       string
+		title      string
+		regionText string
+		nameText   string
+	}{
+		{
+			name:       "english",
+			lang:       "en",
+			title:      "Optional dynamic parameters:",
+			regionText: "Query by --region-id and fill it automatically; fall back to the region ID if no display name is returned.",
+			nameText:   "When omitted, generate `Huawei Cloud(Recommended, SDK v3.1.86)-<region display name or region ID>` automatically.",
+		},
+		{
+			name:       "chinese",
+			lang:       "zh_cn",
+			title:      "可按需补充以下动态参数：",
+			regionText: "根据 --region-id 查询并回填；查询不到地域名称时使用区域 ID。",
+			nameText:   "省略时按 `华为云(推荐使用，SDK v3.1.86)-<地域显示名称或区域 ID>` 自动生成。",
+		},
+	}
+
+	forbiddenFlags := []string{
+		"linux-boot-image-id",
+		"windows-boot-image-id",
+		"linux-uefi-boot-image-id",
+		"windows-uefi-boot-image-id",
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute([]string{
+				"--lang", tt.lang,
+				"cloud-account", "create",
+				"--cloud-type", "huawei",
+				"--storage-type", "object",
+				"--help",
+			}, &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+
+			text := out.String()
+			for _, want := range []string{
+				tt.title,
+				"--account-name <name>",
+				"--region-name <region_name>",
+				"--custom-name <name>",
+				tt.regionText,
+				tt.nameText,
+				"--use-internal-ip <mode>",
+				"--control-access-ip <ip>",
+				"--linux-boot-image-host-config-zone-id <zone_id>",
+				"--linux-boot-image-host-config-flavor-id <flavor_id>",
+				"--linux-boot-image-host-config-network-id <network_id>",
+				"--linux-boot-image-host-config-subnet-id <subnet_id>",
+				"--linux-boot-image-host-config-image-id <image_id>",
+				"--linux-boot-image-host-config-system-disk-type-id <type_id>",
+				"--boot-loader-image-id <image_id>",
+				"--boot-loader-flavor-id <flavor_id>",
+				"boot_loader_images",
+				"--fetch-res zones",
+				"--network-id <network_id>",
+				"--fetch-res subnets",
+			} {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			for _, flag := range []string{
+				"account-name", "region-name", "custom-name", "auth-project-id", "use-internal-ip", "control-access-ip",
+				"linux-boot-image-host-config-zone-id", "linux-boot-image-host-config-flavor-id", "linux-boot-image-host-config-network-id",
+				"linux-boot-image-host-config-subnet-id", "linux-boot-image-host-config-image-id", "linux-boot-image-host-config-system-disk-type-id",
+				"boot-loader-image-id", "boot-loader-image-name", "boot-loader-flavor-id",
+			} {
+				if strings.Contains(text, "--"+flag+" string") {
+					t.Fatalf("dynamic parameter --%s must not be rendered in Flags: %q", flag, text)
+				}
+			}
+			for _, flag := range forbiddenFlags {
+				if strings.Contains(text, "--"+flag) {
+					t.Fatalf("Huawei object help must not advertise advanced parameter --%s: %q", flag, text)
+				}
+			}
+			for _, forbidden := range []string{
+				"--control-access-ip-radio", "--linux-boot-image-host-config-bandwidth-id", "--linux-boot-image-host-config-bandwidth-name",
+				"--linux-boot-image-host-config-zone-name", "--linux-boot-image-host-config-flavor-name",
+				"--linux-boot-image-host-config-network-name", "--linux-boot-image-host-config-subnet-name",
+				"--linux-boot-image-host-config-image-name", "--linux-boot-image-host-config-system-disk-type-name",
+				"--boot-loader-image-name", "boot_loader_flavors",
+			} {
+				if strings.Contains(text, forbidden) {
+					t.Fatalf("Huawei object help must not contain %q: %q", forbidden, text)
+				}
+			}
+			if strings.Count(text, "--preview-request") != 2 {
+				t.Fatalf("preview-request must appear once in Flags and once in Usage Notes: %q", text)
+			}
+			for _, removed := range []string{"Resource selection flow:", "资源选择流程："} {
+				if strings.Contains(text, removed) {
+					t.Fatalf("resource selection flow must not be rendered: %q", text)
+				}
+			}
+			if strings.Count(text, tt.title) != 1 {
+				t.Fatalf("dynamic parameter title must be rendered once: %q", text)
+			}
+			transitionTitle := "Huawei Cloud temporary transition-host image build:"
+			if tt.lang == "zh_cn" {
+				transitionTitle = "华为云临时过渡主机镜像构建："
+			}
+			assertContainsInOrder(t, text,
+				"--account-name <name>",
+				"--region-name <region_name>",
+				"--custom-name <name>",
+				"--use-internal-ip <mode>",
+				"--boot-loader-image-id <image_id>",
+				"--boot-loader-flavor-id <flavor_id>",
+				transitionTitle,
+				"--linux-boot-image-host-config-zone-id <zone_id>",
+				"--preview-request",
+			)
+
+			dynamicStart := strings.Index(text, tt.title)
+			dynamicEnd := strings.Index(text[dynamicStart:], "--preview-request")
+			if dynamicEnd < 0 {
+				t.Fatalf("preview guidance missing after dynamic parameter section: %q", text)
+			}
+			dynamicText := text[dynamicStart : dynamicStart+dynamicEnd]
+			if strings.Contains(dynamicText, "\n\n\n    --") {
+				t.Fatalf("dynamic parameters must not have multiple blank lines between entries: %q", text)
+			}
 		})
 	}
 }
@@ -969,8 +1106,8 @@ func TestCloudAccountArchivedHelpCopyIsLocalized(t *testing.T) {
 		{
 			name: "huawei object",
 			path: []string{"create", "--cloud-type", "huawei", "--storage-type", "object"},
-			zh:   []string{"创建华为云对象存储账号", "区域 ID（必须）", "--fetch-res zones", "--fetch-res system_volume_types"},
-			en:   []string{"Create Huawei Cloud object-storage account", "Region ID (required)", "--fetch-res zones", "--fetch-res system_volume_types"},
+			zh:   []string{"创建华为云对象存储账号", "区域 ID（必须）", "资源获取：", "--fetch-res regions", "华为云临时过渡主机镜像构建："},
+			en:   []string{"Create Huawei Cloud object-storage account", "Region ID (required)", "Resource Retrieval:", "--fetch-res regions", "Huawei Cloud temporary transition-host image build:"},
 		},
 		{
 			name: "openstack object",
@@ -1310,86 +1447,105 @@ func TestCloudAccountsCreateBlockFileRejectsWrapperObject(t *testing.T) {
 	}
 }
 
-func TestCloudAccountsCreateOSSGenericProviderFallsBackToGenericBuilder(t *testing.T) {
+func TestCloudAccountsCreateOSSHuaweiUsesDedicatedAKSKBuilder(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
-		"--auth-url", "https://vc.example.invalid",
-		"--username", "admin",
-		"--password", "secret",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-north-1",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
 		t.Fatalf("path = %q", path)
 	}
 	cloudAccount := body["cloud_account"].(map[string]interface{})
-	if cloudAccount["cloud_type"] != "huawei_obs" || cloudAccount["cloud_auth_type"] != "password" {
-		t.Fatalf("cloud_account = %+v", cloudAccount)
-	}
-}
-
-func TestCloudAccountsCreateGenericProviderMixedCredentialStylesRequireCloudAuthType(t *testing.T) {
-	dir := t.TempDir()
-	setUserDirs(t, dir)
-
-	var out, errOut bytes.Buffer
-	err := Execute(withHost(t, "https://example.invalid",
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
-		"--access-key-id", "ak",
-		"--access-key-secret", "sk",
-		"--username", "admin",
-		"--password", "secret",
-	), &out, &errOut)
-	if err == nil || !strings.Contains(err.Error(), "multiple credential styles provided; pass --cloud-auth-type explicitly") {
-		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestCloudAccountsCreateGenericProviderExplicitCloudAuthTypeAllowsMixedCredentialStyles(t *testing.T) {
-	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
-		"--cloud-auth-type", "password",
-		"--auth-url", "https://vc.example.invalid",
-		"--username", "admin",
-		"--password", "secret",
-		"--access-key-id", "ak",
-		"--access-key-secret", "sk",
-	})
-
-	if path != "/hypermotion/v1/cloud_accounts" {
-		t.Fatalf("path = %q", path)
-	}
-
-	cloudAccount := body["cloud_account"].(map[string]interface{})
-	if cloudAccount["cloud_auth_type"] != "password" {
+	if cloudAccount["cloud_type"] != "huawei_obs" || cloudAccount["cloud_auth_type"] != "aksk" {
 		t.Fatalf("cloud_account = %+v", cloudAccount)
 	}
 	metadata := cloudAccount["metadata"].(map[string]interface{})
-	if metadata["access_key_id"] != "ak" || metadata["access_key_secret"] != "sk" {
+	if metadata["access_id"] != "ak" || metadata["access_secret"] != "sk" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+	for _, forbidden := range []string{"access_key_id", "access_key_secret", "boot_image_source", "skip_driver_fix", "windows_boot_image_id", "linux_uefi_boot_image_id", "windows_uefi_boot_image_id", "upload_uefi_image", "region_type", "region_type_list", "control_access_ip_radio", "control_access_ip", "boot_loader_flavor_id"} {
+		if _, ok := metadata[forbidden]; ok {
+			t.Fatalf("metadata must not contain %s: %+v", forbidden, metadata)
+		}
+	}
+	host := metadata["linux_boot_image_host_config"].(map[string]interface{})
+	for _, forbidden := range []string{"bandwidth_id", "bandwidth_name"} {
+		if _, ok := host[forbidden]; ok {
+			t.Fatalf("host config must not contain %s: %+v", forbidden, host)
+		}
+	}
+}
+
+func TestCloudAccountsCreateOSSHuaweiSubmitsExplicitControlIPAndBootLoaderFlavor(t *testing.T) {
+	_, body := executeCloudAccountCreateAtPath(t, []string{
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-north-1",
+		"--control-access-ip", "2001:db8::10",
+		"--boot-loader-flavor-id", "manual-flavor",
+	})
+
+	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	if metadata["control_access_ip"] != "2001:db8::10" || metadata["boot_loader_flavor_id"] != "manual-flavor" {
 		t.Fatalf("metadata = %+v", metadata)
 	}
 }
 
-func TestCloudAccountsCreateGenericProviderDirectCredentialStyleOverridesFileInference(t *testing.T) {
-	dir := t.TempDir()
-	filePath := filepath.Join(dir, "metadata.json")
-	if err := os.WriteFile(filePath, []byte(`{"access_key_id":"file-ak","access_key_secret":"file-sk"}`), 0o600); err != nil {
-		t.Fatal(err)
+func TestCloudAccountsCreateOSSHuaweiRejectsRemovedFlags(t *testing.T) {
+	for _, flag := range []string{
+		"control-access-ip-radio",
+		"linux-boot-image-host-config-bandwidth-id",
+		"linux-boot-image-host-config-bandwidth-name",
+	} {
+		t.Run(flag, func(t *testing.T) {
+			dir := t.TempDir()
+			setUserDirs(t, dir)
+			var out, errOut bytes.Buffer
+			err := Execute(withHost(t, "https://example.invalid",
+				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
+				"--access-key-id", "ak", "--access-key-secret", "sk", "--region-id", "cn-north-1",
+				"--"+flag, "value",
+			), &out, &errOut)
+			if err == nil || !strings.Contains(err.Error(), "unknown flag: --"+flag) {
+				t.Fatalf("err = %v", err)
+			}
+		})
 	}
+}
 
-	path, body := executeCloudAccountCreateAtPath(t, []string{
-		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
-		"--file", filePath,
-		"--auth-url", "https://vc.example.invalid",
-		"--username", "admin",
-		"--password", "secret",
-	})
-
-	if path != "/hypermotion/v1/cloud_accounts" {
-		t.Fatalf("path = %q", path)
+func TestCloudAccountsCreateOSSHuaweiRequiresRegionAndValidControlIP(t *testing.T) {
+	cases := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "missing region",
+			args: []string{"--access-key-id", "ak", "--access-key-secret", "sk"},
+			want: "region-id is required",
+		},
+		{
+			name: "invalid control IP",
+			args: []string{"--access-key-id", "ak", "--access-key-secret", "sk", "--region-id", "cn-north-1", "--control-access-ip", "not-an-ip"},
+			want: "control-access-ip must be a valid IP address",
+		},
 	}
-	cloudAccount := body["cloud_account"].(map[string]interface{})
-	if cloudAccount["cloud_auth_type"] != "password" {
-		t.Fatalf("cloud_account = %+v", cloudAccount)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			setUserDirs(t, dir)
+			args := []string{"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object"}
+			args = append(args, tc.args...)
+			var out, errOut bytes.Buffer
+			err := Execute(withHost(t, "https://example.invalid", args...), &out, &errOut)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("err = %v", err)
+			}
+		})
 	}
 }
 
@@ -1412,32 +1568,6 @@ func TestCloudAccountsCreateGenericProvidersAllowFormerLegacyConfigFlagsAsMetada
 			wantKey: "host",
 			want:    "https://legacy.invalid",
 		},
-		{
-			name: "oss scene",
-			args: []string{
-				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
-				"--cloud-auth-type", "password",
-				"--auth-url", "https://vc.example.invalid",
-				"--username", "admin",
-				"--password", "secret",
-				"--scene", "migration",
-			},
-			wantKey: "scene",
-			want:    "migration",
-		},
-		{
-			name: "oss insecure",
-			args: []string{
-				"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
-				"--cloud-auth-type", "password",
-				"--auth-url", "https://vc.example.invalid",
-				"--username", "admin",
-				"--password", "secret",
-				"--insecure", "true",
-			},
-			wantKey: "insecure",
-			want:    "true",
-		},
 	}
 
 	for _, tc := range cases {
@@ -1457,7 +1587,7 @@ func TestCloudAccountsCreateOSSHuaweiAcceptsDynamicMetadataFlags(t *testing.T) {
 		"--access-key-id", "ak",
 		"--access-key-secret", "sk",
 		"--region-id", "cn-north-4",
-		"--project-domain-id", "domain-1",
+		"--operator-label", "ops",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -1465,7 +1595,21 @@ func TestCloudAccountsCreateOSSHuaweiAcceptsDynamicMetadataFlags(t *testing.T) {
 	}
 	cloudAccount := body["cloud_account"].(map[string]interface{})
 	metadata := cloudAccount["metadata"].(map[string]interface{})
-	if metadata["access_key_id"] != "ak" || metadata["project_domain_id"] != "domain-1" || metadata["region_id"] != "cn-north-4" {
+	if metadata["access_id"] != "ak" || metadata["operator_label"] != "ops" || metadata["region_id"] != "cn-north-4" || metadata["region_name"] != "North China - Beijing 4" {
+		t.Fatalf("metadata = %+v", metadata)
+	}
+}
+
+func TestCloudAccountsCreateOSSHuaweiFallsBackToSpecifiedRegionIDForName(t *testing.T) {
+	_, body := executeCloudAccountCreateAtPath(t, []string{
+		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-test-empty",
+	})
+
+	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	if metadata["region_id"] != "cn-test-empty" || metadata["region_name"] != "cn-test-empty" {
 		t.Fatalf("metadata = %+v", metadata)
 	}
 }
@@ -1483,7 +1627,7 @@ func TestCloudAccountsCreateOSSHuaweiAutoGeneratesCustomName(t *testing.T) {
 	}
 
 	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
-	if metadata["custom_name"] != "Huawei Cloud(Recommended, SDK v3.1.86)-cn-north-1" {
+	if metadata["custom_name"] != "Huawei Cloud(Recommended, SDK v3.1.86)-North China - Beijing 1" {
 		t.Fatalf("metadata = %+v", metadata)
 	}
 }
@@ -1527,7 +1671,7 @@ func TestCloudAccountsCreateBlockGenericAliasValidationKeepsFieldErrors(t *testi
 	}
 }
 
-func TestCloudAccountsCreateOSSGenericFileSetAndFlagOverrides(t *testing.T) {
+func TestCloudAccountsCreateOSSHuaweiFileSetAndFlagOverrides(t *testing.T) {
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "metadata.json")
 	if err := os.WriteFile(filePath, []byte(`{"project_id":"file-project","custom_name":"file-name","nested":{"disk_bus_type_id":"file-bus"}}`), 0o600); err != nil {
@@ -1536,14 +1680,13 @@ func TestCloudAccountsCreateOSSGenericFileSetAndFlagOverrides(t *testing.T) {
 
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
-		"--cloud-auth-type", "password",
 		"--file", filePath,
 		"--set-json", `nested={"disk_bus_type_id":"json-bus","disk_bus_type_name":"virtio"}`,
 		"--set", "project_id=set-project",
 		"--custom-name", "flag-name",
-		"--auth-url", "https://vc.example.invalid",
-		"--username", "admin",
-		"--password", "secret",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-north-1",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -1562,13 +1705,12 @@ func TestCloudAccountsCreateOSSGenericFileSetAndFlagOverrides(t *testing.T) {
 	}
 }
 
-func TestCloudAccountsCreateOSSGenericMakeImageKeepsAutoUploadImagesEnabled(t *testing.T) {
+func TestCloudAccountsCreateOSSHuaweiAlwaysMakesSingleLinuxImage(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "huawei", "--storage-type", "object",
-		"--auth-url", "https://vc.example.invalid",
-		"--username", "admin",
-		"--password", "secret",
-		"--set", "linux_boot_image_id=make_image",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-north-1",
 	})
 
 	if path != "/hypermotion/v1/cloud_accounts" {
@@ -1581,6 +1723,14 @@ func TestCloudAccountsCreateOSSGenericMakeImageKeepsAutoUploadImagesEnabled(t *t
 	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
 	if metadata["linux_boot_image_id"] != "make_image" {
 		t.Fatalf("metadata = %+v", metadata)
+	}
+	host := metadata["linux_boot_image_host_config"].(map[string]interface{})
+	if host["zone_id"] != "cn-north-1a" || host["flavor_id"] != "c3.large.2" || host["network_id"] != "network-1" || host["subnet_id"] != "subnet-1" || host["image_id"] != "image-linux-1" || host["system_disk_type_id"] != "disk-type-1" {
+		t.Fatalf("host = %+v", host)
+	}
+	flavorIDs := host["flavor_id_arr"].([]interface{})
+	if len(flavorIDs) != 3 || flavorIDs[0] != "u-2" || flavorIDs[1] != "u-2-m-4" || flavorIDs[2] != "c3.large.2" {
+		t.Fatalf("flavor_id_arr = %+v", flavorIDs)
 	}
 }
 
@@ -1710,7 +1860,49 @@ func executeCloudAccountCreateAtPath(t *testing.T, commandArgs []string) (string
 				t.Fatal(err)
 			}
 			fetchRes, _ := requestBody["fetch_res"].(string)
+			cloudType := ""
+			if cloudAccount, ok := requestBody["cloud_account"].(map[string]interface{}); ok {
+				cloudType, _ = cloudAccount["cloud_type"].(string)
+			}
 			cloudInfo := map[string]interface{}{}
+			if cloudType == "huawei_obs" {
+				switch fetchRes {
+				case "regions,zones":
+					cloudInfo["regions"] = []map[string]interface{}{
+						{"id": "cn-north-1", "display_name": "North China - Beijing 1", "local_name": "华北-北京一"},
+						{"id": "cn-north-4", "display_name": "North China - Beijing 4", "local_name": "华北-北京四"},
+						{"id": "cn-test-empty"},
+					}
+					cloudInfo["zones"] = []map[string]interface{}{
+						{"id": "cn-north-1a", "name": "Availability Zone 1", "local_name": "可用区1"},
+						{"id": "cn-north-4a", "name": "Availability Zone 1", "local_name": "可用区1"},
+					}
+				case "networks,subnets":
+					cloudInfo["networks"] = []map[string]interface{}{{"id": "network-1", "name": "vpc-ray", "is_recommend": 1}}
+					cloudInfo["subnets"] = []map[string]interface{}{{"id": "subnet-1", "name": "subnet-ray", "network_id": "network-1"}}
+				case "flavors":
+					cloudInfo["flavors"] = []map[string]interface{}{{
+						"value": "u-2", "children": []interface{}{map[string]interface{}{
+							"value": "u-2-m-4", "children": []interface{}{map[string]interface{}{
+								"id": "c3.large.2", "name": "c3.large.2", "vcpus": 2, "ram_GB": 4, "is_recommend": 1,
+							}},
+						}},
+					}}
+				case "images,system_volume_types":
+					cloudInfo["images"] = []map[string]interface{}{{"id": "image-linux-1", "name": "Ubuntu 24.04 server 64bit", "os_type": "linux", "is_recommend": 1}}
+					cloudInfo["system_volume_types"] = []map[string]interface{}{{"id": "disk-type-1", "name": "General Purpose SSD", "is_recommend": 1}}
+				case "boot_loader_images":
+					cloudInfo["boot_loader_images"] = []map[string]interface{}{{"id": "boot-image-1", "name": "Windows Server 2016 Standard 64bit English", "is_recommend": 1}}
+				}
+				if strings.Contains(fetchRes, "boot_loader_flavors") || strings.Contains(fetchRes, "bandwidths") {
+					t.Errorf("unexpected Huawei object resource query %q", fetchRes)
+				}
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"code": "00000000",
+					"data": map[string]interface{}{"cloud_info": cloudInfo},
+				})
+				return
+			}
 			switch fetchRes {
 			case "boot_loader_images":
 				cloudInfo["boot_loader_images"] = []map[string]interface{}{

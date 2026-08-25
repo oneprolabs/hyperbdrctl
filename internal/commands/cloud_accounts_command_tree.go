@@ -265,7 +265,7 @@ func newCloudAccountsCreateProviderCommand(ctx *context, entry catalog.CloudEntr
 	addHelpLayout(cmd, helpLayoutFourSection)
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(cloudAccountCreateProviderUsageLineKey(storageType)), entry.Provider))
 	notes := cloudAccountCreateProviderUsageNotes(ctx, entry, storageType, specialized)
-	if specialized && storageType == "objectstorage" && entry.Provider == "aliyun" {
+	if storageType == "objectstorage" && (entry.Provider == "huawei" || (specialized && entry.Provider == "aliyun")) {
 		helpContext := dynamicParameterHelpContext{
 			Command:      dynamicParameterHelpCloudAccountCreate,
 			Provider:     entry.Provider,
@@ -290,6 +290,8 @@ func newCloudAccountsCreateProviderCommand(ctx *context, entry catalog.CloudEntr
 		addCloudAccountCreateOpenStackBlockFlags(cmd, ctx)
 	case specialized && storageType == "objectstorage" && entry.Provider == "aliyun":
 		addCloudAccountCreateAliyunObjectFlags(cmd, ctx)
+	case specialized && storageType == "objectstorage" && entry.Provider == "huawei":
+		addCloudAccountCreateHuaweiObjectFlags(cmd, ctx)
 	case specialized && storageType == "objectstorage" && entry.Provider == "openstack":
 		addCloudAccountCreateOpenStackObjectFlags(cmd, ctx)
 	case storageType == "block":
@@ -378,6 +380,25 @@ func addCloudAccountCreateAliyunObjectFlags(cmd *cobra.Command, ctx *context) {
 		addFlagString(cmd, ctx, name)
 	}
 	for _, name := range []string{"region-name", "boot-loader-flavor-id", "custom-name", "file"} {
+		addFlagString(cmd, ctx, name)
+	}
+	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))
+	cmd.Flags().StringArray("set-json", nil, ctx.loc.T("flag.set-json"))
+	addFlagBool(cmd, ctx, "preview-request")
+}
+
+func addCloudAccountCreateHuaweiObjectFlags(cmd *cobra.Command, ctx *context) {
+	for _, name := range []string{
+		"access-key-id", "access-key-secret", "region-id", "region-name", "custom-name",
+		"auth-project-id", "use-internal-ip", "control-access-ip",
+		"linux-boot-image-host-config-zone-id", "linux-boot-image-host-config-zone-name",
+		"linux-boot-image-host-config-flavor-id", "linux-boot-image-host-config-flavor-name",
+		"linux-boot-image-host-config-network-id", "linux-boot-image-host-config-network-name",
+		"linux-boot-image-host-config-subnet-id", "linux-boot-image-host-config-subnet-name",
+		"linux-boot-image-host-config-image-id", "linux-boot-image-host-config-image-name",
+		"linux-boot-image-host-config-system-disk-type-id", "linux-boot-image-host-config-system-disk-type-name",
+		"boot-loader-image-id", "boot-loader-image-name", "boot-loader-flavor-id", "file",
+	} {
 		addFlagString(cmd, ctx, name)
 	}
 	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))

@@ -153,58 +153,12 @@ Parameter Sources:
   --region-id string
     Confirm the target region ID before creating the cloud account.
 
-  --custom-name string
-    Add this only when you want to save a custom name.
-
 Resource Retrieval:
-  Query the region list first:
+  To find an available region-id, first query the Huawei Cloud region list:
     hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
       --access-key-id <ak> \
       --access-key-secret <sk> \
       --fetch-res regions \
-      --output json
-
-  Then query availability zones:
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --fetch-res zones \
-      --output json
-
-  Query flavors as needed:
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --zone-id <zone_id> \
-      --fetch-res flavors \
-      --flavor-vcpus 2 \
-      --flavor-ram 4 \
-      --output json
-
-  Query networks and subnets as needed:
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --fetch-res networks,subnets \
-      --output json
-
-  Query images and system volume types as needed:
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --fetch-res images \
-      --output json
-
-    hyperbdrctl cloud-resource fetch --cloud-type huawei --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --zone-id <zone_id> \
-      --fetch-res system_volume_types \
       --output json
 
 The minimum create command is:

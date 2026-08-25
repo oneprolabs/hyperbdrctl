@@ -40,6 +40,7 @@ type dynamicParameterHelpParameter struct {
 type dynamicParameterHelpGroup struct {
 	Key                 string
 	TitleKey            string
+	FooterKey           string
 	LegacyUsageNoteKeys []string
 	Parameters          []dynamicParameterHelpParameter
 }
@@ -141,6 +142,48 @@ var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
 				DefaultValue:   "auto_upload",
 				SourceKey:      "help.dynamic_parameter.aliyun_object.uefi_boot_image.source.windows",
 			},
+		},
+	},
+	"huawei-object-cloud-account-names": {
+		Key:      "huawei-object-cloud-account-names",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{
+				Flag:           "region-name",
+				Placeholder:    "<region_name>",
+				DescriptionKey: "help.dynamic_parameter.huawei_object.region_name",
+				SourceKey:      "help.dynamic_parameter.huawei_object.region_name.source",
+			},
+			{
+				Flag:           "custom-name",
+				Placeholder:    "<name>",
+				DescriptionKey: "help.dynamic_parameter.huawei_object.custom_name",
+				SourceKey:      "help.dynamic_parameter.huawei_object.custom_name.source",
+			},
+		},
+	},
+	"huawei-object-cloud-account-controls": {
+		Key:      "huawei-object-cloud-account-controls",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{Flag: "auth-project-id", Placeholder: "<project_id>", DescriptionKey: "help.dynamic_parameter.huawei_object.auth_project_id", SourceKey: "help.dynamic_parameter.huawei_object.auth_project_id.source"},
+			{Flag: "use-internal-ip", Placeholder: "<mode>", DescriptionKey: "help.dynamic_parameter.huawei_object.use_internal_ip", DefaultValue: "0", Choices: []string{"0", "1"}, ChoicesInline: true, SourceKey: "help.dynamic_parameter.huawei_object.use_internal_ip.source"},
+			{Flag: "control-access-ip", Placeholder: "<ip>", DescriptionKey: "help.dynamic_parameter.huawei_object.control_access_ip", SourceKey: "help.dynamic_parameter.huawei_object.control_access_ip.source"},
+			{Flag: "boot-loader-image-id", Placeholder: "<image_id>", DescriptionKey: "help.dynamic_parameter.huawei_object.boot_loader_image_id", SourceKey: "help.dynamic_parameter.huawei_object.boot_loader_image_id.source"},
+			{Flag: "boot-loader-flavor-id", Placeholder: "<flavor_id>", DescriptionKey: "help.dynamic_parameter.huawei_object.boot_loader_flavor_id", SourceKey: "help.dynamic_parameter.huawei_object.boot_loader_flavor_id.source"},
+		},
+	},
+	"huawei-object-cloud-account-transition-host": {
+		Key:       "huawei-object-cloud-account-transition-host",
+		TitleKey:  "help.dynamic_parameter.huawei_object.transition_host.title",
+		FooterKey: "help.dynamic_parameter.huawei_object.transition_host.footer",
+		Parameters: []dynamicParameterHelpParameter{
+			{Flag: "linux-boot-image-host-config-zone-id", Placeholder: "<zone_id>", DescriptionKey: "help.dynamic_parameter.huawei_object.host.zone_id", SourceKey: "help.dynamic_parameter.huawei_object.host.zone_id.source"},
+			{Flag: "linux-boot-image-host-config-flavor-id", Placeholder: "<flavor_id>", DescriptionKey: "help.dynamic_parameter.huawei_object.host.flavor_id", SourceKey: "help.dynamic_parameter.huawei_object.host.flavor_id.source"},
+			{Flag: "linux-boot-image-host-config-network-id", Placeholder: "<network_id>", DescriptionKey: "help.dynamic_parameter.huawei_object.host.network_id", SourceKey: "help.dynamic_parameter.huawei_object.host.network_id.source"},
+			{Flag: "linux-boot-image-host-config-subnet-id", Placeholder: "<subnet_id>", DescriptionKey: "help.dynamic_parameter.huawei_object.host.subnet_id", SourceKey: "help.dynamic_parameter.huawei_object.host.subnet_id.source"},
+			{Flag: "linux-boot-image-host-config-image-id", Placeholder: "<image_id>", DescriptionKey: "help.dynamic_parameter.huawei_object.host.image_id", SourceKey: "help.dynamic_parameter.huawei_object.host.image_id.source"},
+			{Flag: "linux-boot-image-host-config-system-disk-type-id", Placeholder: "<type_id>", DescriptionKey: "help.dynamic_parameter.huawei_object.host.system_disk_type_id", SourceKey: "help.dynamic_parameter.huawei_object.host.system_disk_type_id.source"},
 		},
 	},
 	"openstack-block-cloud-account-image-access": {
@@ -356,6 +399,24 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		StorageType: "objectstorage",
 	},
 	{
+		GroupKey:    "huawei-object-cloud-account-names",
+		Command:     dynamicParameterHelpCloudAccountCreate,
+		Provider:    "huawei",
+		StorageType: "objectstorage",
+	},
+	{
+		GroupKey:    "huawei-object-cloud-account-controls",
+		Command:     dynamicParameterHelpCloudAccountCreate,
+		Provider:    "huawei",
+		StorageType: "objectstorage",
+	},
+	{
+		GroupKey:    "huawei-object-cloud-account-transition-host",
+		Command:     dynamicParameterHelpCloudAccountCreate,
+		Provider:    "huawei",
+		StorageType: "objectstorage",
+	},
+	{
 		GroupKey:    "huawei-block-cloud-account-auth-project",
 		Command:     dynamicParameterHelpCloudAccountCreate,
 		Provider:    "huawei",
@@ -453,6 +514,10 @@ func renderDynamicParameterHelp(ctx *context, groups []dynamicParameterHelpGroup
 			}
 			appendDynamicParameterHelpParameter(&text, ctx, parameter)
 			parameterCount++
+		}
+		if group.FooterKey != "" {
+			text.WriteString("\n\n")
+			text.WriteString(ctx.loc.T(group.FooterKey))
 		}
 	}
 	return text.String()

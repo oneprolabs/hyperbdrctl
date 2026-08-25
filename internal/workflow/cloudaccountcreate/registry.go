@@ -24,6 +24,10 @@ var adapters = map[string]adapter{
 		key:   workflow.CloudAccountCreateKey("aliyun_obs", "objectstorage").String(),
 		build: buildAliyunObject,
 	},
+	workflow.CloudAccountCreateKey("huawei_obs", "objectstorage").String(): {
+		key:   workflow.CloudAccountCreateKey("huawei_obs", "objectstorage").String(),
+		build: buildHuaweiObject,
+	},
 	workflow.CloudAccountCreateKey("openstack", "objectstorage").String(): {
 		key:   workflow.CloudAccountCreateKey("openstack", "objectstorage").String(),
 		build: buildOpenStackObject,

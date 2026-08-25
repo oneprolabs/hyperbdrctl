@@ -13,6 +13,7 @@ type FetchResourcesSpec struct {
 	BootMode         string
 	FetchRes         string
 	ZoneID           string
+	FlavorID         string
 	FlavorVCPUs      string
 	FlavorRAM        string
 	ComputeZoneID    string
@@ -77,6 +78,9 @@ func (s Service) FetchResources(spec FetchResourcesSpec) (client.APIResponse, er
 	}
 	if spec.ZoneID != "" {
 		body["zone_id"] = spec.ZoneID
+	}
+	if spec.FlavorID != "" {
+		body["flavor_id"] = spec.FlavorID
 	}
 	if spec.BootMode != "" {
 		body["boot_mode"] = spec.BootMode
