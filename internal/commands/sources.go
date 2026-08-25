@@ -177,7 +177,6 @@ func runSources(ctx *context, args []string) error {
 		fs := newFlagSet("source create")
 		sourceType := fs.String("type", "", "")
 		synchNodeID := fs.String("synch-node-id", "", "")
-		synchNodeIDs := fs.String("synch-node-ids", "", "")
 		authURL := fs.String("auth-url", "", "")
 		authKey := fs.String("auth-key", "", "")
 		authCert := fs.String("auth-cert", "", "")
@@ -187,13 +186,12 @@ func runSources(ctx *context, args []string) error {
 			return err
 		}
 		spec := appsource.CreateSpec{
-			Type:         *sourceType,
-			SynchNodeID:  *synchNodeID,
-			SynchNodeIDs: *synchNodeIDs,
-			AuthURL:      *authURL,
-			AuthKey:      *authKey,
-			AuthCert:     *authCert,
-			RegionID:     *regionID,
+			Type:        *sourceType,
+			SynchNodeID: *synchNodeID,
+			AuthURL:     *authURL,
+			AuthKey:     *authKey,
+			AuthCert:    *authCert,
+			RegionID:    *regionID,
 		}
 		if *previewRequest {
 			prepared, err := createService.PrepareCreate(spec)

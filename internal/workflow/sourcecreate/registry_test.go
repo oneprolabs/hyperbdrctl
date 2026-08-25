@@ -4,12 +4,11 @@ import "testing"
 
 func TestBuildRequestVMwareMapsToVSphere(t *testing.T) {
 	path, body, err := BuildRequest(Spec{
-		Type:         "vmware",
-		SynchNodeID:  "node-1",
-		SynchNodeIDs: "node-2,node-1",
-		AuthURL:      "https://vcenter.invalid",
-		AuthKey:      "user",
-		AuthCert:     "secret",
+		Type:        "vmware",
+		SynchNodeID: "node-1",
+		AuthURL:     "https://vcenter.invalid",
+		AuthKey:     "user",
+		AuthCert:    "secret",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -21,7 +20,7 @@ func TestBuildRequestVMwareMapsToVSphere(t *testing.T) {
 	if connection["type"] != "vsphere" {
 		t.Fatalf("connection.type = %v", connection["type"])
 	}
-	if got := connection["synch_node_ids"].([]string); len(got) != 2 || got[0] != "node-1" || got[1] != "node-2" {
+	if got := connection["synch_node_ids"].([]string); len(got) != 1 || got[0] != "node-1" {
 		t.Fatalf("synch_node_ids = %#v", got)
 	}
 	vsphere := connection["vsphere"].(map[string]interface{})
@@ -32,12 +31,12 @@ func TestBuildRequestVMwareMapsToVSphere(t *testing.T) {
 
 func TestBuildRequestAWSKeepsAWSPayload(t *testing.T) {
 	_, body, err := BuildRequest(Spec{
-		Type:         "aws",
-		SynchNodeIDs: "node-1,node-2",
-		AuthURL:      "aws.example",
-		AuthKey:      "ak",
-		AuthCert:     "sk",
-		RegionID:     "cn-test-1",
+		Type:        "aws",
+		SynchNodeID: "node-1",
+		AuthURL:     "aws.example",
+		AuthKey:     "ak",
+		AuthCert:    "sk",
+		RegionID:    "cn-test-1",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -64,9 +63,9 @@ func TestBuildRequestValidation(t *testing.T) {
 			want: "type must be one of vmware, aws",
 		},
 		{
-			name: "missing node ids",
+			name: "missing node id",
 			spec: Spec{Type: "vmware", AuthURL: "u", AuthKey: "k", AuthCert: "c"},
-			want: "synch-node-id or synch-node-ids is required",
+			want: "synch-node-id is required",
 		},
 		{
 			name: "missing aws region",

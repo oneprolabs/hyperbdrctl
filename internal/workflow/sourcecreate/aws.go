@@ -13,7 +13,7 @@ func buildAWS(spec Spec) (string, map[string]interface{}, error) {
 	if err := required(spec.RegionID, "region-id"); err != nil {
 		return "", nil, err
 	}
-	nodeIDs, err := synchNodeIDs(spec.SynchNodeID, spec.SynchNodeIDs)
+	nodeIDs, err := synchNodeIDs(spec.SynchNodeID)
 	if err != nil {
 		return "", nil, err
 	}

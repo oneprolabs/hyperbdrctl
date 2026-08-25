@@ -10,7 +10,7 @@ func buildVMware(spec Spec) (string, map[string]interface{}, error) {
 	if err := required(spec.AuthCert, "auth-cert"); err != nil {
 		return "", nil, err
 	}
-	nodeIDs, err := synchNodeIDs(spec.SynchNodeID, spec.SynchNodeIDs)
+	nodeIDs, err := synchNodeIDs(spec.SynchNodeID)
 	if err != nil {
 		return "", nil, err
 	}

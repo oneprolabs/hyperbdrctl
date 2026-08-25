@@ -35,7 +35,7 @@ func newProductionSiteCreateCommand(ctx *context) *cobra.Command {
 		},
 	}
 	cmd.Flags().String("type", "", ctx.loc.T("flag.production-site-type"))
-	for _, name := range []string{"synch-node-id", "synch-node-ids", "auth-url", "auth-key", "auth-cert", "region-id"} {
+	for _, name := range []string{"synch-node-id", "auth-url", "auth-key", "auth-cert", "region-id"} {
 		addFlagString(cmd, ctx, name)
 	}
 	addFlagBool(cmd, ctx, "preview-request")
@@ -101,8 +101,7 @@ func productionSiteCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 		return append([]flagHelpSpec{{name: "type", choices: []string{"vmware", "aws"}}}, global...)
 	}
 	specs := []flagHelpSpec{
-		{name: "synch-node-id"},
-		{name: "synch-node-ids"},
+		{name: "synch-node-id", required: true},
 		{name: "auth-url", required: true},
 		{name: "auth-key", required: true},
 		{name: "auth-cert", required: true},

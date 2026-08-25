@@ -535,7 +535,6 @@ func TestSourcesCreatePreviewRequestBuildsVMwarePayload(t *testing.T) {
 		"production-site", "create",
 		"--type", "vmware",
 		"--synch-node-id", "node-1",
-		"--synch-node-ids", "node-2,node-1",
 		"--auth-url", "https://192.168.10.2:443",
 		"--auth-key", "zhangtianjie@vsphere.local",
 		"--auth-cert", "2b24",
@@ -549,7 +548,6 @@ func TestSourcesCreatePreviewRequestBuildsVMwarePayload(t *testing.T) {
 		`"type": "vsphere"`,
 		`"synch_node_ids": [`,
 		`"node-1"`,
-		`"node-2"`,
 		`"vsphere": {`,
 		`"auth_url": "https://192.168.10.2:443"`,
 		`"auth_key": "zhangtianjie@vsphere.local"`,
@@ -589,7 +587,7 @@ func TestSourcesCreateSendsAWSPayload(t *testing.T) {
 	err := Execute(withHost(t, srv.URL,
 		"production-site", "create",
 		"--type", "aws",
-		"--synch-node-ids", "node-1,node-2",
+		"--synch-node-id", "node-1",
 		"--auth-url", "test",
 		"--auth-key", "testak",
 		"--auth-cert", "1e2334261801",
@@ -608,6 +606,43 @@ func TestSourcesCreateSendsAWSPayload(t *testing.T) {
 	aws := connection["aws"].(map[string]interface{})
 	if aws["auth_key"] != "testak" || aws["auth_cert"] != "1e2334261801" || aws["region_id"] != "test-region" {
 		t.Fatalf("aws payload = %#v", aws)
+	}
+}
+
+func TestSourcesCreateRejectsRemovedSynchNodeIDsFlag(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"production-site", "create",
+		"--type", "vmware",
+		"--synch-node-ids", "node-1,node-2",
+		"--auth-url", "https://vcenter.example:443",
+		"--auth-key", "user",
+		"--auth-cert", "secret",
+		"--preview-request",
+	), &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "synch-node-ids") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestSourcesCreateRequiresSynchNodeID(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, "https://example.invalid",
+		"production-site", "create",
+		"--type", "vmware",
+		"--auth-url", "https://vcenter.example:443",
+		"--auth-key", "user",
+		"--auth-cert", "secret",
+		"--preview-request",
+	), &out, &errOut)
+	if err == nil || err.Error() != "synch-node-id is required" {
+		t.Fatalf("err = %v", err)
 	}
 }
 
@@ -721,31 +756,31 @@ func TestProductionSiteCreateHelpUsesTypeProfiles(t *testing.T) {
 			name:     "selector zh_cn",
 			args:     []string{"--lang", "zh_cn", "production-site", "create", "--help"},
 			want:     []string{"创建生产站点", "生产站点类型，可选值 vmware / aws", "--type vmware --help", "--type aws --help"},
-			unwanted: []string{"--synch-node-id string", "--auth-url string", "--region-id string", "--preview-request"},
+			unwanted: []string{"--synch-node-id string", "--synch-node-ids", "--auth-url string", "--region-id string", "--preview-request"},
 		},
 		{
 			name:     "vmware zh_cn",
 			args:     []string{"--lang", "zh_cn", "production-site", "create", "--type", "vmware", "--help"},
-			want:     []string{"创建 VMware 生产站点", "用法: hyperbdrctl production-site create --type vmware", "VMware vCenter 鉴权地址（必须）", "VMware vCenter 用户名（必须）", "VMware vCenter 密码（必须）", "`--synch-node-id` 和 `--synch-node-ids` 至少提供一个。", "--type vmware --binding-status binding"},
-			unwanted: []string{"      --type string", "--region-id string", "AWS Secret Access Key"},
+			want:     []string{"创建 VMware 生产站点", "用法: hyperbdrctl production-site create --type vmware", "单个同步节点 ID（必须）", "VMware vCenter 鉴权地址（必须）", "VMware vCenter 用户名（必须）", "VMware vCenter 密码（必须）", "--type vmware --binding-status binding"},
+			unwanted: []string{"      --type string", "--synch-node-ids", "--region-id string", "AWS Secret Access Key"},
 		},
 		{
 			name:     "aws zh_cn equals syntax",
 			args:     []string{"--lang", "zh_cn", "production-site", "create", "--type=aws", "--help"},
-			want:     []string{"创建 AWS 生产站点", "用法: hyperbdrctl production-site create --type aws", "AWS Access Key ID（必须）", "AWS Secret Access Key（必须）", "区域 ID（必须）", "--synch-node-ids <node_id_1,node_id_2>", "--type aws --binding-status binding"},
-			unwanted: []string{"      --type string", "VMware vCenter"},
+			want:     []string{"创建 AWS 生产站点", "用法: hyperbdrctl production-site create --type aws", "单个同步节点 ID（必须）", "AWS Access Key ID（必须）", "AWS Secret Access Key（必须）", "区域 ID（必须）", "--synch-node-id <node_id>", "--type aws --binding-status binding"},
+			unwanted: []string{"      --type string", "--synch-node-ids", "VMware vCenter"},
 		},
 		{
 			name:     "vmware en help first",
 			args:     []string{"--lang", "en", "production-site", "create", "--help", "--type", "vmware"},
-			want:     []string{"Create VMware production site", "Usage: hyperbdrctl production-site create --type vmware", "VMware vCenter authentication URL (required)", "Provide at least one of `--synch-node-id` and `--synch-node-ids`.", "--type vmware --binding-status binding"},
-			unwanted: []string{"      --type string", "--region-id string"},
+			want:     []string{"Create VMware production site", "Usage: hyperbdrctl production-site create --type vmware", "Single sync node ID (required)", "VMware vCenter authentication URL (required)", "--type vmware --binding-status binding"},
+			unwanted: []string{"      --type string", "--synch-node-ids", "--region-id string"},
 		},
 		{
 			name:     "aws en",
 			args:     []string{"--lang", "en", "production-site", "create", "--type", "aws", "-h"},
-			want:     []string{"Create AWS production site", "Usage: hyperbdrctl production-site create --type aws", "AWS Access Key ID (required)", "AWS Secret Access Key (required)", "Region ID (required)", "--type aws --binding-status binding"},
-			unwanted: []string{"      --type string", "VMware vCenter"},
+			want:     []string{"Create AWS production site", "Usage: hyperbdrctl production-site create --type aws", "Single sync node ID (required)", "AWS Access Key ID (required)", "AWS Secret Access Key (required)", "Region ID (required)", "--type aws --binding-status binding"},
+			unwanted: []string{"      --type string", "--synch-node-ids", "VMware vCenter"},
 		},
 	}
 
