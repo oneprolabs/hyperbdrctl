@@ -13,8 +13,8 @@ func TestProvidersAreUniqueWithinEachCatalog(t *testing.T) {
 func TestEnabledBlockCloudsReturnsOnlyEnabledEntries(t *testing.T) {
 	got := EnabledBlockClouds()
 
-	if len(got) != 30 {
-		t.Fatalf("EnabledBlockClouds() len = %d, want %d", len(got), 30)
+	if len(got) != 3 {
+		t.Fatalf("EnabledBlockClouds() len = %d, want %d", len(got), 3)
 	}
 	if containsCloudType(got, "huaweicloud") {
 		t.Fatalf("EnabledBlockClouds() unexpectedly contains disabled huaweicloud entry")
@@ -24,8 +24,8 @@ func TestEnabledBlockCloudsReturnsOnlyEnabledEntries(t *testing.T) {
 func TestEnabledObjectCloudsReturnsOnlyEnabledEntries(t *testing.T) {
 	got := EnabledObjectClouds()
 
-	if len(got) != 22 {
-		t.Fatalf("EnabledObjectClouds() len = %d, want %d", len(got), 22)
+	if len(got) != 3 {
+		t.Fatalf("EnabledObjectClouds() len = %d, want %d", len(got), 3)
 	}
 	if containsCloudType(got, "aws_obs") {
 		t.Fatalf("EnabledObjectClouds() unexpectedly contains disabled aws_obs entry")
@@ -53,12 +53,12 @@ func TestFindObjectCloudByCloudType(t *testing.T) {
 }
 
 func TestFindBlockCloudByProvider(t *testing.T) {
-	got, ok := FindBlockCloud("open_telekom")
+	got, ok := FindBlockCloud("huawei")
 	if !ok {
 		t.Fatalf("FindBlockCloud() ok = false, want true")
 	}
-	if got.CloudType != "open_telekom_bs" {
-		t.Fatalf("FindBlockCloud() cloudType = %q, want %q", got.CloudType, "open_telekom_bs")
+	if got.CloudType != "huawei_bs" {
+		t.Fatalf("FindBlockCloud() cloudType = %q, want %q", got.CloudType, "huawei_bs")
 	}
 }
 
@@ -73,12 +73,21 @@ func TestFindObjectCloudByCloudTypeSharedProvider(t *testing.T) {
 }
 
 func TestFindCloudTrimsWhitespaceAndIgnoresCase(t *testing.T) {
-	got, ok := FindBlockCloud("  OPEN_TELEKOM_BS ")
+	got, ok := FindBlockCloud("  HUAWEI_BS ")
 	if !ok {
 		t.Fatalf("FindBlockCloud() ok = false, want true")
 	}
-	if got.Key != "open_telekom_bs_block" {
-		t.Fatalf("FindBlockCloud() key = %q, want %q", got.Key, "open_telekom_bs_block")
+	if got.Key != "huawei_bs_block" {
+		t.Fatalf("FindBlockCloud() key = %q, want %q", got.Key, "huawei_bs_block")
+	}
+}
+
+func TestFindCloudDoesNotReturnDisabledEntry(t *testing.T) {
+	if _, ok := FindBlockCloud("open_telekom_bs"); ok {
+		t.Fatalf("FindBlockCloud() returned disabled open_telekom_bs entry")
+	}
+	if _, ok := FindObjectCloud("aws_v2_obs"); ok {
+		t.Fatalf("FindObjectCloud() returned disabled aws_v2_obs entry")
 	}
 }
 
@@ -90,36 +99,9 @@ func TestFindCloudMiss(t *testing.T) {
 
 func TestBlockCloudTypesStableOrdered(t *testing.T) {
 	want := []string{
-		"aliyun",
 		"aliyun_bs",
-		"apsara316_bs",
-		"apsara318_bs",
-		"tencentcloud",
-		"tce_bs",
-		"tstackenterprise",
-		"tstack",
 		"huawei_bs",
-		"hcso_bs",
-		"hwfc80",
-		"aws_cn_v2_bs",
-		"aws_v2_bs",
-		"azure_bs",
-		"ucloudstack_bs",
-		"qcloud",
-		"yidongecloud",
-		"yidongjointcloud",
-		"esurfingcloud_bs",
 		"openstack",
-		"tmcloud",
-		"oracle_bs",
-		"google_bs",
-		"smartx_bs",
-		"open_telekom_bs",
-		"lvneng_bs",
-		"zstack",
-		"xhere_bs",
-		"jinshancloud",
-		"fixo_bs",
 	}
 	if got := BlockCloudTypes(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("BlockCloudTypes() = %#v, want %#v", got, want)
@@ -128,28 +110,9 @@ func TestBlockCloudTypesStableOrdered(t *testing.T) {
 
 func TestObjectCloudTypesStableOrdered(t *testing.T) {
 	want := []string{
-		"aliyun",
 		"aliyun_obs",
-		"apsara316",
-		"apsara318",
-		"tencent_obs",
-		"tce_obs",
 		"huawei_obs",
-		"hcso_obs",
-		"fusioncompute_obs",
-		"volc",
-		"aws_cn_v2_obs",
-		"aws_v2_obs",
-		"ucloud",
-		"yidongecloud",
-		"ctyun_obs",
 		"openstack",
-		"tmcloud",
-		"open_telekom_obs",
-		"vmware_obs",
-		"xhere",
-		"ens",
-		"vmware",
 	}
 	if got := ObjectCloudTypes(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("ObjectCloudTypes() = %#v, want %#v", got, want)
@@ -160,8 +123,9 @@ func TestEnabledHelpersReturnCopies(t *testing.T) {
 	got := EnabledBlockClouds()
 	got[0].NameEn = "mutated"
 
-	if BlockClouds[0].NameEn != "Alibaba Cloud(Not Recommended)" {
-		t.Fatalf("BlockClouds mutated = %q, want original value", BlockClouds[0].NameEn)
+	original := findCloudEntryByType(t, BlockClouds, "aliyun_bs")
+	if original.NameEn != "Alibaba Cloud(Recommended, SDK v2.0)" {
+		t.Fatalf("BlockClouds mutated = %q, want original value", original.NameEn)
 	}
 }
 
@@ -206,7 +170,7 @@ func TestObjectCloudArchitectures(t *testing.T) {
 }
 
 func TestEnabledCloudsPreserveArchitecture(t *testing.T) {
-	block := findCloudEntryByType(t, EnabledBlockClouds(), "open_telekom_bs")
+	block := findCloudEntryByType(t, EnabledBlockClouds(), "aliyun_bs")
 	if block.Architecture != AtomyV2 {
 		t.Fatalf("EnabledBlockClouds() architecture for %q = %q, want %q", block.CloudType, block.Architecture, AtomyV2)
 	}
