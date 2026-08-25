@@ -436,6 +436,159 @@ func TestCloudAccountsCreateProviderHelpsUseFourSectionLayout(t *testing.T) {
 	}
 }
 
+func TestCloudAccountCreateAliyunObjectDynamicParameterHelp(t *testing.T) {
+	flags := []string{
+		"region-name",
+		"custom-name",
+		"use-internal-ip",
+		"boot-loader-image-id",
+		"boot-loader-image-name",
+		"boot-loader-flavor-id",
+		"linux-boot-image-id",
+		"windows-boot-image-id",
+		"linux-uefi-boot-image-id",
+		"windows-uefi-boot-image-id",
+	}
+
+	cases := []struct {
+		name string
+		lang string
+		want []string
+	}{
+		{
+			name: "english",
+			lang: "en",
+			want: []string{
+				"Optional dynamic parameters:",
+				"--account-name <name>",
+				"--region-name <region_name>",
+				"Region display name",
+				"--custom-name <name>",
+				"Object-storage cloud-account display name",
+				"--use-internal-ip <mode>",
+				"Default: 0",
+				"Allowed values: 0 / 1",
+				"Value 0 uses public access",
+				"Value 1 uses internal access",
+				"--boot-loader-image-id <image_id>",
+				"--boot-loader-flavor-id <flavor_id>",
+				"--linux-boot-image-id <image_id>",
+				"Default: auto_upload",
+				"--windows-boot-image-id <image_id>",
+				"--linux-uefi-boot-image-id <image_id>",
+				"--windows-uefi-boot-image-id <image_id>",
+				"boot_loader_images",
+				"--flavor-vcpus 2",
+				"--flavor-ram 4",
+				"--os-type linux",
+				"--os-type windows",
+				"--fetch-res images",
+			},
+		},
+		{
+			name: "chinese",
+			lang: "zh_cn",
+			want: []string{
+				"可按需补充以下动态参数：",
+				"--account-name <name>",
+				"--region-name <region_name>",
+				"地域显示名称",
+				"--custom-name <name>",
+				"对象存储云账号显示名称",
+				"--use-internal-ip <mode>",
+				"默认值：0",
+				"可选值：0 / 1",
+				"值 0 使用公网",
+				"值 1 使用内网",
+				"--boot-loader-image-id <image_id>",
+				"--boot-loader-flavor-id <flavor_id>",
+				"--linux-boot-image-id <image_id>",
+				"默认值：auto_upload",
+				"--windows-boot-image-id <image_id>",
+				"--linux-uefi-boot-image-id <image_id>",
+				"--windows-uefi-boot-image-id <image_id>",
+				"boot_loader_images",
+				"--flavor-vcpus 2",
+				"--flavor-ram 4",
+				"--os-type linux",
+				"--os-type windows",
+				"--fetch-res images",
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			err := Execute([]string{
+				"--lang", tt.lang,
+				"cloud-account", "create",
+				"--cloud-type", "aliyun",
+				"--storage-type", "object",
+				"--help",
+			}, &out, &errOut)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			text := out.String()
+			for _, want := range tt.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("help missing %q: %q", want, text)
+				}
+			}
+			for _, flag := range flags {
+				if strings.Contains(text, "--"+flag+" string") {
+					t.Fatalf("dynamic parameter --%s must not be rendered in Flags: %q", flag, text)
+				}
+			}
+			if strings.Count(text, tt.want[0]) != 1 {
+				t.Fatalf("dynamic parameter title must be rendered once: %q", text)
+			}
+			dynamicStart := strings.Index(text, tt.want[0])
+			dynamicEnd := strings.Index(text[dynamicStart:], "--preview-request")
+			if dynamicEnd < 0 {
+				t.Fatalf("preview guidance missing after dynamic parameter section: %q", text)
+			}
+			dynamicText := text[dynamicStart : dynamicStart+dynamicEnd]
+			if got := strings.Count(dynamicText, "\n\n    --"); got != len(flags) {
+				t.Fatalf("dynamic parameters should have exactly one blank line between entries: separators=%d help=%q", got, text)
+			}
+			if strings.Contains(dynamicText, "\n\n\n    --") {
+				t.Fatalf("dynamic parameters must not have multiple blank lines between entries: %q", text)
+			}
+			assertContainsInOrder(t, text,
+				"--account-name <name>",
+				"--region-name <region_name>",
+				"--custom-name <name>",
+				"--use-internal-ip <mode>",
+				"--boot-loader-image-id <image_id>",
+				"--boot-loader-image-name <image_name>",
+				"--boot-loader-flavor-id <flavor_id>",
+				"--linux-boot-image-id <image_id>",
+				"--windows-boot-image-id <image_id>",
+				"--linux-uefi-boot-image-id <image_id>",
+				"--windows-uefi-boot-image-id <image_id>",
+				"--preview-request",
+			)
+		})
+	}
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{
+		"--lang", "en",
+		"cloud-account", "create",
+		"--cloud-type", "openstack",
+		"--storage-type", "object",
+		"--help",
+	}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	if text := out.String(); strings.Contains(text, "--linux-uefi-boot-image-id <image_id>") {
+		t.Fatalf("OpenStack object help must not include Aliyun-only UEFI parameter: %q", text)
+	}
+}
+
 func TestCloudAccountsCreateHelpDynamicallyAddsSupplementalFlags(t *testing.T) {
 	profiles := [][]string{
 		{"aliyun", "block"},
@@ -810,8 +963,8 @@ func TestCloudAccountArchivedHelpCopyIsLocalized(t *testing.T) {
 		{
 			name: "aliyun object",
 			path: []string{"create", "--cloud-type", "aliyun", "--storage-type", "object"},
-			zh:   []string{"创建阿里云对象存储账号", "控制台访问方式", "可选值 0 / 1", "boot_loader_images,images"},
-			en:   []string{"Create Alibaba Cloud object-storage account", "Console access method", "allowed values 0 / 1", "boot_loader_images,images"},
+			zh:   []string{"创建阿里云对象存储账号", "控制台访问方式", "默认值：0", "可选值：", "boot_loader_images", "--fetch-res images"},
+			en:   []string{"Create Alibaba Cloud object-storage account", "Console access mode", "Default: 0", "Allowed values:", "boot_loader_images", "--fetch-res images"},
 		},
 		{
 			name: "huawei object",

@@ -264,7 +264,24 @@ func newCloudAccountsCreateProviderCommand(ctx *context, entry catalog.CloudEntr
 
 	addHelpLayout(cmd, helpLayoutFourSection)
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(cloudAccountCreateProviderUsageLineKey(storageType)), entry.Provider))
-	addAnnotationValue(cmd, usageNotesAnnotation, cloudAccountCreateProviderUsageNotes(ctx, entry, storageType, specialized))
+	notes := cloudAccountCreateProviderUsageNotes(ctx, entry, storageType, specialized)
+	if specialized && storageType == "objectstorage" && entry.Provider == "aliyun" {
+		helpContext := dynamicParameterHelpContext{
+			Command:      dynamicParameterHelpCloudAccountCreate,
+			Provider:     entry.Provider,
+			CloudType:    entry.CloudType,
+			Architecture: entry.Architecture,
+			StorageType:  storageType,
+		}
+		setDynamicParameterHelpContext(cmd, helpContext)
+		notes = appendCloudAccountCreateSupplementalHelp(ctx, notes, cloudAccountCreateProfile{
+			Entry:       entry,
+			Provider:    entry.Provider,
+			StorageType: storageType,
+			Specialized: specialized,
+		})
+	}
+	addAnnotationValue(cmd, usageNotesAnnotation, notes)
 
 	switch {
 	case specialized && storageType == "block" && entry.Provider == "aliyun":

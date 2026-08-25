@@ -246,7 +246,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "help"},
 		}
 	case path == "hyperbdrctl target account create-oss aliyun":
-		return []flagHelpSpec{
+		return omitDynamicParameterHelpFlags([]flagHelpSpec{
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},
 			{name: "region-id", required: true},
@@ -268,7 +268,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
-		}
+		}, dynamicParameterHelpContextFromCommand(cmd))
 	case path == "hyperbdrctl target account create-oss openstack":
 		return []flagHelpSpec{
 			{name: "auth-url", required: true},

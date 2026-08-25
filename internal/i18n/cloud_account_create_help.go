@@ -125,26 +125,12 @@ const (
   --region-id string
     使用目标区域 ID，通常来自区域列表查询结果。
 
-  --region-name string
-    如果未显式传入，CLI 会根据 ` + cloudAccountCreateHelpBacktick + `region-id` + cloudAccountCreateHelpBacktick + ` 自动解析并回填地域显示名称。
-
-  --use-internal-ip string
-    0 表示公网访问，1 表示内网访问。
-
 资源获取：
-  先查询区域列表：
+  查询区域列表：
     hyperbdrctl cloud-resource fetch --cloud-type aliyun --storage-type object \
       --access-key-id <ak> \
       --access-key-secret <sk> \
       --fetch-res regions \
-      --output json
-
-  只有需要手动覆盖镜像相关字段时，才继续查询：
-    hyperbdrctl cloud-resource fetch --cloud-type aliyun --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --fetch-res boot_loader_images,images \
       --output json
 
 最小创建命令如下：

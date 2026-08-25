@@ -33,6 +33,7 @@ type dynamicParameterHelpParameter struct {
 	DescriptionKey string
 	DefaultValue   string
 	Choices        []string
+	ChoicesInline  bool
 	SourceKey      string
 }
 
@@ -67,6 +68,79 @@ var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
 		TitleKey: "help.dynamic_parameter.optional",
 		Parameters: []dynamicParameterHelpParameter{
 			{Flag: "auth-project-id", Placeholder: "<project_id>", DescriptionKey: "help.dynamic_parameter.auth_project_id"},
+		},
+	},
+	"aliyun-object-cloud-account": {
+		Key:      "aliyun-object-cloud-account",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{
+				Flag:           "region-name",
+				Placeholder:    "<region_name>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.region_name",
+				SourceKey:      "help.dynamic_parameter.aliyun_object.region_name.source",
+			},
+			{
+				Flag:           "custom-name",
+				Placeholder:    "<name>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.custom_name",
+				SourceKey:      "help.dynamic_parameter.aliyun_object.custom_name.source",
+			},
+			{
+				Flag:           "use-internal-ip",
+				Placeholder:    "<mode>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.use_internal_ip",
+				DefaultValue:   "0",
+				Choices:        []string{"0", "1"},
+				ChoicesInline:  true,
+				SourceKey:      "help.dynamic_parameter.aliyun_object.use_internal_ip.source",
+			},
+			{
+				Flag:           "boot-loader-image-id",
+				Placeholder:    "<image_id>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.boot_loader_image_id",
+				SourceKey:      "help.dynamic_parameter.aliyun_object.boot_loader_image_id.source",
+			},
+			{
+				Flag:           "boot-loader-image-name",
+				Placeholder:    "<image_name>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.boot_loader_image_name",
+				SourceKey:      "help.dynamic_parameter.aliyun_object.boot_loader_image_name.source",
+			},
+			{
+				Flag:           "boot-loader-flavor-id",
+				Placeholder:    "<flavor_id>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.boot_loader_flavor_id",
+				SourceKey:      "help.dynamic_parameter.aliyun_object.boot_loader_flavor_id.source",
+			},
+			{
+				Flag:           "linux-boot-image-id",
+				Placeholder:    "<image_id>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.linux_boot_image_id",
+				DefaultValue:   "auto_upload",
+				SourceKey:      "help.dynamic_parameter.aliyun_object.boot_image.source.linux",
+			},
+			{
+				Flag:           "windows-boot-image-id",
+				Placeholder:    "<image_id>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.windows_boot_image_id",
+				DefaultValue:   "auto_upload",
+				SourceKey:      "help.dynamic_parameter.aliyun_object.boot_image.source.windows",
+			},
+			{
+				Flag:           "linux-uefi-boot-image-id",
+				Placeholder:    "<image_id>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.linux_uefi_boot_image_id",
+				DefaultValue:   "auto_upload",
+				SourceKey:      "help.dynamic_parameter.aliyun_object.uefi_boot_image.source.linux",
+			},
+			{
+				Flag:           "windows-uefi-boot-image-id",
+				Placeholder:    "<image_id>",
+				DescriptionKey: "help.dynamic_parameter.aliyun_object.windows_uefi_boot_image_id",
+				DefaultValue:   "auto_upload",
+				SourceKey:      "help.dynamic_parameter.aliyun_object.uefi_boot_image.source.windows",
+			},
 		},
 	},
 	"openstack-block-cloud-account-image-access": {
@@ -276,6 +350,12 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		Architecture: catalog.AtomyV2,
 	},
 	{
+		GroupKey:    "aliyun-object-cloud-account",
+		Command:     dynamicParameterHelpCloudAccountCreate,
+		Provider:    "aliyun",
+		StorageType: "objectstorage",
+	},
+	{
 		GroupKey:    "huawei-block-cloud-account-auth-project",
 		Command:     dynamicParameterHelpCloudAccountCreate,
 		Provider:    "huawei",
@@ -358,6 +438,7 @@ func prepareDynamicParameterHelp(ctx *context, notes string, helpContext dynamic
 func renderDynamicParameterHelp(ctx *context, groups []dynamicParameterHelpGroup) string {
 	var text strings.Builder
 	lastTitleKey := ""
+	parameterCount := 0
 	for _, group := range groups {
 		if group.TitleKey != lastTitleKey {
 			if text.Len() > 0 {
@@ -367,10 +448,11 @@ func renderDynamicParameterHelp(ctx *context, groups []dynamicParameterHelpGroup
 			lastTitleKey = group.TitleKey
 		}
 		for index, parameter := range group.Parameters {
-			if index > 0 {
+			if index > 0 || parameterCount > 0 {
 				text.WriteString("\n")
 			}
 			appendDynamicParameterHelpParameter(&text, ctx, parameter)
+			parameterCount++
 		}
 	}
 	return text.String()
@@ -410,10 +492,15 @@ func appendDynamicParameterHelpParameter(text *strings.Builder, ctx *context, pa
 	}
 	if len(parameter.Choices) > 0 {
 		text.WriteString("\n    ")
-		text.WriteString(ctx.loc.T("help.dynamic_parameter.choices"))
-		for _, choice := range parameter.Choices {
-			text.WriteString("\n      ")
-			text.WriteString(choice)
+		if parameter.ChoicesInline {
+			text.WriteString(ctx.loc.T("help.dynamic_parameter.choices_inline"))
+			text.WriteString(strings.Join(parameter.Choices, " / "))
+		} else {
+			text.WriteString(ctx.loc.T("help.dynamic_parameter.choices"))
+			for _, choice := range parameter.Choices {
+				text.WriteString("\n      ")
+				text.WriteString(choice)
+			}
 		}
 	}
 	if parameter.SourceKey != "" {

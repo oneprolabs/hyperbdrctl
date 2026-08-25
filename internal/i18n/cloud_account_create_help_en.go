@@ -122,26 +122,12 @@ Parameter Sources:
   --region-id string
     Use the target region ID, usually obtained from the region list query.
 
-  --region-name string
-    When omitted, the CLI resolves and fills the region display name from ` + cloudAccountCreateHelpBacktick + `region-id` + cloudAccountCreateHelpBacktick + `.
-
-  --use-internal-ip string
-    0 selects public access; 1 selects internal access.
-
 Resource Retrieval:
   Query the region list first:
     hyperbdrctl cloud-resource fetch --cloud-type aliyun --storage-type object \
       --access-key-id <ak> \
       --access-key-secret <sk> \
       --fetch-res regions \
-      --output json
-
-  Query image resources only when you need to override image-related fields manually:
-    hyperbdrctl cloud-resource fetch --cloud-type aliyun --storage-type object \
-      --access-key-id <ak> \
-      --access-key-secret <sk> \
-      --region-id <region_id> \
-      --fetch-res boot_loader_images,images \
       --output json
 
 The minimum create command is:
