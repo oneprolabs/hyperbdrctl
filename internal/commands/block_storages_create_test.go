@@ -199,9 +199,11 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 			},
 			want: []string{
 				"--cloud-account-id",
-				"Boot loader image ID",
-				"System disk size in GiB, default 50",
-				"--boot-types-id string",
+				"Optional dynamic parameters:",
+				"--boot-loader-image-id <image_id>",
+				"--system-disk-size <size_gib>",
+				"Default: 50",
+				"--boot-types-id <boot_type>",
 				"Usage: hyperbdrctl cloud-sync-gateway create --cloud-account-id <account_id> [flags]",
 				"--fetch-res regions,compute_zones,projects",
 				"--set stringArray",
@@ -211,7 +213,9 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"cloud-sync-gateway wait --id <storage_id>",
 			},
 			unwanted: []string{
-				"Boot loader image ID (required)",
+				"--boot-loader-image-id string",
+				"--system-disk-size string",
+				"--boot-types-id string",
 				"--cloud-type string",
 			},
 		},
@@ -413,12 +417,83 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 		t.Fatal(err)
 	}
 	text = out.String()
-	if strings.Contains(text, "Optional dynamic parameters:") {
-		t.Fatalf("non-Atomy gateway help must not include dynamic parameter group: %q", text)
-	}
-	for _, want := range []string{"--hg-control-network string", "--hg-data-network string", "--boot-loader-image-id string"} {
+	for _, want := range []string{
+		"Optional dynamic parameters:",
+		"--hg-control-network <mode>",
+		"--hg-data-network <mode>",
+		"--boot-loader-flavor-id <flavor_id>",
+		"--boot-loader-image-id <image_id>",
+		"--fixed-ip <ip>",
+		"--system-disk-size <size_gib>",
+		"Default: 50",
+		"--block-store-zone-id <zone_id>",
+		"When omitted, follow --compute-zone-id.",
+		"--project-domain-id <domain_id>",
+		"--boot-types-id <boot_type>",
+		"Default: boot_from_volume",
+	} {
 		if !strings.Contains(text, want) {
-			t.Fatalf("non-Atomy gateway help missing Flags parameter %q: %q", want, text)
+			t.Fatalf("OpenStack gateway help missing dynamic parameter %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{
+		"--hg-control-network string",
+		"--hg-data-network string",
+		"--boot-loader-image-id string",
+		"--system-disk-size string",
+		"--block-store-zone-id string",
+		"--project-domain-id string",
+		"--boot-types-id string",
+	} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("OpenStack dynamic parameter must not remain in Flags %q: %q", unwanted, text)
+		}
+	}
+	if strings.Count(text, "Optional dynamic parameters:") != 1 {
+		t.Fatalf("OpenStack dynamic parameter section should be rendered once: %q", text)
+	}
+	if strings.Index(text, "Optional dynamic parameters:") > strings.Index(text, "To inspect the final request body first, add:") {
+		t.Fatalf("OpenStack dynamic parameters must appear before preview guidance: %q", text)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if err := Execute([]string{
+		"--lang", "zh_cn", "cloud-sync-gateway", "create",
+		"--cloud-type", "openstack",
+		"--help",
+	}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	text = out.String()
+	for _, want := range []string{
+		"可按需补充以下动态参数：",
+		"--hg-control-network <mode>",
+		"默认值：floating_ip_without_proxy",
+		"--boot-loader-image-id <image_id>",
+		"省略时使用云账号资源响应中的第一个可用引导加载器镜像。",
+		"--system-disk-size <size_gib>",
+		"默认值：50",
+		"--block-store-zone-id <zone_id>",
+		"省略时跟随 --compute-zone-id。",
+		"--project-domain-id <domain_id>",
+		"--boot-types-id <boot_type>",
+		"默认值：boot_from_volume",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("OpenStack Chinese help missing dynamic parameter %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{
+		"--hg-control-network string",
+		"--boot-loader-image-id string",
+		"--system-disk-size string",
+		"--block-store-zone-id string",
+		"--project-domain-id string",
+		"--boot-types-id string",
+	} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("OpenStack Chinese dynamic parameter must not remain in Flags %q: %q", unwanted, text)
 		}
 	}
 }
@@ -877,8 +952,9 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 		"Usage Notes:",
 		"Parameter Sources:",
 		"--cloud-account-id",
-		"--boot-loader-image-id",
-		"--boot-types-id string",
+		"Optional dynamic parameters:",
+		"--boot-loader-image-id <image_id>",
+		"--boot-types-id <boot_type>",
 		"boot_from_volume",
 		"floating_ip_without_proxy",
 		"cloud-resource fetch",
@@ -892,6 +968,18 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 	for _, want := range []string{"--set stringArray", "--set-json stringArray", "--preview-request"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("openstack help should retain %q: %q", want, text)
+		}
+	}
+	for _, unwanted := range []string{
+		"--boot-loader-image-id string",
+		"--boot-types-id string",
+		"--hg-control-network string",
+		"--fixed-ip string",
+		"--system-disk-size string",
+		"--block-store-zone-id string",
+	} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("openstack dynamic parameter should not remain in Flags %q: %q", unwanted, text)
 		}
 	}
 	if strings.Contains(text, "cloud-sync-gateway subnet-config") {

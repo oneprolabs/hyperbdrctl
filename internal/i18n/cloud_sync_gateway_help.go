@@ -164,8 +164,7 @@ const (
     --flavor-id <flavor_id> \
     --network-id <network_id> \
     --subnet-id <subnet_id> \
-    --volume-type-id <volume_type_id> \
-    --block-store-zone-id <block_store_zone_id>
+    --volume-type-id <volume_type_id>
 
 如需覆盖 metadata 字段，可重复附加：
   --set path=value
@@ -345,8 +344,7 @@ After adding the key fields from the resource flow, run:
     --flavor-id <flavor_id> \
     --network-id <network_id> \
     --subnet-id <subnet_id> \
-    --volume-type-id <volume_type_id> \
-    --block-store-zone-id <block_store_zone_id>
+    --volume-type-id <volume_type_id>
 
 To override metadata fields, repeat either flag as needed:
   --set path=value

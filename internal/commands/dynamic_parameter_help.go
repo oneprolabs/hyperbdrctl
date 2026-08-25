@@ -189,6 +189,84 @@ var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
 			},
 		},
 	},
+	"openstack-cloud-sync-gateway-advanced": {
+		Key:      "openstack-cloud-sync-gateway-advanced",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{
+				Flag:           "hg-control-network",
+				Placeholder:    "<mode>",
+				DescriptionKey: "help.dynamic_parameter.hg_control_network",
+				DefaultValue:   "floating_ip_without_proxy",
+				Choices: []string{
+					"floating_ip_without_proxy",
+					"fixed_ip_without_proxy",
+					"floating_ip_with_proxy",
+					"fixed_ip_with_proxy",
+				},
+			},
+			{
+				Flag:           "hg-data-network",
+				Placeholder:    "<mode>",
+				DescriptionKey: "help.dynamic_parameter.hg_data_network",
+				DefaultValue:   "floating_ip_without_proxy",
+				Choices: []string{
+					"floating_ip_without_proxy",
+					"fixed_ip_without_proxy",
+					"floating_ip_with_proxy",
+					"fixed_ip_with_proxy",
+				},
+			},
+			{Flag: "control-nat-ip", Placeholder: "<ip>", DescriptionKey: "help.dynamic_parameter.control_nat_ip"},
+			{Flag: "data-nat-ip", Placeholder: "<ip>", DescriptionKey: "help.dynamic_parameter.data_nat_ip"},
+			{
+				Flag:           "boot-loader-flavor-id",
+				Placeholder:    "<flavor_id>",
+				DescriptionKey: "help.dynamic_parameter.boot_loader_flavor_id",
+				SourceKey:      "help.dynamic_parameter.openstack.boot_loader_flavor_id.source",
+			},
+			{
+				Flag:           "boot-loader-image-id",
+				Placeholder:    "<image_id>",
+				DescriptionKey: "help.dynamic_parameter.boot_loader_image_id",
+				SourceKey:      "help.dynamic_parameter.openstack.boot_loader_image_id.source",
+			},
+			{
+				Flag:           "fixed-ip",
+				Placeholder:    "<ip>",
+				DescriptionKey: "help.dynamic_parameter.fixed_ip",
+				SourceKey:      "help.dynamic_parameter.fixed_ip.source",
+			},
+			{
+				Flag:           "system-disk-size",
+				Placeholder:    "<size_gib>",
+				DescriptionKey: "help.dynamic_parameter.system_disk_size",
+				DefaultValue:   "50",
+			},
+			{
+				Flag:           "block-store-zone-id",
+				Placeholder:    "<zone_id>",
+				DescriptionKey: "flag.block-store-zone-id",
+				SourceKey:      "help.dynamic_parameter.openstack.block_store_zone_id.source",
+			},
+			{
+				Flag:           "project-domain-id",
+				Placeholder:    "<domain_id>",
+				DescriptionKey: "flag.project-domain-id",
+				SourceKey:      "help.dynamic_parameter.openstack.project_domain_id.source",
+			},
+			{
+				Flag:           "boot-types-id",
+				Placeholder:    "<boot_type>",
+				DescriptionKey: "flag.boot-types-id",
+				DefaultValue:   "boot_from_volume",
+				Choices: []string{
+					"boot_from_volume",
+					"boot_from_image",
+				},
+			},
+		},
+	},
 }
 
 var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
@@ -225,6 +303,12 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		GroupKey:    "huawei-cloud-sync-gateway-advanced",
 		Command:     dynamicParameterHelpCloudSyncGatewayCreate,
 		Provider:    "huawei",
+		StorageType: "block",
+	},
+	{
+		GroupKey:    "openstack-cloud-sync-gateway-advanced",
+		Command:     dynamicParameterHelpCloudSyncGatewayCreate,
+		Provider:    "openstack",
 		StorageType: "block",
 	},
 }
