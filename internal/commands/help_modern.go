@@ -1115,7 +1115,7 @@ func objectStorageFlagSpecsForProfile(path, profile, protocolDefault, bucketLook
 			{name: "access-key-secret", required: true},
 			{name: "protocol"},
 			{name: "bucket-lookup", choices: []string{"dns", "path"}},
-			{name: "use-tls"},
+			{name: "use-tls", defaultValue: "false"},
 			{name: "bucket-mode", choices: []string{"existing", "new"}, defaultValue: "existing"},
 			{name: "bucket-name", required: true},
 			{name: "public-endpoint"},

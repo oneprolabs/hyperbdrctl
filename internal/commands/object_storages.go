@@ -383,6 +383,9 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 	if err != nil {
 		return err
 	}
+	if profile.IsCustom() && !flagWasSet(fs, "use-tls") {
+		*useTLS = false
+	}
 
 	spec := appobjectstorage.CreateSpec{
 		DisplayName:      *displayName,
@@ -406,6 +409,7 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 			"bucket-lookup",
 			"public-endpoint",
 			"internal-endpoint",
+			"use-tls",
 		),
 	}
 

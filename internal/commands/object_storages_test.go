@@ -286,6 +286,9 @@ func TestObjectStoragesCreatePreviewRequestPrintsRequestBody(t *testing.T) {
 	if metadata["cloud_type_select"] != "custom" {
 		t.Fatalf("body = %+v", gotBody)
 	}
+	if config["use_tls"] != false {
+		t.Fatalf("custom mode should default use_tls=false, body = %+v", gotBody)
+	}
 }
 
 func TestObjectStoragesCreateAutoGeneratesDisplayNameWithoutFlag(t *testing.T) {
