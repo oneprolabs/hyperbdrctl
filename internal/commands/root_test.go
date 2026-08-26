@@ -40,6 +40,25 @@ func TestExtractGlobalFlagsAnywhere(t *testing.T) {
 	}
 }
 
+func TestObjectStorageProviderHelpRequiresConfig(t *testing.T) {
+	tests := []struct {
+		args []string
+		want bool
+	}{
+		{args: []string{"oss", "create", "--help"}, want: true},
+		{args: []string{"oss", "create", "--provider", "custom", "--help"}, want: false},
+		{args: []string{"oss", "create", "--provider", "aliyun", "--help"}, want: true},
+		{args: []string{"oss", "create", "--provider=huaweicloud", "--help"}, want: true},
+		{args: []string{"oss", "create", "--provider", "custom", "--provider", "aliyun", "--help"}, want: true},
+		{args: []string{"oss", "buckets", "--provider", "aliyun", "--help"}, want: false},
+	}
+	for _, tt := range tests {
+		if got := objectStorageCreateHelpRequiresConfig(tt.args); got != tt.want {
+			t.Fatalf("args=%v got=%v want=%v", tt.args, got, tt.want)
+		}
+	}
+}
+
 func TestUsageIsLocalized(t *testing.T) {
 	var out, errOut bytes.Buffer
 	if err := Execute([]string{"--lang", "zh_cn", "help"}, &out, &errOut); err != nil {

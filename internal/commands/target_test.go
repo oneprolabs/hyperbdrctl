@@ -711,37 +711,52 @@ func TestOSSLeafHelpUsesFourSectionLayout(t *testing.T) {
 func TestOSSCreateHelpProfiles(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
 
 	cases := []struct {
-		name string
-		args []string
-		want []string
-		omit []string
+		name      string
+		args      []string
+		want      []string
+		omit      []string
+		needsHost bool
 	}{
 		{
-			name: "default custom",
-			args: []string{"oss", "create", "--help"},
-			want: []string{"Usage Notes:", "creates custom object storage", "--auth-url", "--bucket-mode", "--bucket-name"},
-			omit: []string{"--cloud-type-select"},
+			name:      "default custom",
+			args:      []string{"oss", "create", "--help"},
+			want:      []string{"Usage Notes:", "creates custom object storage", "--auth-url", "--bucket-mode", "--bucket-name", "Providers:", "aliyun", "huaweicloud", "ens"},
+			omit:      []string{"--cloud-type-select"},
+			needsHost: true,
 		},
 		{
-			name: "provider catalog",
-			args: []string{"oss", "create", "--provider", "aliyun", "--help"},
-			want: []string{"Usage Notes:", "hyperbdrctl oss catalog --provider aliyun", "--region-id", "--public-endpoint", "--internal-endpoint"},
-			omit: []string{"--cloud-type-select"},
+			name:      "provider catalog",
+			args:      []string{"oss", "create", "--provider", "aliyun", "--help"},
+			want:      []string{"Usage Notes:", "hyperbdrctl oss catalog --provider aliyun", "--region-id", "--public-endpoint", "--internal-endpoint", "Provider: Alibaba Cloud (aliyun)"},
+			omit:      []string{"--cloud-type-select", "Providers:"},
+			needsHost: true,
 		},
 		{
 			name: "custom provider alias",
 			args: []string{"oss", "create", "--provider", "custom", "--help"},
 			want: []string{"Usage Notes:", "creates custom object storage", "--auth-url", "--region-id"},
-			omit: []string{"--cloud-type-select", "localized provider name and region name"},
+			omit: []string{"--cloud-type-select", "localized provider name and region name", "Providers:"},
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			var out, errOut bytes.Buffer
-			if err := Execute(tt.args, &out, &errOut); err != nil {
+			args := tt.args
+			if tt.needsHost {
+				args = withHost(t, srv.URL, args...)
+			}
+			if err := Execute(args, &out, &errOut); err != nil {
 				t.Fatalf("args=%v err=%v", tt.args, err)
 			}
 
@@ -758,6 +773,89 @@ func TestOSSCreateHelpProfiles(t *testing.T) {
 			}
 			assertNoHelpFooter(t, text)
 		})
+	}
+}
+
+func TestOSSCreateProviderRegionHelpUsesExactCatalogProfile(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	requests := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"oss", "create",
+		"--provider", "aliyun",
+		"--region-id", "oss-cn-beijing",
+		"--help",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if requests != 1 {
+		t.Fatalf("catalog requests = %d, want 1", requests)
+	}
+	text := out.String()
+	for _, want := range []string{
+		"Provider: Alibaba Cloud (aliyun)",
+		"Region: Beijing (oss-cn-beijing)",
+		"Auth URL: oss-cn-beijing.aliyuncs.com",
+		"Public endpoint: oss-cn-beijing.aliyuncs.com",
+		"Internal endpoint: oss-cn-beijing-internal.aliyuncs.com",
+		"Protocol: s3",
+		"Bucket lookup: path",
+		"Protocol type, default s3",
+		"Bucket lookup style, default path",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("help missing %q: %q", want, text)
+		}
+	}
+}
+
+func TestOSSCreateExplicitCustomHelpDoesNotReadCatalog(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	requests := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	if err := Execute(withHost(t, srv.URL, "oss", "create", "--provider", "custom", "--help"), &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	if requests != 0 {
+		t.Fatalf("catalog requests = %d, want 0", requests)
+	}
+}
+
+func TestOSSCreateProviderHelpReturnsCatalogFailure(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"message":"catalog unavailable"}`))
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "oss", "create", "--provider", "aliyun", "--help"), &out, &errOut)
+	if err == nil {
+		t.Fatal("expected provider help catalog error")
 	}
 }
 
@@ -811,14 +909,22 @@ func TestOSSBucketsHelpProfiles(t *testing.T) {
 func TestOSSCreateHelpUsesCustomModeInChinese(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/static/json/s3.json" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(testObjectStorageCatalogJSON))
+	}))
+	defer srv.Close()
 
 	var out, errOut bytes.Buffer
-	if err := Execute([]string{"--lang", "zh_cn", "oss", "create", "--help"}, &out, &errOut); err != nil {
+	if err := Execute(withHost(t, srv.URL, "--lang", "zh_cn", "oss", "create", "--help"), &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 
 	text := out.String()
-	for _, want := range []string{"使用说明", "默认按自定义对象存储方式创建", "--provider <provider_id>", "--region-id string"} {
+	for _, want := range []string{"使用说明", "默认按自定义对象存储方式创建", "--provider <provider_id>", "--region-id string", "云厂商:", "aliyun", "huaweicloud", "ens"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("oss create zh help missing %q: %q", want, text)
 		}
@@ -858,7 +964,7 @@ func TestOSSArchivedHelpCopyIsLocalized(t *testing.T) {
 		},
 		{
 			name: "zh create",
-			args: []string{"--lang", "zh_cn", "oss", "create", "--help"},
+			args: []string{"--lang", "zh_cn", "oss", "create", "--provider", "custom", "--help"},
 			want: []string{"创建目标对象存储", "存储桶模式，可选值 existing /", "默认按自定义对象存储方式创建", "--preview-request"},
 			omit: []string{"默认值 true"},
 		},
@@ -902,7 +1008,7 @@ func TestOSSArchivedHelpCopyIsLocalized(t *testing.T) {
 		},
 		{
 			name: "en create",
-			args: []string{"--lang", "en", "oss", "create", "--help"},
+			args: []string{"--lang", "en", "oss", "create", "--provider", "custom", "--help"},
 			want: []string{"Create target object storage", "Bucket mode, allowed values existing / new", "creates custom object storage", "--preview-request"},
 			omit: []string{"default true"},
 		},

@@ -118,7 +118,12 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 		return bootConfigApplyFlagSpecsForProfile(cmd.Annotations[bootConfigApplyHelpProfileAnnotation])
 	}
 	if path == "hyperbdrctl oss buckets" || path == "hyperbdrctl oss create" {
-		return objectStorageFlagSpecsForProfile(path, cmd.Annotations[objectStorageHelpProfileAnnotation])
+		return objectStorageFlagSpecsForProfile(
+			path,
+			cmd.Annotations[objectStorageHelpProfileAnnotation],
+			cmd.Annotations[objectStorageHelpProtocolAnnotation],
+			cmd.Annotations[objectStorageHelpBucketLookupAnnotation],
+		)
 	}
 	switch {
 	case strings.HasPrefix(path, "hyperbdrctl boot-config fetch-block-resources "):
@@ -1037,7 +1042,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 	}
 }
 
-func objectStorageFlagSpecsForProfile(path, profile string) []flagHelpSpec {
+func objectStorageFlagSpecsForProfile(path, profile, protocolDefault, bucketLookupDefault string) []flagHelpSpec {
 	common := []flagHelpSpec{
 		{name: "debug"},
 		{name: "lang"},
@@ -1081,8 +1086,8 @@ func objectStorageFlagSpecsForProfile(path, profile string) []flagHelpSpec {
 			}, common...)
 		}
 	}
-	switch profile {
-	case "provider":
+	switch {
+	case isObjectStorageProviderHelpProfile(profile):
 		return append([]flagHelpSpec{
 			{name: "display-name"},
 			{name: "provider", required: true},
@@ -1090,8 +1095,8 @@ func objectStorageFlagSpecsForProfile(path, profile string) []flagHelpSpec {
 			{name: "access-key-id", required: true},
 			{name: "access-key-secret", required: true},
 			{name: "auth-url"},
-			{name: "protocol"},
-			{name: "bucket-lookup"},
+			{name: "protocol", defaultValue: protocolDefault},
+			{name: "bucket-lookup", defaultValue: bucketLookupDefault},
 			{name: "use-tls", defaultValue: "true"},
 			{name: "bucket-mode", choices: []string{"existing", "new"}, defaultValue: "existing"},
 			{name: "bucket-name", required: true},
@@ -1100,7 +1105,7 @@ func objectStorageFlagSpecsForProfile(path, profile string) []flagHelpSpec {
 			{name: "app-id"},
 			{name: "preview-request"},
 		}, common...)
-	case "custom":
+	case profile == "custom":
 		return append([]flagHelpSpec{
 			{name: "display-name"},
 			{name: "provider"},

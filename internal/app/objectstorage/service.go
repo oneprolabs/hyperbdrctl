@@ -3,9 +3,9 @@ package objectstorage
 import (
 	"fmt"
 	"net/url"
-	"strings"
 
 	"hyperbdr-client/internal/client"
+	workflowcreate "hyperbdr-client/internal/workflow/objectstoragecreate"
 )
 
 type API interface {
@@ -47,27 +47,13 @@ type AssociatedResourcesSpec struct {
 	ID string
 }
 
-type CreateSpec struct {
-	DisplayName      string
-	CloudType        string
-	AuthURL          string
-	RegionID         string
-	AccessKeyID      string
-	AccessKeySecret  string
-	Protocol         string
-	BucketLookup     string
-	UseTLS           bool
-	BucketMode       string
-	BucketName       string
-	PublicEndpoint   string
-	InternalEndpoint string
-	CloudTypeSelect  string
-	AppID            string
-}
+type CreateProfile = workflowcreate.Profile
+
+type CreateSpec = workflowcreate.Spec
 
 type PreparedCreateRequest struct {
 	Path string
-	Body interface{}
+	Body map[string]interface{}
 }
 
 type DeleteSpec struct {
@@ -124,12 +110,12 @@ func (s Service) Buckets(spec BucketsSpec) (client.APIResponse, error) {
 		"auth_cert":     spec.AccessKeySecret,
 		"use_tls":       spec.UseTLS,
 		"protocol":      spec.Protocol,
-		"bucket_lookup": normalizeBucketLookup(spec.BucketLookup),
+		"bucket_lookup": workflowcreate.NormalizeBucketLookup(spec.BucketLookup),
 	})
 }
 
-func (s Service) Create(spec CreateSpec) (client.APIResponse, error) {
-	prepared, err := s.PrepareCreate(spec)
+func (s Service) Create(profile CreateProfile, spec CreateSpec) (client.APIResponse, error) {
+	prepared, err := s.PrepareCreate(profile, spec)
 	if err != nil {
 		return client.APIResponse{}, err
 	}
@@ -146,112 +132,12 @@ func (s Service) Delete(spec DeleteSpec) (client.APIResponse, error) {
 	})
 }
 
-func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
-	spec.CloudType = normalizeObjectStorageCloudType(spec.CloudType)
-	if spec.AuthURL == "" {
-		return PreparedCreateRequest{}, fmt.Errorf("auth-url is required")
-	}
-	if spec.RegionID == "" && spec.CloudType != "custom" {
-		return PreparedCreateRequest{}, fmt.Errorf("region-id is required")
-	}
-	if spec.AccessKeyID == "" {
-		return PreparedCreateRequest{}, fmt.Errorf("access-key-id is required")
-	}
-	if spec.AccessKeySecret == "" {
-		return PreparedCreateRequest{}, fmt.Errorf("access-key-secret is required")
-	}
-	if spec.BucketName == "" {
-		return PreparedCreateRequest{}, fmt.Errorf("bucket-name is required")
-	}
-	if spec.DisplayName == "" {
-		spec.DisplayName = defaultObjectStorageDisplayName(spec.CloudType, spec.RegionID)
-	}
-
-	normalizedMode, err := normalizeBucketMode(spec.BucketMode)
+func (s Service) PrepareCreate(profile CreateProfile, spec CreateSpec) (PreparedCreateRequest, error) {
+	prepared, err := workflowcreate.BuildRequest(profile, spec)
 	if err != nil {
 		return PreparedCreateRequest{}, err
 	}
-	if spec.Protocol == "" {
-		spec.Protocol = "s3"
-	}
-	if spec.PublicEndpoint == "" {
-		spec.PublicEndpoint = spec.AuthURL
-	}
-	if spec.InternalEndpoint == "" {
-		spec.InternalEndpoint = spec.AuthURL
-	}
-	if spec.CloudTypeSelect == "" {
-		if spec.CloudType == "custom" {
-			spec.CloudTypeSelect = "custom"
-		} else {
-			spec.CloudTypeSelect = spec.CloudType + "," + spec.RegionID
-		}
-	}
-
-	return PreparedCreateRequest{
-		Path: "/api/v2/createStorage",
-		Body: map[string]interface{}{
-			"display_name": spec.DisplayName,
-			"cloud_type":   spec.CloudType,
-			"type":         "objectstorage",
-			"config": map[string]interface{}{
-				"need_creation":     normalizedMode == "new",
-				"bucket_name":       spec.BucketName,
-				"auth_type":         "aksk",
-				"auth_key":          spec.AccessKeyID,
-				"auth_cert":         spec.AccessKeySecret,
-				"auth_url":          spec.AuthURL,
-				"protocol":          spec.Protocol,
-				"bucket_lookup":     normalizeBucketLookup(spec.BucketLookup),
-				"use_tls":           spec.UseTLS,
-				"region_id":         spec.RegionID,
-				"public_endpoint":   spec.PublicEndpoint,
-				"internal_endpoint": spec.InternalEndpoint,
-			},
-			"metadata": map[string]interface{}{
-				"cloud_type_select": spec.CloudTypeSelect,
-				"app_id":            spec.AppID,
-			},
-		},
-	}, nil
-}
-
-func normalizeObjectStorageCloudType(value string) string {
-	normalized := strings.TrimSpace(strings.ToLower(value))
-	if normalized != "" {
-		return normalized
-	}
-	return "custom"
-}
-
-func defaultObjectStorageDisplayName(cloudType, regionID string) string {
-	cloudType = strings.TrimSpace(cloudType)
-	regionID = strings.TrimSpace(regionID)
-	if regionID == "" {
-		return cloudType
-	}
-	return cloudType + "-" + regionID
-}
-
-func normalizeBucketLookup(value string) string {
-	normalized := strings.TrimSpace(strings.ToLower(value))
-	switch normalized {
-	case "", "virtual-hosted-style", "virtual_hosted_style", "virtualhostedstyle":
-		return "dns"
-	default:
-		return normalized
-	}
-}
-
-func normalizeBucketMode(value string) (string, error) {
-	switch strings.TrimSpace(strings.ToLower(value)) {
-	case "", "existing", "exist", "existing-bucket":
-		return "existing", nil
-	case "new", "new-bucket":
-		return "new", nil
-	default:
-		return "", fmt.Errorf("bucket-mode must be existing or new")
-	}
+	return PreparedCreateRequest{Path: prepared.Path, Body: prepared.Body}, nil
 }
 
 func cloneValues(v url.Values) url.Values {

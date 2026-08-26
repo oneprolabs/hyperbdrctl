@@ -13,10 +13,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const objectStorageHelpProfileAnnotation = "object-storage-help-profile"
+const (
+	objectStorageHelpProfileAnnotation      = "object-storage-help-profile"
+	objectStorageHelpProtocolAnnotation     = "object-storage-help-protocol"
+	objectStorageHelpBucketLookupAnnotation = "object-storage-help-bucket-lookup"
+)
 
 type objectStorageHelpSelection struct {
 	Provider string
+	RegionID string
 }
 
 func newObjectStorageBucketsCommand(ctx *context) *cobra.Command {
@@ -102,14 +107,19 @@ func parseObjectStorageHelpSelection(args []string) (objectStorageHelpSelection,
 			continue
 		}
 		name, value, hasInline := splitFlag(arg)
-		if strings.TrimPrefix(name, "--") != "provider" {
+		flagName := strings.TrimPrefix(name, "--")
+		if flagName != "provider" && flagName != "region-id" {
 			continue
 		}
 		v, next, err := strictFlagValue(args, i, value, hasInline)
 		if err != nil {
 			return selection, err
 		}
-		selection.Provider = strings.TrimSpace(v)
+		if flagName == "provider" {
+			selection.Provider = strings.TrimSpace(v)
+		} else {
+			selection.RegionID = strings.TrimSpace(v)
+		}
 		i = next
 	}
 	return selection, nil
@@ -124,10 +134,23 @@ func renderObjectStorageBucketsHelp(ctx *context, cmd *cobra.Command, selection 
 }
 
 func renderObjectStorageCreateHelp(ctx *context, cmd *cobra.Command, selection objectStorageHelpSelection) error {
-	profile := objectStorageHelpProfile(selection.Provider)
-	addAnnotationValue(cmd, objectStorageHelpProfileAnnotation, profile)
-	addHelpDescription(cmd, ctx, objectStorageCreateHelpTitleKey(profile))
-	addAnnotationValue(cmd, usageNotesAnnotation, objectStorageCreateUsageNotes(ctx, profile))
+	profile, err := resolveObjectStorageCreateProfile(ctx, selection, false)
+	if err != nil {
+		return err
+	}
+	var providers []objectStorageCatalogProvider
+	if strings.TrimSpace(selection.Provider) == "" {
+		providers, err = loadObjectStorageCatalog(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	helpProfile := objectStorageCreateHelpProfile(profile)
+	addAnnotationValue(cmd, objectStorageHelpProfileAnnotation, helpProfile)
+	addAnnotationValue(cmd, objectStorageHelpProtocolAnnotation, profile.Protocol)
+	addAnnotationValue(cmd, objectStorageHelpBucketLookupAnnotation, profile.BucketLookup)
+	addHelpDescription(cmd, ctx, objectStorageCreateHelpTitleKey(helpProfile))
+	addAnnotationValue(cmd, usageNotesAnnotation, objectStorageCreateUsageNotes(ctx, profile, providers))
 	return renderHelp(cmd, ctx)
 }
 
@@ -148,7 +171,7 @@ func objectStorageBucketsHelpTitleKey(profile string) string {
 }
 
 func objectStorageCreateHelpTitleKey(profile string) string {
-	if profile == "provider" {
+	if isObjectStorageProviderHelpProfile(profile) {
 		return "cmd.oss.create.provider.short"
 	}
 	return "cmd.oss.create.custom.short"
@@ -161,11 +184,68 @@ func objectStorageBucketsUsageNotes(ctx *context, profile string) string {
 	return ctx.loc.T("cmd.oss.buckets.custom.usage_notes")
 }
 
-func objectStorageCreateUsageNotes(ctx *context, profile string) string {
-	if profile == "provider" {
-		return ctx.loc.T("cmd.oss.create.provider.usage_notes")
+func objectStorageCreateUsageNotes(ctx *context, profile appobjectstorage.CreateProfile, providers []objectStorageCatalogProvider) string {
+	if !profile.IsCustom() {
+		notes := ctx.loc.T("cmd.oss.create.provider.usage_notes")
+		notes = strings.ReplaceAll(notes, "--provider aliyun", "--provider "+profile.ProviderID)
+		regionID := profile.RegionID
+		if regionID == "" {
+			regionID = "<region_id>"
+		}
+		notes = strings.ReplaceAll(notes, "oss-cn-beijing", regionID)
+		if profile.RegionID == "" {
+			return appendUsageNoteSections(notes, fmt.Sprintf(
+				ctx.loc.T("cmd.oss.create.profile_notes"),
+				profile.ProviderName,
+				profile.ProviderID,
+			))
+		}
+		return appendUsageNoteSections(notes, fmt.Sprintf(
+			ctx.loc.T("cmd.oss.create.region_notes"),
+			profile.ProviderName,
+			profile.ProviderID,
+			profile.RegionName,
+			profile.RegionID,
+			profile.AuthURL,
+			profile.PublicEndpoint,
+			profile.InternalEndpoint,
+			profile.Protocol,
+			profile.BucketLookup,
+		))
 	}
-	return ctx.loc.T("cmd.oss.create.custom.usage_notes")
+	return appendObjectStorageCreateProviders(ctx, ctx.loc.T("cmd.oss.create.custom.usage_notes"), providers)
+}
+
+func appendObjectStorageCreateProviders(ctx *context, notes string, providers []objectStorageCatalogProvider) string {
+	if len(providers) == 0 {
+		return notes
+	}
+	var b strings.Builder
+	b.WriteString(strings.TrimSpace(notes))
+	b.WriteString("\n\n")
+	b.WriteString(ctx.loc.T("cmd.oss.create.providers_label"))
+	for _, provider := range providers {
+		if id := strings.TrimSpace(provider.ID); id != "" {
+			b.WriteString("\n  ")
+			b.WriteString(id)
+		}
+	}
+	return b.String()
+}
+
+func objectStorageCreateHelpProfile(profile appobjectstorage.CreateProfile) string {
+	if profile.IsCustom() {
+		return "custom"
+	}
+	parts := []string{"provider", profile.ProviderID}
+	if profile.RegionID != "" {
+		parts = append(parts, profile.RegionID)
+	}
+	return strings.Join(parts, "|")
+}
+
+func isObjectStorageProviderHelpProfile(profile string) bool {
+	return profile == "provider" || strings.HasPrefix(profile, "provider|")
 }
 
 func rejectObjectStorageListTypeFlag(args []string) error {
@@ -296,6 +376,13 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+	profile, err := resolveObjectStorageCreateProfile(ctx, objectStorageHelpSelection{
+		Provider: *provider,
+		RegionID: *regionID,
+	}, true)
+	if err != nil {
+		return err
+	}
 
 	spec := appobjectstorage.CreateSpec{
 		DisplayName:      *displayName,
@@ -311,20 +398,26 @@ func runObjectStorageCreate(ctx *context, args []string) error {
 		PublicEndpoint:   *publicEndpoint,
 		InternalEndpoint: *internalEndpoint,
 		AppID:            *appID,
-	}
-	if err := applyObjectStorageCreateDefaults(ctx, fs, *provider, &spec); err != nil {
-		return err
+		ExplicitFields: objectStorageCreateExplicitFields(fs,
+			"display-name",
+			"auth-url",
+			"region-id",
+			"protocol",
+			"bucket-lookup",
+			"public-endpoint",
+			"internal-endpoint",
+		),
 	}
 
 	service := appobjectstorage.NewService(commandPosterAdapter{ctx: ctx})
 	if *previewRequest {
-		prepared, err := service.PrepareCreate(spec)
+		prepared, err := service.PrepareCreate(profile, spec)
 		if err != nil {
 			return err
 		}
 		return output.JSON(ctx.out, prepared.Body)
 	}
-	resp, err := service.Create(spec)
+	resp, err := service.Create(profile, spec)
 	if err != nil {
 		return err
 	}
@@ -366,42 +459,61 @@ func runObjectStorageCatalog(ctx *context, args []string) error {
 	return writeRows(ctx, objectStorageCatalogRegionRows(*matchedProvider, ctx.loc.Lang()), objectStorageCatalogRegionColumns())
 }
 
-func applyObjectStorageCreateDefaults(ctx *context, fs *flag.FlagSet, provider string, spec *appobjectstorage.CreateSpec) error {
-	normalizedProvider := normalizeObjectStorageCreateProvider(provider)
-	if normalizedProvider == "" || normalizedProvider == "custom" {
-		spec.CloudType = "custom"
-		if !flagWasSet(fs, "display-name") && strings.TrimSpace(spec.DisplayName) == "" {
-			spec.DisplayName = ctx.loc.T("value.object_storage.display_name.custom")
-		}
-		return nil
+func resolveObjectStorageCreateProfile(ctx *context, selection objectStorageHelpSelection, requireRegion bool) (appobjectstorage.CreateProfile, error) {
+	provider := normalizeObjectStorageCreateProvider(selection.Provider)
+	if provider == "" || provider == "custom" {
+		return appobjectstorage.CreateProfile{
+			Mode:               "custom",
+			ProviderID:         "custom",
+			ProviderName:       ctx.loc.T("value.object_storage.display_name.custom"),
+			RegionID:           strings.TrimSpace(selection.RegionID),
+			DefaultDisplayName: ctx.loc.T("value.object_storage.display_name.custom"),
+		}, nil
 	}
-	if strings.TrimSpace(spec.RegionID) == "" {
-		return missing(ctx, "error.missing_region_id")
+	if requireRegion && strings.TrimSpace(selection.RegionID) == "" {
+		return appobjectstorage.CreateProfile{}, missing(ctx, "error.missing_region_id")
 	}
-	matchedProvider, matchedRegion, err := resolveObjectStorageCatalogRegion(ctx, normalizedProvider, spec.RegionID)
+
+	providers, err := loadObjectStorageCatalog(ctx)
 	if err != nil {
-		return err
+		return appobjectstorage.CreateProfile{}, err
 	}
-	spec.CloudType = matchedProvider.ID
-	if !flagWasSet(fs, "auth-url") {
-		spec.AuthURL = matchedRegion.AuthURL
+	matchedProvider, ok := findObjectStorageCatalogProvider(providers, provider)
+	if !ok {
+		return appobjectstorage.CreateProfile{}, fmt.Errorf(ctx.loc.T("error.object_storage_catalog_provider_not_found"), provider)
 	}
-	if !flagWasSet(fs, "public-endpoint") {
-		spec.PublicEndpoint = matchedRegion.ExternalEndpoint
+	profile := appobjectstorage.CreateProfile{
+		Mode:         "catalog",
+		ProviderID:   matchedProvider.ID,
+		ProviderName: localizedObjectStorageCatalogName(matchedProvider.Name, matchedProvider.NameEn, ctx.loc.Lang()),
 	}
-	if !flagWasSet(fs, "internal-endpoint") {
-		spec.InternalEndpoint = matchedRegion.InternalEndpoint
+	if strings.TrimSpace(selection.RegionID) == "" {
+		profile.DefaultDisplayName = profile.ProviderName
+		return profile, nil
 	}
-	if !flagWasSet(fs, "protocol") {
-		spec.Protocol = matchedRegion.Protocol
+	matchedRegion, ok := findObjectStorageCatalogRegion(*matchedProvider, selection.RegionID)
+	if !ok {
+		return appobjectstorage.CreateProfile{}, fmt.Errorf(ctx.loc.T("error.object_storage_catalog_region_not_found"), provider, selection.RegionID)
 	}
-	if !flagWasSet(fs, "bucket-lookup") {
-		spec.BucketLookup = matchedRegion.BucketLookup
+	profile.RegionID = matchedRegion.ID
+	profile.RegionName = localizedObjectStorageCatalogName(matchedRegion.Name, matchedRegion.NameEn, ctx.loc.Lang())
+	profile.AuthURL = matchedRegion.AuthURL
+	profile.PublicEndpoint = matchedRegion.ExternalEndpoint
+	profile.InternalEndpoint = matchedRegion.InternalEndpoint
+	profile.Protocol = matchedRegion.Protocol
+	profile.BucketLookup = matchedRegion.BucketLookup
+	profile.DefaultDisplayName = defaultObjectStorageCatalogDisplayName(*matchedProvider, *matchedRegion, ctx.loc.Lang())
+	return profile, nil
+}
+
+func objectStorageCreateExplicitFields(fs *flag.FlagSet, names ...string) map[string]bool {
+	explicit := make(map[string]bool, len(names))
+	for _, name := range names {
+		if flagWasSet(fs, name) {
+			explicit[name] = true
+		}
 	}
-	if !flagWasSet(fs, "display-name") && strings.TrimSpace(spec.DisplayName) == "" {
-		spec.DisplayName = defaultObjectStorageCatalogDisplayName(matchedProvider, matchedRegion, ctx.loc.Lang())
-	}
-	return nil
+	return explicit
 }
 
 func applyObjectStorageBucketsDefaults(ctx *context, fs *flag.FlagSet, provider string, spec *appobjectstorage.BucketsSpec) error {

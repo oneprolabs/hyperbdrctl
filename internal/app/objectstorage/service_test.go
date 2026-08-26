@@ -2,6 +2,7 @@ package objectstorage
 
 import (
 	"net/url"
+	"reflect"
 	"testing"
 
 	"hyperbdr-client/internal/client"
@@ -91,7 +92,7 @@ func TestServiceAssociatedResourcesBuildsQuery(t *testing.T) {
 func TestServicePrepareCreateDefaultsCloudTypeToCustom(t *testing.T) {
 	service := NewService(&fakeAPI{})
 
-	prepared, err := service.PrepareCreate(CreateSpec{
+	prepared, err := service.PrepareCreate(CreateProfile{Mode: "custom", ProviderID: "custom"}, CreateSpec{
 		AuthURL:         "oss-cn-beijing.aliyuncs.com",
 		RegionID:        "oss-cn-beijing",
 		AccessKeyID:     "ak",
@@ -102,7 +103,7 @@ func TestServicePrepareCreateDefaultsCloudTypeToCustom(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	body := prepared.Body.(map[string]interface{})
+	body := prepared.Body
 	if body["display_name"] != "custom-oss-cn-beijing" {
 		t.Fatalf("body = %+v", body)
 	}
@@ -118,7 +119,7 @@ func TestServicePrepareCreateDefaultsCloudTypeToCustom(t *testing.T) {
 func TestServicePrepareCreateAllowsEmptyRegionForCustom(t *testing.T) {
 	service := NewService(&fakeAPI{})
 
-	prepared, err := service.PrepareCreate(CreateSpec{
+	prepared, err := service.PrepareCreate(CreateProfile{Mode: "custom", ProviderID: "custom"}, CreateSpec{
 		AuthURL:         "192.168.8.171:9000",
 		AccessKeyID:     "ak",
 		AccessKeySecret: "sk",
@@ -128,7 +129,7 @@ func TestServicePrepareCreateAllowsEmptyRegionForCustom(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	body := prepared.Body.(map[string]interface{})
+	body := prepared.Body
 	if body["cloud_type"] != "custom" || body["display_name"] != "custom" {
 		t.Fatalf("body = %+v", body)
 	}
@@ -145,8 +146,11 @@ func TestServicePrepareCreateAllowsEmptyRegionForCustom(t *testing.T) {
 func TestServicePrepareCreatePreservesExplicitCloudType(t *testing.T) {
 	service := NewService(&fakeAPI{})
 
-	prepared, err := service.PrepareCreate(CreateSpec{
-		CloudType:       "huaweicloud",
+	prepared, err := service.PrepareCreate(CreateProfile{
+		Mode:       "catalog",
+		ProviderID: "huaweicloud",
+		RegionID:   "cn-north-1",
+	}, CreateSpec{
 		AuthURL:         "obs.cn-north-1.myhuaweicloud.com",
 		RegionID:        "cn-north-1",
 		AccessKeyID:     "ak",
@@ -157,13 +161,45 @@ func TestServicePrepareCreatePreservesExplicitCloudType(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	body := prepared.Body.(map[string]interface{})
+	body := prepared.Body
 	if body["cloud_type"] != "huaweicloud" || body["display_name"] != "huaweicloud-cn-north-1" {
 		t.Fatalf("body = %+v", body)
 	}
 	metadata := body["metadata"].(map[string]interface{})
 	if metadata["cloud_type_select"] != "huaweicloud,cn-north-1" {
 		t.Fatalf("body = %+v", body)
+	}
+}
+
+func TestServiceCreateUsesPreparedRequest(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+	profile := CreateProfile{
+		Mode:               "catalog",
+		ProviderID:         "aliyun",
+		RegionID:           "oss-cn-beijing",
+		AuthURL:            "oss-cn-beijing.aliyuncs.com",
+		PublicEndpoint:     "oss-cn-beijing.aliyuncs.com",
+		InternalEndpoint:   "oss-cn-beijing-internal.aliyuncs.com",
+		Protocol:           "s3",
+		BucketLookup:       "dns",
+		DefaultDisplayName: "Alibaba Cloud-Beijing",
+	}
+	spec := CreateSpec{
+		AccessKeyID:     "ak",
+		AccessKeySecret: "sk",
+		BucketName:      "bucket-1",
+		UseTLS:          true,
+	}
+	prepared, err := service.PrepareCreate(profile, spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Create(profile, spec); err != nil {
+		t.Fatal(err)
+	}
+	if api.postPath != prepared.Path || !reflect.DeepEqual(api.postBody, prepared.Body) {
+		t.Fatalf("post path/body = %q/%+v, prepared = %q/%+v", api.postPath, api.postBody, prepared.Path, prepared.Body)
 	}
 }
 

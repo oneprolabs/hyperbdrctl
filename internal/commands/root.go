@@ -38,6 +38,14 @@ func Execute(args []string, out, errOut io.Writer) error {
 		return renderVersion(ctx)
 	}
 	if wantsHelp(args) {
+		if objectStorageCreateHelpRequiresConfig(args) {
+			cfg, err := config.Resolve(flags)
+			if err != nil {
+				return err
+			}
+			ctx := &context{out: out, errOut: errOut, flags: flags, cfg: cfg, loc: i18n.New(cfg.Lang)}
+			return executeRootCommand(args, ctx)
+		}
 		lang, err := config.ResolveLang(flags)
 		if err != nil {
 			return err
@@ -51,6 +59,29 @@ func Execute(args []string, out, errOut io.Writer) error {
 	}
 	ctx := &context{out: out, errOut: errOut, flags: flags, cfg: cfg, loc: i18n.New(cfg.Lang)}
 	return executeRootCommand(args, ctx)
+}
+
+func objectStorageCreateHelpRequiresConfig(args []string) bool {
+	commandArgs := args
+	if len(commandArgs) > 0 && commandArgs[0] == "help" {
+		commandArgs = commandArgs[1:]
+	}
+	if len(commandArgs) < 2 || commandArgs[0] != "oss" || commandArgs[1] != "create" {
+		return false
+	}
+	provider := ""
+	for i := 2; i < len(commandArgs); i++ {
+		name, value, inline := splitFlag(commandArgs[i])
+		if name != "--provider" {
+			continue
+		}
+		if !inline && i+1 < len(commandArgs) {
+			value = commandArgs[i+1]
+			i++
+		}
+		provider = strings.ToLower(strings.TrimSpace(value))
+	}
+	return provider != "custom"
 }
 
 func executeRootCommand(args []string, ctx *context) error {
