@@ -726,6 +726,68 @@ func TestCloudAccountCreateAliyunObjectDynamicParameterHelp(t *testing.T) {
 	}
 }
 
+func TestCloudAccountCreateOpenStackObjectDynamicParameterHelp(t *testing.T) {
+	for _, lang := range []string{"zh_cn", "en"} {
+		t.Run(lang, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			if err := Execute([]string{"--lang", lang, "cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object", "--help"}, &out, &errOut); err != nil {
+				t.Fatal(err)
+			}
+			text := out.String()
+			title := "Optional dynamic parameters:"
+			if lang == "zh_cn" {
+				title = "可按需补充以下动态参数："
+			}
+			if strings.Count(text, title) != 1 {
+				t.Fatalf("dynamic parameter title count = %d, help=%q", strings.Count(text, title), text)
+			}
+			for _, flag := range []string{"custom-name", "use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "boot-loader-flavor-id", "disk-bus-type-id", "disk-bus-type-name", "linux-boot-image-id", "windows-boot-image-id"} {
+				if strings.Contains(text, "--"+flag+" string") {
+					t.Fatalf("dynamic parameter --%s must not remain in Flags: %q", flag, text)
+				}
+			}
+			for _, flag := range []string{"project-domain-id", "project-id", "project-name", "region-id", "region-name"} {
+				if !strings.Contains(text, "--"+flag+" string") {
+					t.Fatalf("project/region flag --%s should remain in Flags: %q", flag, text)
+				}
+			}
+			assertContainsInOrder(t, text,
+				"--custom-name <name>",
+				"--use-internal-ip <mode>",
+				"--boot-loader-image-id <image_id>",
+				"--boot-loader-image-name <image_name>",
+				"--boot-loader-flavor-id <flavor_id>",
+				"--disk-bus-type-id <type_id>",
+				"--disk-bus-type-name <type_name>",
+				"--linux-boot-image-id <image_id>",
+				"--windows-boot-image-id <image_id>",
+				"--preview-request",
+			)
+			if !strings.Contains(text, "boot_loader_images") || !strings.Contains(text, "--fetch-res flavor") || !strings.Contains(text, "--fetch-res images") {
+				t.Fatalf("resource query guidance missing: %q", text)
+			}
+			for _, want := range []string{
+				"--auth-url string            " + map[string]string{"zh_cn": "鉴权地址（必须）", "en": "Auth URL (required)"}[lang],
+				"--fetch-res boot_loader_images",
+				"--flavor-vcpus 2 \\\n          --flavor-ram 4 \\\n          --fetch-res flavor",
+			} {
+				if !strings.Contains(text, want) {
+					t.Fatalf("OpenStack object help missing optimized guidance %q: %q", want, text)
+				}
+			}
+			dynamicStart := strings.Index(text, title)
+			dynamicEnd := strings.Index(text[dynamicStart:], "--preview-request")
+			if dynamicEnd < 0 {
+				t.Fatalf("preview guidance missing after dynamic parameters: %q", text)
+			}
+			dynamicText := text[dynamicStart : dynamicStart+dynamicEnd]
+			if got := strings.Count(dynamicText, "\n\n    --"); got != 8 {
+				t.Fatalf("dynamic parameters should have one blank line between entries: separators=%d help=%q", got, text)
+			}
+		})
+	}
+}
+
 func TestCloudAccountsCreateHelpDynamicallyAddsSupplementalFlags(t *testing.T) {
 	profiles := [][]string{
 		{"aliyun", "block"},
@@ -1112,8 +1174,8 @@ func TestCloudAccountArchivedHelpCopyIsLocalized(t *testing.T) {
 		{
 			name: "openstack object",
 			path: []string{"create", "--cloud-type", "openstack", "--storage-type", "object"},
-			zh:   []string{"创建 OpenStack 对象存储账号", "控制台访问方式", "重点关注返回结果中的", "disk_bus_type_name"},
-			en:   []string{"Create OpenStack object-storage account", "Console access method", "Pay particular attention to these fields", "disk_bus_type_name"},
+			zh:   []string{"创建 OpenStack 对象存储账号", "控制台访问方式", "可按需补充以下动态参数：", "boot_loader_images"},
+			en:   []string{"Create OpenStack object-storage account", "Console access mode", "Optional dynamic parameters:", "boot_loader_images"},
 		},
 	}
 
@@ -1182,8 +1244,8 @@ func TestCloudAccountsCreateOSSOpenStackUsesValidatedWorkflow(t *testing.T) {
 	if cloudAccount["cloud_type"] != "openstack" || cloudAccount["cloud_auth_type"] != "password" {
 		t.Fatalf("cloud_account = %+v", cloudAccount)
 	}
-	if _, ok := body["only_verify"]; ok {
-		t.Fatalf("body should not contain only_verify: %+v", body)
+	if value, ok := body["only_verify"]; !ok || value != nil {
+		t.Fatalf("body should contain only_verify: null, got %+v", body)
 	}
 
 	metadata := cloudAccount["metadata"].(map[string]interface{})

@@ -187,34 +187,15 @@ Parameter Sources:
   --user-domain-id string
     On the OpenStack control node, run ` + cloudAccountCreateHelpBacktick + `openstack user show <username>` + cloudAccountCreateHelpBacktick + ` and read ` + cloudAccountCreateHelpBacktick + `domain_id` + cloudAccountCreateHelpBacktick + `; the default is usually ` + cloudAccountCreateHelpBacktick + `default` + cloudAccountCreateHelpBacktick + `.
 
-  --project-domain-id string
-  --project-id string
-  --project-name string
-  --region-id string
-    These project and region fields usually come from resource retrieval results; pass them explicitly only to override automatically supplied values.
-
-  --use-internal-ip string
-    0 selects public access; 1 selects internal access.
-
 Resource Retrieval:
-  Query cloud resources first:
+  Query the region, project, zone, and image resources first:
     hyperbdrctl cloud-resource fetch --cloud-type openstack --storage-type object \
       --auth-url <auth_url> \
       --username <username> \
       --password <password> \
       --user-domain-id <user_domain_id> \
+      --fetch-res region \
       --output json
-
-  Pay particular attention to these fields in the response:
-    project_domain_id
-    project_id
-    project_name
-    region_id
-    region_name
-    boot_loader_image_id
-    boot_loader_image_name
-    disk_bus_type_id
-    disk_bus_type_name
 
 The minimum create command is:
   hyperbdrctl cloud-account create --cloud-type openstack --storage-type object \

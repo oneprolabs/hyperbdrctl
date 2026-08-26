@@ -115,6 +115,32 @@ func (s Service) DirectAuth(spec DirectAuthSpec) (Result, error) {
 	}
 
 	if shouldUseOpenStackDirectAuth(spec.CloudType, authType) {
+		// The OpenStack target-auth endpoint cannot return flattened flavor
+		// candidates. Keep a compatibility path for object-storage flavor
+		// queries through the generic auth endpoint, which accepts the
+		// anonymous account scope used by the resource API.
+		if shouldUseOpenStackObjectFlavorCompat(spec.CloudType, spec.StorageType, resources) {
+			compatSpec := spec
+			compatSpec.FetchRes = "flavors"
+			body, err := buildGenericDirectAuthBody(compatSpec, authType)
+			if err != nil {
+				return Result{}, err
+			}
+			cloudAccount := body["cloud_account"].(map[string]interface{})
+			cloudAccount["cloud_account_id"] = "anonymous"
+			body["rt_flatten"] = 1
+			resp, err := s.api.Post(routeDirectAuthGeneric, body)
+			if err != nil {
+				return Result{}, err
+			}
+			return Result{
+				Response:    resp,
+				CloudType:   spec.CloudType,
+				StorageType: spec.StorageType,
+				Resources:   resources,
+				Route:       routeDirectAuthGeneric,
+			}, nil
+		}
 		body, err := buildOpenStackDirectAuthBody(spec)
 		if err != nil {
 			return Result{}, err
@@ -519,6 +545,18 @@ func resolveAuthType(explicit string, fields map[string]string) (string, error) 
 
 func shouldUseOpenStackDirectAuth(cloudType, authType string) bool {
 	return strings.EqualFold(strings.TrimSpace(cloudType), "openstack") && authType == "password"
+}
+
+func shouldUseOpenStackObjectFlavorCompat(cloudType, storageType string, resources []string) bool {
+	if !strings.EqualFold(strings.TrimSpace(cloudType), "openstack") || normalizeStorageType(storageType) != "objectstorage" {
+		return false
+	}
+	for _, resource := range resources {
+		if resource == "flavors" {
+			return true
+		}
+	}
+	return false
 }
 
 func NormalizeRequestedResources(fetchRes string) []string {

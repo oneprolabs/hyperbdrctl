@@ -89,6 +89,40 @@ func TestDirectAuthOpenStackPasswordUsesTargetAuthEndpoint(t *testing.T) {
 	}
 }
 
+func TestDirectAuthOpenStackObjectFlavorUsesGenericAuthCompatibilityEndpoint(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	result, err := service.DirectAuth(DirectAuthSpec{
+		CloudType:   "openstack",
+		StorageType: "objectstorage",
+		FetchRes:    "flavor",
+		DynamicFields: map[string]string{
+			"auth_url":       "http://identity:5000/v3",
+			"username":       "demo",
+			"password":       "secret",
+			"user_domain_id": "default",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Route != routeDirectAuthGeneric || api.postPath != routeDirectAuthGeneric {
+		t.Fatalf("route=%q path=%q", result.Route, api.postPath)
+	}
+	body := api.postBody.(map[string]interface{})
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	if cloudAccount["cloud_account_id"] != "anonymous" {
+		t.Fatalf("cloud_account=%#v", cloudAccount)
+	}
+	if body["fetch_res"] != "flavors" {
+		t.Fatalf("body=%#v", body)
+	}
+	if body["rt_flatten"] != 1 {
+		t.Fatalf("body=%#v", body)
+	}
+}
+
 func TestFetchDefaultsToGetCloudInfo(t *testing.T) {
 	api := &fakeAPI{
 		getResps: []client.APIResponse{

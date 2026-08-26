@@ -265,7 +265,7 @@ func newCloudAccountsCreateProviderCommand(ctx *context, entry catalog.CloudEntr
 	addHelpLayout(cmd, helpLayoutFourSection)
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(cloudAccountCreateProviderUsageLineKey(storageType)), entry.Provider))
 	notes := cloudAccountCreateProviderUsageNotes(ctx, entry, storageType, specialized)
-	if storageType == "objectstorage" && (entry.Provider == "huawei" || (specialized && entry.Provider == "aliyun")) {
+	if storageType == "objectstorage" && (entry.Provider == "huawei" || entry.Provider == "openstack" || (specialized && entry.Provider == "aliyun")) {
 		helpContext := dynamicParameterHelpContext{
 			Command:      dynamicParameterHelpCloudAccountCreate,
 			Provider:     entry.Provider,

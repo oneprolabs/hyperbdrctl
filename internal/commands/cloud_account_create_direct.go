@@ -159,6 +159,9 @@ func applyCloudAccountCreateProviderHelp(ctx *context, cmd *cobra.Command, profi
 	if profile.StorageType == "objectstorage" && (profile.Provider == "aliyun" || profile.Provider == "openstack" || profile.Provider == "huawei") {
 		overrideFlagUsage(cmd, ctx, "use-internal-ip", "flag.cloud-account.use-internal-ip")
 	}
+	if profile.StorageType == "objectstorage" && profile.Provider == "openstack" {
+		overrideFlagUsage(cmd, ctx, "auth-url", "help.target_account_create_object_openstack.flag.auth-url")
+	}
 	setDynamicParameterHelpContext(cmd, dynamicParameterHelpContext{
 		Command:      dynamicParameterHelpCloudAccountCreate,
 		Provider:     profile.Provider,

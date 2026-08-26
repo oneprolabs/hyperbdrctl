@@ -79,6 +79,7 @@ func buildOpenStackObject(spec Spec) (string, map[string]interface{}, error) {
 			"storage_type": "objectstorage",
 		},
 		"auto_upload_images": autoUploadImages,
+		"only_verify":        nil,
 	}
 	return "/hypermotion/v1/cloud_accounts", finalizeCreateBody(spec, body), nil
 }

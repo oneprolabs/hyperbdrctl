@@ -144,6 +144,21 @@ var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
 			},
 		},
 	},
+	"openstack-object-cloud-account": {
+		Key:      "openstack-object-cloud-account",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{Flag: "custom-name", Placeholder: "<name>", DescriptionKey: "help.dynamic_parameter.openstack_object.custom_name", SourceKey: "help.dynamic_parameter.openstack_object.custom_name.source"},
+			{Flag: "use-internal-ip", Placeholder: "<mode>", DescriptionKey: "help.dynamic_parameter.openstack_object.use_internal_ip", DefaultValue: "0", Choices: []string{"0", "1"}, ChoicesInline: true, SourceKey: "help.dynamic_parameter.openstack_object.use_internal_ip.source"},
+			{Flag: "boot-loader-image-id", Placeholder: "<image_id>", DescriptionKey: "help.dynamic_parameter.openstack_object.boot_loader_image_id", SourceKey: "help.dynamic_parameter.openstack_object.boot_loader_image_id.source"},
+			{Flag: "boot-loader-image-name", Placeholder: "<image_name>", DescriptionKey: "help.dynamic_parameter.openstack_object.boot_loader_image_name", SourceKey: "help.dynamic_parameter.openstack_object.boot_loader_image_name.source"},
+			{Flag: "boot-loader-flavor-id", Placeholder: "<flavor_id>", DescriptionKey: "help.dynamic_parameter.openstack_object.boot_loader_flavor_id", SourceKey: "help.dynamic_parameter.openstack_object.boot_loader_flavor_id.source"},
+			{Flag: "disk-bus-type-id", Placeholder: "<type_id>", DescriptionKey: "help.dynamic_parameter.openstack_object.disk_bus_type_id", SourceKey: "help.dynamic_parameter.openstack_object.disk_bus_type_id.source"},
+			{Flag: "disk-bus-type-name", Placeholder: "<type_name>", DescriptionKey: "help.dynamic_parameter.openstack_object.disk_bus_type_name", SourceKey: "help.dynamic_parameter.openstack_object.disk_bus_type_name.source"},
+			{Flag: "linux-boot-image-id", Placeholder: "<image_id>", DescriptionKey: "help.dynamic_parameter.openstack_object.linux_boot_image_id", SourceKey: "help.dynamic_parameter.openstack_object.boot_image.source.linux"},
+			{Flag: "windows-boot-image-id", Placeholder: "<image_id>", DescriptionKey: "help.dynamic_parameter.openstack_object.windows_boot_image_id", SourceKey: "help.dynamic_parameter.openstack_object.boot_image.source.windows"},
+		},
+	},
 	"huawei-object-cloud-account-names": {
 		Key:      "huawei-object-cloud-account-names",
 		TitleKey: "help.dynamic_parameter.optional",
@@ -396,6 +411,12 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		GroupKey:    "aliyun-object-cloud-account",
 		Command:     dynamicParameterHelpCloudAccountCreate,
 		Provider:    "aliyun",
+		StorageType: "objectstorage",
+	},
+	{
+		GroupKey:    "openstack-object-cloud-account",
+		Command:     dynamicParameterHelpCloudAccountCreate,
+		Provider:    "openstack",
 		StorageType: "objectstorage",
 	},
 	{

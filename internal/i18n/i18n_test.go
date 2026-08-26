@@ -19,8 +19,8 @@ func TestFallback(t *testing.T) {
 }
 
 func TestLocaleCatalogCompleteness(t *testing.T) {
-	if len(en) != 1391 {
-		t.Fatalf("english catalog entries = %d, want 1391", len(en))
+	if len(en) != 1409 {
+		t.Fatalf("english catalog entries = %d, want 1409", len(en))
 	}
 	if len(zhCN) != len(en) {
 		t.Fatalf("zh_cn catalog entries = %d, want %d", len(zhCN), len(en))

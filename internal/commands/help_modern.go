@@ -278,7 +278,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "help"},
 		}, dynamicParameterHelpContextFromCommand(cmd))
 	case path == "hyperbdrctl target account create-oss openstack":
-		return []flagHelpSpec{
+		return omitDynamicParameterHelpFlags([]flagHelpSpec{
 			{name: "auth-url", required: true},
 			{name: "username", required: true},
 			{name: "password", required: true},
@@ -304,7 +304,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "lang"},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
-		}
+		}, dynamicParameterHelpContextFromCommand(cmd))
 	case strings.HasPrefix(path, "hyperbdrctl target account create-oss "):
 		return omitDynamicParameterHelpFlags([]flagHelpSpec{
 			{name: "cloud-auth-type", choices: []string{"aksk", "password"}},
@@ -1556,14 +1556,14 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) (specs []flagHelpSpec
 			{name: "username", required: true},
 			{name: "password", required: true},
 			{name: "user-domain-id", required: true},
-			{name: "file"},
-			{name: "set"},
-			{name: "set-json"},
 			{name: "project-domain-id"},
 			{name: "project-id"},
 			{name: "project-name"},
 			{name: "region-id"},
 			{name: "region-name"},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
 			{name: "boot-loader-image-id"},
 			{name: "boot-loader-image-name"},
 			{name: "disk-bus-type-id"},

@@ -190,34 +190,15 @@ const (
   --user-domain-id string
     在 OpenStack 控制节点执行 ` + cloudAccountCreateHelpBacktick + `openstack user show <用户名>` + cloudAccountCreateHelpBacktick + `，读取 ` + cloudAccountCreateHelpBacktick + `domain_id` + cloudAccountCreateHelpBacktick + `；默认通常为 ` + cloudAccountCreateHelpBacktick + `default` + cloudAccountCreateHelpBacktick + `。
 
-  --project-domain-id string
-  --project-id string
-  --project-name string
-  --region-id string
-    这些项目和地域字段通常来自资源获取结果；只有需要覆盖自动带入值时，才显式传入。
-
-  --use-internal-ip string
-    0 表示公网访问，1 表示内网访问。
-
 资源获取：
-  先查询云资源：
+  先查询区域、项目、可用区、镜像云资源：
     hyperbdrctl cloud-resource fetch --cloud-type openstack --storage-type object \
       --auth-url <auth_url> \
       --username <username> \
       --password <password> \
       --user-domain-id <user_domain_id> \
+      --fetch-res region \
       --output json
-
-  重点关注返回结果中的：
-    project_domain_id
-    project_id
-    project_name
-    region_id
-    region_name
-    boot_loader_image_id
-    boot_loader_image_name
-    disk_bus_type_id
-    disk_bus_type_name
 
 最小创建命令如下：
   hyperbdrctl cloud-account create --cloud-type openstack --storage-type object \
