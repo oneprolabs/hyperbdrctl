@@ -28,6 +28,7 @@ type DirectAuthSpec struct {
 	StorageType   string
 	CloudAuthType string
 	FetchRes      string
+	Purpose       string
 	RegionID      string
 	ZoneID        string
 	BootMode      string
@@ -317,6 +318,9 @@ func buildGenericDirectAuthBody(spec DirectAuthSpec, authType string) (map[strin
 	addStringToBody(body, "region_id", spec.RegionID)
 	addStringToBody(body, "zone_id", spec.ZoneID)
 	addStringToBody(body, "boot_mode", spec.BootMode)
+	if (spec.CloudType == "huawei" || spec.CloudType == "huawei_obs") && spec.StorageType == "objectstorage" {
+		addStringToBody(body, "purpose", spec.Purpose)
+	}
 	return body, nil
 }
 
@@ -431,6 +435,11 @@ func buildGenericMetadata(spec DirectAuthSpec, authType string) (map[string]inte
 		"zone_id":           true,
 		"boot_mode":         true,
 		"cloud_account_id":  true,
+	}
+	if (spec.CloudType == "huawei" || spec.CloudType == "huawei_obs") && spec.StorageType == "objectstorage" {
+		reserved["purpose"] = true
+	} else if strings.TrimSpace(spec.Purpose) != "" {
+		metadata["purpose"] = spec.Purpose
 	}
 	for key, value := range fields {
 		if reserved[key] || strings.TrimSpace(value) == "" {

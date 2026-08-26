@@ -27,6 +27,10 @@ func enrichHuaweiObjectCloudAccountSpec(ctx *context, spec cloudAccountCreateSpe
 
 	service := appcloudaccount.NewService(commandPosterAdapter{ctx: ctx})
 	fetch := func(resources, zoneID, flavorID, bootMode string) (interface{}, error) {
+		purpose := ""
+		if resources == "flavors" || resources == "images" {
+			purpose = "make_image"
+		}
 		resp, err := service.FetchResources(appcloudaccount.FetchResourcesSpec{
 			Spec: workflowcreate.Spec{
 				CloudType:       spec.CloudType,
@@ -37,6 +41,7 @@ func enrichHuaweiObjectCloudAccountSpec(ctx *context, spec cloudAccountCreateSpe
 				RegionID:        spec.RegionID,
 			},
 			FetchRes: resources,
+			Purpose:  purpose,
 			ZoneID:   zoneID,
 			FlavorID: flavorID,
 			BootMode: bootMode,
@@ -101,7 +106,7 @@ func enrichHuaweiObjectCloudAccountSpec(ctx *context, spec cloudAccountCreateSpe
 	}
 	flavorID := mapString(flavor, "id", "flavor_id", "value")
 
-	imageData, err := fetch("images,system_volume_types", zoneID, flavorID, "")
+	imageData, err := fetch("images", zoneID, flavorID, "")
 	if err != nil {
 		return spec, err
 	}
@@ -109,7 +114,11 @@ func enrichHuaweiObjectCloudAccountSpec(ctx *context, spec cloudAccountCreateSpe
 	if err != nil {
 		return spec, fmt.Errorf("linux-boot-image-host-config-image-id: %w", err)
 	}
-	diskType, err := selectHuaweiObjectRecommendedRow(cloudinfo.SystemVolumeTypeRows(imageData), spec.LinuxBootImageHostConfig.SystemDiskTypeID, "id", "system_disk_type_id", "value")
+	diskData, err := fetch("system_volume_types", zoneID, flavorID, "")
+	if err != nil {
+		return spec, err
+	}
+	diskType, err := selectHuaweiObjectRecommendedRow(cloudinfo.SystemVolumeTypeRows(diskData), spec.LinuxBootImageHostConfig.SystemDiskTypeID, "id", "system_disk_type_id", "value")
 	if err != nil {
 		return spec, fmt.Errorf("linux-boot-image-host-config-system-disk-type-id: %w", err)
 	}

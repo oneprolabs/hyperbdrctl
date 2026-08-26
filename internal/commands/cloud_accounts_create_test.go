@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -502,6 +503,7 @@ func TestCloudAccountCreateHuaweiObjectDynamicParameterHelp(t *testing.T) {
 				"--fetch-res zones",
 				"--network-id <network_id>",
 				"--fetch-res subnets",
+				"--purpose make_image",
 			} {
 				if !strings.Contains(text, want) {
 					t.Fatalf("help missing %q: %q", want, text)
@@ -521,6 +523,9 @@ func TestCloudAccountCreateHuaweiObjectDynamicParameterHelp(t *testing.T) {
 				if strings.Contains(text, "--"+flag) {
 					t.Fatalf("Huawei object help must not advertise advanced parameter --%s: %q", flag, text)
 				}
+			}
+			if strings.Count(text, "--purpose make_image") != 2 {
+				t.Fatalf("Huawei object help should show purpose=make_image for flavor and image queries: %q", text)
 			}
 			for _, forbidden := range []string{
 				"--control-access-ip-radio", "--linux-boot-image-host-config-bandwidth-id", "--linux-boot-image-host-config-bandwidth-name",
@@ -1915,6 +1920,7 @@ func executeCloudAccountCreateAtPath(t *testing.T, commandArgs []string) (string
 	var gotPath string
 	var gotQuery string
 	var gotBody map[string]interface{}
+	var huaweiFetchRes []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v3/postCloudInfoForAuth" {
 			var requestBody map[string]interface{}
@@ -1928,6 +1934,7 @@ func executeCloudAccountCreateAtPath(t *testing.T, commandArgs []string) (string
 			}
 			cloudInfo := map[string]interface{}{}
 			if cloudType == "huawei_obs" {
+				huaweiFetchRes = append(huaweiFetchRes, fetchRes)
 				switch fetchRes {
 				case "regions,zones":
 					cloudInfo["regions"] = []map[string]interface{}{
@@ -1943,6 +1950,9 @@ func executeCloudAccountCreateAtPath(t *testing.T, commandArgs []string) (string
 					cloudInfo["networks"] = []map[string]interface{}{{"id": "network-1", "name": "vpc-ray", "is_recommend": 1}}
 					cloudInfo["subnets"] = []map[string]interface{}{{"id": "subnet-1", "name": "subnet-ray", "network_id": "network-1"}}
 				case "flavors":
+					if requestBody["purpose"] != "make_image" {
+						t.Fatalf("Huawei flavor query purpose = %v, body = %+v", requestBody["purpose"], requestBody)
+					}
 					cloudInfo["flavors"] = []map[string]interface{}{{
 						"value": "u-2", "children": []interface{}{map[string]interface{}{
 							"value": "u-2-m-4", "children": []interface{}{map[string]interface{}{
@@ -1950,8 +1960,15 @@ func executeCloudAccountCreateAtPath(t *testing.T, commandArgs []string) (string
 							}},
 						}},
 					}}
-				case "images,system_volume_types":
+				case "images":
+					if requestBody["purpose"] != "make_image" {
+						t.Fatalf("Huawei image query purpose = %v, body = %+v", requestBody["purpose"], requestBody)
+					}
 					cloudInfo["images"] = []map[string]interface{}{{"id": "image-linux-1", "name": "Ubuntu 24.04 server 64bit", "os_type": "linux", "is_recommend": 1}}
+				case "system_volume_types":
+					if _, ok := requestBody["purpose"]; ok {
+						t.Fatalf("Huawei system volume query should not contain purpose: %+v", requestBody)
+					}
 					cloudInfo["system_volume_types"] = []map[string]interface{}{{"id": "disk-type-1", "name": "General Purpose SSD", "is_recommend": 1}}
 				case "boot_loader_images":
 					cloudInfo["boot_loader_images"] = []map[string]interface{}{{"id": "boot-image-1", "name": "Windows Server 2016 Standard 64bit English", "is_recommend": 1}}
@@ -2031,6 +2048,12 @@ func executeCloudAccountCreateAtPath(t *testing.T, commandArgs []string) (string
 		gotQuery = r.URL.RawQuery
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Fatal(err)
+		}
+		if len(huaweiFetchRes) > 0 {
+			want := []string{"regions,zones", "networks,subnets", "flavors", "images", "system_volume_types", "boot_loader_images"}
+			if !reflect.DeepEqual(huaweiFetchRes, want) {
+				t.Fatalf("Huawei resource query order = %v, want %v", huaweiFetchRes, want)
+			}
 		}
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"code": "00000000",

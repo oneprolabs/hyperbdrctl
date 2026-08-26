@@ -379,6 +379,51 @@ func TestCloudResourceBlockUsesDirectAuthEndpoint(t *testing.T) {
 	}
 }
 
+func TestCloudResourceHuaweiObjectPurposeIsTopLevel(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v3/postCloudInfoForAuth" {
+			t.Fatalf("path=%q", r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"cloud_info": map[string]interface{}{
+				"flavors": []map[string]interface{}{{"id": "flavor-1", "vcpus": 2, "ram_GB": 4}},
+			}},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"cloud-resource", "fetch",
+		"--cloud-type", "huawei",
+		"--storage-type", "object",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-north-1",
+		"--purpose", "make_image",
+		"--fetch-res", "flavors",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["purpose"] != "make_image" {
+		t.Fatalf("body=%+v", gotBody)
+	}
+	cloudAccount := gotBody["cloud_account"].(map[string]interface{})
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if _, ok := metadata["purpose"]; ok {
+		t.Fatalf("metadata should not contain purpose: %+v", metadata)
+	}
+}
+
 func TestCloudResourceOpenStackUsesTargetAuthEndpoint(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

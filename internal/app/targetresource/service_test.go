@@ -123,6 +123,62 @@ func TestDirectAuthOpenStackObjectFlavorUsesGenericAuthCompatibilityEndpoint(t *
 	}
 }
 
+func TestDirectAuthHuaweiObjectPurposeIsTopLevel(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.DirectAuth(DirectAuthSpec{
+		CloudType:   "huawei",
+		StorageType: "objectstorage",
+		FetchRes:    "flavors",
+		Purpose:     "make_image",
+		DynamicFields: map[string]string{
+			"access_key_id":     "ak",
+			"access_key_secret": "sk",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := api.postBody.(map[string]interface{})
+	if body["purpose"] != "make_image" {
+		t.Fatalf("body = %+v", body)
+	}
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if _, ok := metadata["purpose"]; ok {
+		t.Fatalf("metadata should not contain purpose: %+v", metadata)
+	}
+}
+
+func TestDirectAuthNonHuaweiPurposeRemainsMetadata(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.DirectAuth(DirectAuthSpec{
+		CloudType:   "aliyun_obs",
+		StorageType: "objectstorage",
+		FetchRes:    "images",
+		Purpose:     "custom-purpose",
+		DynamicFields: map[string]string{
+			"access_key_id":     "ak",
+			"access_key_secret": "sk",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := api.postBody.(map[string]interface{})
+	if _, ok := body["purpose"]; ok {
+		t.Fatalf("non-Huawei body should not contain top-level purpose: %+v", body)
+	}
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	if metadata["purpose"] != "custom-purpose" {
+		t.Fatalf("metadata=%+v", metadata)
+	}
+}
+
 func TestFetchDefaultsToGetCloudInfo(t *testing.T) {
 	api := &fakeAPI{
 		getResps: []client.APIResponse{

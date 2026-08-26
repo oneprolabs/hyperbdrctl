@@ -11,6 +11,7 @@ import (
 type FetchResourcesSpec struct {
 	workflowcreate.Spec
 	BootMode         string
+	Purpose          string
 	FetchRes         string
 	ZoneID           string
 	FlavorID         string
@@ -84,6 +85,9 @@ func (s Service) FetchResources(spec FetchResourcesSpec) (client.APIResponse, er
 	}
 	if spec.BootMode != "" {
 		body["boot_mode"] = spec.BootMode
+	}
+	if strings.TrimSpace(spec.Purpose) != "" {
+		body["purpose"] = spec.Purpose
 	}
 
 	return s.api.Post("/api/v3/postCloudInfoForAuth", body)

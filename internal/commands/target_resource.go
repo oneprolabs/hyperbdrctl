@@ -564,6 +564,16 @@ func parseTargetResourceDirectAuthArgs(commandName, cloudType, storageType strin
 			}
 			spec.BootMode = v
 			i = next
+		case "purpose":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return apptargetresource.DirectAuthSpec{}, err
+			}
+			spec.Purpose = v
+			if (cloudType != "huawei" && cloudType != "huawei_obs") || storageType != "objectstorage" {
+				spec.DynamicFields["purpose"] = v
+			}
+			i = next
 		default:
 			v, next, err := targetResourceOptionalFlagValue(args, i, value, hasInline)
 			if err != nil {
