@@ -183,7 +183,11 @@ func runTargetResourceDirectAuth(ctx *context, commandName, cloudType, storageTy
 	if err != nil {
 		return err
 	}
-	return writeTargetResourceResponse(ctx, result, nil)
+	meta := make(map[string]interface{}, len(spec.DynamicFields))
+	for key, value := range spec.DynamicFields {
+		meta[key] = value
+	}
+	return writeTargetResourceResponse(ctx, result, meta)
 }
 
 func runTargetResourceFetch(ctx *context, args []string) error {

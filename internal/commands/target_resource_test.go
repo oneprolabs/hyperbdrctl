@@ -665,6 +665,18 @@ func TestCloudResourceFetchFlavorFiltersDoNotAffectJSONOutput(t *testing.T) {
 	}
 }
 
+func TestTargetResourceDirectAuthImageFilterKeepsRowsWithoutOSType(t *testing.T) {
+	rows := []map[string]interface{}{
+		{"id": "linux-1", "os_type": "linux"},
+		{"id": "windows-1", "os_type": "windows"},
+		{"id": "unknown-1"},
+	}
+	filtered := filterImageRows(rows, map[string]interface{}{"os_type": "linux"})
+	if len(filtered) != 2 || filtered[0]["id"] != "linux-1" || filtered[1]["id"] != "unknown-1" {
+		t.Fatalf("filtered=%#v", filtered)
+	}
+}
+
 func TestRemovedTargetResourceCommandsReturnUnknown(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

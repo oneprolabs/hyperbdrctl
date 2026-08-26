@@ -51,7 +51,47 @@ func writeTargetResourceSection(ctx *context, section normalizetargetresource.Se
 		}
 		rows = filtered
 	}
+	if isImageResource(section.Resource) {
+		rows = filterImageRows(rows, meta)
+	}
 	return output.Table(ctx.out, ctx.loc, rows, visibleColumns(rows, targetResourceColumns(section.Resource)))
+}
+
+func isImageResource(resource string) bool {
+	switch resource {
+	case "images", "boot_loader_images", "win_hd_images", "linux_hd_images":
+		return true
+	default:
+		return false
+	}
+}
+
+func filterImageRows(rows []map[string]interface{}, meta map[string]interface{}) []map[string]interface{} {
+	want, _ := meta["os_type"].(string)
+	want = strings.TrimSpace(want)
+	if want == "" {
+		return rows
+	}
+
+	filtered := make([]map[string]interface{}, 0, len(rows))
+	for _, row := range rows {
+		got := imageOSType(row)
+		// Some providers do not return os_type for image candidates. In that
+		// case keep the row instead of applying an unreliable filter.
+		if got == "" || strings.EqualFold(got, want) {
+			filtered = append(filtered, row)
+		}
+	}
+	return filtered
+}
+
+func imageOSType(row map[string]interface{}) string {
+	for _, key := range []string{"os_type", "osType", "os-type"} {
+		if value, ok := row[key].(string); ok && strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
 
 func targetResourceColumns(resource string) []output.Column {
