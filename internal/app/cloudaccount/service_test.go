@@ -308,16 +308,24 @@ func TestServiceFetchResourcesIncludesPurposeWhenProvided(t *testing.T) {
 			AccessKeySecret: "sk",
 			RegionID:        "cn-north-1",
 		},
-		FetchRes: "flavors",
-		Purpose:  "make_image",
+		FetchRes:  "flavors",
+		Purpose:   "make_image",
+		OSType:    "linux",
+		ImageType: "system",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	body := api.postBody.(map[string]interface{})
-	if body["purpose"] != "make_image" {
+	if body["purpose"] != "make_image" || body["os_type"] != "linux" || body["image_type"] != "system" {
 		t.Fatalf("body = %+v", body)
+	}
+	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	for _, key := range []string{"purpose", "os_type", "image_type", "region_type", "region_type_list"} {
+		if _, ok := metadata[key]; ok {
+			t.Fatalf("Huawei object query metadata should not contain %q: %+v", key, metadata)
+		}
 	}
 }
 

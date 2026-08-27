@@ -28,8 +28,14 @@ func enrichHuaweiObjectCloudAccountSpec(ctx *context, spec cloudAccountCreateSpe
 	service := appcloudaccount.NewService(commandPosterAdapter{ctx: ctx})
 	fetch := func(resources, zoneID, flavorID, bootMode string) (interface{}, error) {
 		purpose := ""
+		imageType := ""
+		osType := ""
 		if resources == "flavors" || resources == "images" {
 			purpose = "make_image"
+		}
+		if resources == "images" {
+			imageType = "system"
+			osType = "linux"
 		}
 		resp, err := service.FetchResources(appcloudaccount.FetchResourcesSpec{
 			Spec: workflowcreate.Spec{
@@ -40,11 +46,13 @@ func enrichHuaweiObjectCloudAccountSpec(ctx *context, spec cloudAccountCreateSpe
 				StorageType:     spec.StorageType,
 				RegionID:        spec.RegionID,
 			},
-			FetchRes: resources,
-			Purpose:  purpose,
-			ZoneID:   zoneID,
-			FlavorID: flavorID,
-			BootMode: bootMode,
+			FetchRes:  resources,
+			Purpose:   purpose,
+			ZoneID:    zoneID,
+			FlavorID:  flavorID,
+			BootMode:  bootMode,
+			ImageType: imageType,
+			OSType:    osType,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("auto-resolve Huawei object resources %s: %w", resources, err)

@@ -31,6 +31,12 @@ type DirectAuthSpec struct {
 	Purpose       string
 	RegionID      string
 	ZoneID        string
+	FlavorID      string
+	FlavorVCPUs   string
+	FlavorRAM     string
+	NetworkID     string
+	OSType        string
+	ImageType     string
 	BootMode      string
 	DynamicFields map[string]string
 }
@@ -317,10 +323,14 @@ func buildGenericDirectAuthBody(spec DirectAuthSpec, authType string) (map[strin
 	addStringToBody(body, "fetch_res", spec.FetchRes)
 	addStringToBody(body, "region_id", spec.RegionID)
 	addStringToBody(body, "zone_id", spec.ZoneID)
+	addStringToBody(body, "flavor_id", spec.FlavorID)
+	addStringToBody(body, "flavor_vcpus", spec.FlavorVCPUs)
+	addStringToBody(body, "flavor_ram", spec.FlavorRAM)
+	addStringToBody(body, "network_id", spec.NetworkID)
+	addStringToBody(body, "os_type", spec.OSType)
+	addStringToBody(body, "image_type", spec.ImageType)
 	addStringToBody(body, "boot_mode", spec.BootMode)
-	if (spec.CloudType == "huawei" || spec.CloudType == "huawei_obs") && spec.StorageType == "objectstorage" {
-		addStringToBody(body, "purpose", spec.Purpose)
-	}
+	addStringToBody(body, "purpose", spec.Purpose)
 	return body, nil
 }
 
@@ -366,6 +376,13 @@ func buildOpenStackDirectAuthBody(spec DirectAuthSpec) (map[string]interface{}, 
 		"block_store_zone_id": nilString(fields["block_store_zone_id"]),
 	}
 	addStringToBody(body, "fetch_res", spec.FetchRes)
+	addStringToBody(body, "zone_id", spec.ZoneID)
+	addStringToBody(body, "flavor_id", spec.FlavorID)
+	addStringToBody(body, "flavor_vcpus", spec.FlavorVCPUs)
+	addStringToBody(body, "flavor_ram", spec.FlavorRAM)
+	addStringToBody(body, "network_id", spec.NetworkID)
+	addStringToBody(body, "os_type", spec.OSType)
+	addStringToBody(body, "image_type", spec.ImageType)
 	return body, nil
 }
 
@@ -415,7 +432,7 @@ func buildGenericMetadata(spec DirectAuthSpec, authType string) (map[string]inte
 		}
 	}
 
-	if spec.RegionID != "" {
+	if spec.RegionID != "" && !isHuaweiObjectStorage(spec.CloudType, spec.StorageType) {
 		metadata["region_type"] = "1"
 		metadata["region_type_list"] = spec.RegionID
 	}
@@ -433,14 +450,16 @@ func buildGenericMetadata(spec DirectAuthSpec, authType string) (map[string]inte
 		"fetch_res":         true,
 		"region_id":         true,
 		"zone_id":           true,
+		"flavor_id":         true,
+		"flavor_vcpus":      true,
+		"flavor_ram":        true,
+		"network_id":        true,
+		"os_type":           true,
+		"image_type":        true,
 		"boot_mode":         true,
 		"cloud_account_id":  true,
 	}
-	if (spec.CloudType == "huawei" || spec.CloudType == "huawei_obs") && spec.StorageType == "objectstorage" {
-		reserved["purpose"] = true
-	} else if strings.TrimSpace(spec.Purpose) != "" {
-		metadata["purpose"] = spec.Purpose
-	}
+	reserved["purpose"] = true
 	for key, value := range fields {
 		if reserved[key] || strings.TrimSpace(value) == "" {
 			continue
@@ -448,6 +467,10 @@ func buildGenericMetadata(spec DirectAuthSpec, authType string) (map[string]inte
 		metadata[key] = value
 	}
 	return metadata, nil
+}
+
+func isHuaweiObjectStorage(cloudType, storageType string) bool {
+	return (strings.EqualFold(strings.TrimSpace(cloudType), "huawei") || strings.EqualFold(strings.TrimSpace(cloudType), "huawei_obs")) && normalizeStorageType(storageType) == "objectstorage"
 }
 
 func buildAccountActionBody(resources []string, regionID, zoneID, flavorID string, q url.Values) (map[string]interface{}, error) {

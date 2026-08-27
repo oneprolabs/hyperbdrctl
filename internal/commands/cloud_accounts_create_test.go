@@ -503,6 +503,8 @@ func TestCloudAccountCreateHuaweiObjectDynamicParameterHelp(t *testing.T) {
 				"--fetch-res zones",
 				"--network-id <network_id>",
 				"--fetch-res subnets",
+				"--image-type system",
+				"--os-type linux",
 				"--purpose make_image",
 			} {
 				if !strings.Contains(text, want) {
@@ -526,6 +528,13 @@ func TestCloudAccountCreateHuaweiObjectDynamicParameterHelp(t *testing.T) {
 			}
 			if strings.Count(text, "--purpose make_image") != 2 {
 				t.Fatalf("Huawei object help should show purpose=make_image for flavor and image queries: %q", text)
+			}
+			imageTypePos := strings.Index(text, "--image-type system")
+			osTypePos := strings.Index(text, "--os-type linux")
+			purposePos := strings.LastIndex(text, "--purpose make_image")
+			imagesPos := strings.Index(text[purposePos:], "--fetch-res images")
+			if imageTypePos < 0 || osTypePos < imageTypePos || purposePos < osTypePos || imagesPos < 0 {
+				t.Fatalf("Huawei image query flags are not in the required order: %q", text)
 			}
 			for _, forbidden := range []string{
 				"--control-access-ip-radio", "--linux-boot-image-host-config-bandwidth-id", "--linux-boot-image-host-config-bandwidth-name",
@@ -1554,11 +1563,17 @@ func TestCloudAccountsCreateOSSHuaweiSubmitsExplicitControlIPAndBootLoaderFlavor
 		"--region-id", "cn-north-1",
 		"--control-access-ip", "2001:db8::10",
 		"--boot-loader-flavor-id", "manual-flavor",
+		"--linux-boot-image-host-config-flavor-id", "c3.large.2",
+		"--linux-boot-image-host-config-image-id", "image-linux-1",
 	})
 
 	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
 	if metadata["control_access_ip"] != "2001:db8::10" || metadata["boot_loader_flavor_id"] != "manual-flavor" {
 		t.Fatalf("metadata = %+v", metadata)
+	}
+	host := metadata["linux_boot_image_host_config"].(map[string]interface{})
+	if host["flavor_id"] != "c3.large.2" || host["image_id"] != "image-linux-1" {
+		t.Fatalf("explicit host resource IDs were not preserved: %+v", host)
 	}
 }
 
@@ -1935,6 +1950,12 @@ func executeCloudAccountCreateAtPath(t *testing.T, commandArgs []string) (string
 			cloudInfo := map[string]interface{}{}
 			if cloudType == "huawei_obs" {
 				huaweiFetchRes = append(huaweiFetchRes, fetchRes)
+				metadata := requestBody["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+				for _, key := range []string{"region_type", "region_type_list"} {
+					if _, ok := metadata[key]; ok {
+						t.Fatalf("Huawei object resource query metadata should not contain %q: %+v", key, metadata)
+					}
+				}
 				switch fetchRes {
 				case "regions,zones":
 					cloudInfo["regions"] = []map[string]interface{}{
@@ -1953,6 +1974,11 @@ func executeCloudAccountCreateAtPath(t *testing.T, commandArgs []string) (string
 					if requestBody["purpose"] != "make_image" {
 						t.Fatalf("Huawei flavor query purpose = %v, body = %+v", requestBody["purpose"], requestBody)
 					}
+					for _, key := range []string{"flavor_vcpus", "flavor_ram", "image_type", "os_type"} {
+						if _, ok := requestBody[key]; ok {
+							t.Fatalf("Huawei flavor query should not contain %q: %+v", key, requestBody)
+						}
+					}
 					cloudInfo["flavors"] = []map[string]interface{}{{
 						"value": "u-2", "children": []interface{}{map[string]interface{}{
 							"value": "u-2-m-4", "children": []interface{}{map[string]interface{}{
@@ -1961,16 +1987,26 @@ func executeCloudAccountCreateAtPath(t *testing.T, commandArgs []string) (string
 						}},
 					}}
 				case "images":
-					if requestBody["purpose"] != "make_image" {
+					if requestBody["purpose"] != "make_image" || requestBody["image_type"] != "system" || requestBody["os_type"] != "linux" {
 						t.Fatalf("Huawei image query purpose = %v, body = %+v", requestBody["purpose"], requestBody)
 					}
 					cloudInfo["images"] = []map[string]interface{}{{"id": "image-linux-1", "name": "Ubuntu 24.04 server 64bit", "os_type": "linux", "is_recommend": 1}}
 				case "system_volume_types":
-					if _, ok := requestBody["purpose"]; ok {
-						t.Fatalf("Huawei system volume query should not contain purpose: %+v", requestBody)
+					for _, key := range []string{"purpose", "image_type", "os_type"} {
+						if _, ok := requestBody[key]; ok {
+							t.Fatalf("Huawei system volume query should not contain %q: %+v", key, requestBody)
+						}
 					}
 					cloudInfo["system_volume_types"] = []map[string]interface{}{{"id": "disk-type-1", "name": "General Purpose SSD", "is_recommend": 1}}
 				case "boot_loader_images":
+					for _, key := range []string{"purpose", "image_type", "os_type"} {
+						if _, ok := requestBody[key]; ok {
+							t.Fatalf("Huawei boot loader query should not contain %q: %+v", key, requestBody)
+						}
+					}
+					if requestBody["boot_mode"] != "bios" {
+						t.Fatalf("Huawei boot loader query should contain boot_mode=bios: %+v", requestBody)
+					}
 					cloudInfo["boot_loader_images"] = []map[string]interface{}{{"id": "boot-image-1", "name": "Windows Server 2016 Standard 64bit English", "is_recommend": 1}}
 				}
 				if strings.Contains(fetchRes, "boot_loader_flavors") || strings.Contains(fetchRes, "bandwidths") {

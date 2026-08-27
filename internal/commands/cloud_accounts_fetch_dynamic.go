@@ -75,6 +75,43 @@ func parseCloudAccountFetchResourcesArgs(commandName, cloudType, storageType str
 			}
 			spec.FlavorRAM = v
 			i = next
+		case "flavor-id":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedCloudAccountFetchResourcesCommand{}, err
+			}
+			spec.FlavorID = v
+			i = next
+		case "network-id":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedCloudAccountFetchResourcesCommand{}, err
+			}
+			spec.NetworkID = v
+			i = next
+		case "os-type":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedCloudAccountFetchResourcesCommand{}, err
+			}
+			spec.OSType = v
+			i = next
+		case "image-type":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedCloudAccountFetchResourcesCommand{}, err
+			}
+			spec.ImageType = v
+			i = next
+		case "image_type":
+			return parsedCloudAccountFetchResourcesCommand{}, fmt.Errorf("unknown flag: --image_type; use --image-type")
+		case "purpose":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return parsedCloudAccountFetchResourcesCommand{}, err
+			}
+			spec.Purpose = v
+			i = next
 		case "compute-zone-id":
 			v, next, err := strictFlagValue(args, i, value, hasInline)
 			if err != nil {

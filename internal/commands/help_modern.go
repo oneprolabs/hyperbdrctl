@@ -1331,6 +1331,11 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 		{name: "network-id"},
 		{name: "boot-mode"},
 	}
+	directHuaweiObject := append(append([]flagHelpSpec{}, directAK...),
+		flagHelpSpec{name: "os-type"},
+		flagHelpSpec{name: "image-type"},
+		flagHelpSpec{name: "purpose"},
+	)
 	directOpenStack := []flagHelpSpec{
 		{name: "cloud-type", required: true},
 		{name: "storage-type", required: true, choices: []string{"block", "object"}},
@@ -1364,6 +1369,8 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 		}, commonGlobal...)
 	case strings.HasPrefix(profile, "direct|openstack|"):
 		return append(directOpenStack, commonGlobal...)
+	case profile == "direct|huawei|object":
+		return append(directHuaweiObject, commonGlobal...)
 	case strings.HasPrefix(profile, "direct|"):
 		return append(directAK, commonGlobal...)
 	default:

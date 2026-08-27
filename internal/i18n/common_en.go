@@ -208,7 +208,7 @@ var commonEN = map[string]string{
 	"flag.cloud-account-id":                                  "Cloud account ID",
 	"flag.cloud-account":                                     "Compatibility cloud account flag name",
 	"flag.fetch-res":                                         "Requested resource groups, comma-separated",
-	"flag.purpose":                                           "Gateway action purpose",
+	"flag.purpose":                                           "Resource query purpose",
 	"flag.image-type":                                        "Image type",
 	"flag.host-id":                                           "Host ID",
 	"flag.network-addr-for-write-data":                       "Write network selector",

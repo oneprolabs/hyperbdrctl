@@ -188,6 +188,9 @@ func TestCloudResourceDirectHelpShowsProviderProfile(t *testing.T) {
 			args: []string{"--lang", "zh_cn", "cloud-resource", "fetch", "--cloud-type", "huawei", "--storage-type", "object", "--help"},
 			want: []string{
 				"获取华为云对象存储只读资源。",
+				"--os-type string",
+				"--image-type string",
+				"--purpose string",
 				"system_volume_types",
 				"cloud-account create --cloud-type huawei --storage-type object --help",
 			},
@@ -421,6 +424,93 @@ func TestCloudResourceHuaweiObjectPurposeIsTopLevel(t *testing.T) {
 	metadata := cloudAccount["metadata"].(map[string]interface{})
 	if _, ok := metadata["purpose"]; ok {
 		t.Fatalf("metadata should not contain purpose: %+v", metadata)
+	}
+}
+
+func TestCloudResourceHuaweiObjectKnownQueryFieldsAreTopLevel(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"cloud_info": map[string]interface{}{
+				"images": []map[string]interface{}{{"id": "image-1", "name": "linux", "os_type": "linux"}},
+			}},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL,
+		"cloud-resource", "fetch",
+		"--cloud-type", "huawei",
+		"--storage-type", "object",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--region-id", "cn-north-1",
+		"--zone-id", "cn-north-1a",
+		"--flavor-id", "flavor-1",
+		"--flavor-vcpus", "2",
+		"--flavor-ram", "4",
+		"--network-id", "network-1",
+		"--os-type", "linux",
+		"--image-type", "system",
+		"--boot-mode", "bios",
+		"--purpose", "make_image",
+		"--provider-option", "custom",
+		"--fetch-res", "images",
+	), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		"fetch_res": "images", "region_id": "cn-north-1", "zone_id": "cn-north-1a",
+		"flavor_id": "flavor-1", "flavor_vcpus": "2", "flavor_ram": "4",
+		"network_id": "network-1", "os_type": "linux", "image_type": "system",
+		"boot_mode": "bios", "purpose": "make_image",
+	}
+	for key, value := range want {
+		if gotBody[key] != value {
+			t.Fatalf("body[%q]=%v, want %q; body=%+v", key, gotBody[key], value, gotBody)
+		}
+	}
+	metadata := gotBody["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	for key := range want {
+		if _, ok := metadata[key]; ok {
+			t.Fatalf("metadata should not contain query field %q: %+v", key, metadata)
+		}
+	}
+	for _, key := range []string{"region_type", "region_type_list"} {
+		if _, ok := metadata[key]; ok {
+			t.Fatalf("metadata should not contain %q: %+v", key, metadata)
+		}
+	}
+	if metadata["provider_option"] != "custom" {
+		t.Fatalf("unmodeled provider field was not preserved: %+v", metadata)
+	}
+}
+
+func TestCloudResourceFetchRejectsImageTypeUnderscoreFlag(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	err := Execute([]string{
+		"cloud-resource", "fetch",
+		"--cloud-type", "huawei",
+		"--storage-type", "object",
+		"--access-key-id", "ak",
+		"--access-key-secret", "sk",
+		"--image_type", "system",
+		"--fetch-res", "images",
+	}, &out, &errOut)
+	if err == nil || !strings.Contains(err.Error(), "unknown flag: --image_type; use --image-type") {
+		t.Fatalf("err=%v", err)
 	}
 }
 

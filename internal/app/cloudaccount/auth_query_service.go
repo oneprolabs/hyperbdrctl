@@ -17,6 +17,9 @@ type FetchResourcesSpec struct {
 	FlavorID         string
 	FlavorVCPUs      string
 	FlavorRAM        string
+	NetworkID        string
+	OSType           string
+	ImageType        string
 	ComputeZoneID    string
 	BlockStoreZoneID string
 }
@@ -82,6 +85,21 @@ func (s Service) FetchResources(spec FetchResourcesSpec) (client.APIResponse, er
 	}
 	if spec.FlavorID != "" {
 		body["flavor_id"] = spec.FlavorID
+	}
+	if spec.FlavorVCPUs != "" {
+		body["flavor_vcpus"] = spec.FlavorVCPUs
+	}
+	if spec.FlavorRAM != "" {
+		body["flavor_ram"] = spec.FlavorRAM
+	}
+	if spec.NetworkID != "" {
+		body["network_id"] = spec.NetworkID
+	}
+	if spec.OSType != "" {
+		body["os_type"] = spec.OSType
+	}
+	if spec.ImageType != "" {
+		body["image_type"] = spec.ImageType
 	}
 	if spec.BootMode != "" {
 		body["boot_mode"] = spec.BootMode
@@ -205,11 +223,15 @@ func buildFetchGenericMetadata(spec FetchResourcesSpec, authType string) (map[st
 		}
 	}
 
-	if spec.RegionID != "" {
+	if spec.RegionID != "" && !isHuaweiObjectStorage(spec.CloudType, spec.StorageType) {
 		metadata["region_type"] = "1"
 		metadata["region_type_list"] = spec.RegionID
 	}
 	return metadata, nil
+}
+
+func isHuaweiObjectStorage(cloudType, storageType string) bool {
+	return (strings.EqualFold(strings.TrimSpace(cloudType), "huawei") || strings.EqualFold(strings.TrimSpace(cloudType), "huawei_obs")) && strings.EqualFold(strings.TrimSpace(storageType), "objectstorage")
 }
 
 func fetchResourcesNeedRegion(fetchRes string) bool {

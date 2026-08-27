@@ -151,7 +151,63 @@ func TestDirectAuthHuaweiObjectPurposeIsTopLevel(t *testing.T) {
 	}
 }
 
-func TestDirectAuthNonHuaweiPurposeRemainsMetadata(t *testing.T) {
+func TestDirectAuthKnownQueryFieldsAreTopLevel(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.DirectAuth(DirectAuthSpec{
+		CloudType:   "huawei_obs",
+		StorageType: "objectstorage",
+		FetchRes:    "images",
+		RegionID:    "cn-north-1",
+		ZoneID:      "cn-north-1a",
+		FlavorID:    "flavor-1",
+		FlavorVCPUs: "2",
+		FlavorRAM:   "4",
+		NetworkID:   "network-1",
+		OSType:      "linux",
+		ImageType:   "system",
+		BootMode:    "bios",
+		Purpose:     "make_image",
+		DynamicFields: map[string]string{
+			"access_key_id":     "ak",
+			"access_key_secret": "sk",
+			"provider_option":   "kept-in-metadata",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := api.postBody.(map[string]interface{})
+	want := map[string]string{
+		"fetch_res": "images", "region_id": "cn-north-1", "zone_id": "cn-north-1a",
+		"flavor_id": "flavor-1", "flavor_vcpus": "2", "flavor_ram": "4",
+		"network_id": "network-1", "os_type": "linux", "image_type": "system",
+		"boot_mode": "bios", "purpose": "make_image",
+	}
+	for key, value := range want {
+		if body[key] != value {
+			t.Fatalf("body[%q]=%v, want %q; body=%+v", key, body[key], value, body)
+		}
+	}
+	cloudAccount := body["cloud_account"].(map[string]interface{})
+	metadata := cloudAccount["metadata"].(map[string]interface{})
+	for key := range want {
+		if _, ok := metadata[key]; ok {
+			t.Fatalf("metadata should not contain query field %q: %+v", key, metadata)
+		}
+	}
+	for _, key := range []string{"region_type", "region_type_list"} {
+		if _, ok := metadata[key]; ok {
+			t.Fatalf("Huawei object metadata should not contain %q: %+v", key, metadata)
+		}
+	}
+	if metadata["provider_option"] != "kept-in-metadata" {
+		t.Fatalf("unmodeled provider field should remain in metadata: %+v", metadata)
+	}
+}
+
+func TestDirectAuthAliyunRegionCompatibilityMetadataIsPreserved(t *testing.T) {
 	api := &fakeAPI{}
 	service := NewService(api)
 
@@ -159,7 +215,7 @@ func TestDirectAuthNonHuaweiPurposeRemainsMetadata(t *testing.T) {
 		CloudType:   "aliyun_obs",
 		StorageType: "objectstorage",
 		FetchRes:    "images",
-		Purpose:     "custom-purpose",
+		RegionID:    "cn-beijing",
 		DynamicFields: map[string]string{
 			"access_key_id":     "ak",
 			"access_key_secret": "sk",
@@ -169,13 +225,9 @@ func TestDirectAuthNonHuaweiPurposeRemainsMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := api.postBody.(map[string]interface{})
-	if _, ok := body["purpose"]; ok {
-		t.Fatalf("non-Huawei body should not contain top-level purpose: %+v", body)
-	}
-	cloudAccount := body["cloud_account"].(map[string]interface{})
-	metadata := cloudAccount["metadata"].(map[string]interface{})
-	if metadata["purpose"] != "custom-purpose" {
-		t.Fatalf("metadata=%+v", metadata)
+	metadata := body["cloud_account"].(map[string]interface{})["metadata"].(map[string]interface{})
+	if metadata["region_type"] != "1" || metadata["region_type_list"] != "cn-beijing" {
+		t.Fatalf("Alibaba Cloud compatibility metadata changed: %+v", metadata)
 	}
 }
 

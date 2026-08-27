@@ -77,7 +77,7 @@ func newCloudResourceFetchCommand(ctx *context) *cobra.Command {
 func addCloudResourceFetchAllFlags(cmd *cobra.Command, ctx *context) {
 	for _, name := range []string{
 		"cloud-account-id", "cloud-type", "storage-type", "cloud-auth-type",
-		"fetch-res", "region-id", "zone-id", "flavor-id", "flavor-vcpus", "flavor-ram", "network-id", "os-type", "boot-mode",
+		"fetch-res", "region-id", "zone-id", "flavor-id", "flavor-vcpus", "flavor-ram", "network-id", "os-type", "image-type", "boot-mode", "purpose",
 		"access-key-id", "access-key-secret", "access-id", "access-secret",
 		"auth-url", "username", "password", "user-domain-id",
 		"project-id", "project-domain-id", "project-name", "compute-zone-id", "block-store-zone-id",
@@ -557,6 +557,28 @@ func parseTargetResourceDirectAuthArgs(commandName, cloudType, storageType strin
 			}
 			spec.ZoneID = v
 			i = next
+		case "flavor-id", "flavor-vcpus", "flavor-ram", "network-id", "os-type", "image-type":
+			v, next, err := strictFlagValue(args, i, value, hasInline)
+			if err != nil {
+				return apptargetresource.DirectAuthSpec{}, err
+			}
+			switch name {
+			case "flavor-id":
+				spec.FlavorID = v
+			case "flavor-vcpus":
+				spec.FlavorVCPUs = v
+			case "flavor-ram":
+				spec.FlavorRAM = v
+			case "network-id":
+				spec.NetworkID = v
+			case "os-type":
+				spec.OSType = v
+			case "image-type":
+				spec.ImageType = v
+			}
+			i = next
+		case "image_type":
+			return apptargetresource.DirectAuthSpec{}, fmt.Errorf("unknown flag: --image_type; use --image-type")
 		case "boot-mode":
 			v, next, err := strictFlagValue(args, i, value, hasInline)
 			if err != nil {
@@ -570,9 +592,6 @@ func parseTargetResourceDirectAuthArgs(commandName, cloudType, storageType strin
 				return apptargetresource.DirectAuthSpec{}, err
 			}
 			spec.Purpose = v
-			if (cloudType != "huawei" && cloudType != "huawei_obs") || storageType != "objectstorage" {
-				spec.DynamicFields["purpose"] = v
-			}
 			i = next
 		default:
 			v, next, err := targetResourceOptionalFlagValue(args, i, value, hasInline)

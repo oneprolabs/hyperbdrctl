@@ -208,7 +208,7 @@ var commonZH = map[string]string{
 	"flag.cloud-account-id":                                  "云账号 ID",
 	"flag.cloud-account":                                     "兼容旧写法的云账号参数名",
 	"flag.fetch-res":                                         "请求的资源组，逗号分隔",
-	"flag.purpose":                                           "网关动作用途",
+	"flag.purpose":                                           "资源查询用途",
 	"flag.image-type":                                        "镜像类型",
 	"flag.host-id":                                           "主机 ID",
 	"flag.network-addr-for-write-data":                       "写数据网络选择器",
