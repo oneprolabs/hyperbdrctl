@@ -1,120 +1,86 @@
+<div align="center">
+
 # hyperbdrctl
 
-`hyperbdrctl` is the command-line client for HyperBDR / HyperMotion. It is written in Go and designed for daily operations, batch execution, and script integration.
+**An agent-ready CLI for operating HyperBDR and HyperMotion.**
 
-The CLI talks to the platform through a unified HTTP API and supports both `dr` and `migration` scenes.
+Give an AI agent a predictable command surface for disaster recovery and migration workflows — with
+structured output, explicit flags, safe defaults, and no web-console automation required.
 
-## Core Capabilities
+[English](README.md) | [中文](README.zh-CN.md)
 
-- Manage local connection settings, language, and default output mode
-- Query hosts, snapshots, tasks, licenses, and upgrade information
-- Run host lifecycle operations such as register, sync, boot, deregister, and wait
-- Manage host boot configurations and the top-level `boot-config apply` flow
-- Manage source-side preparation, including Agent install metadata, Agentless sync proxies, and production sites
-- Manage target-side cloud accounts, cloud resource discovery, cloud sync gateways, and object storage
-- Use JSON output for troubleshooting and additional automation
+[![Go](https://img.shields.io/badge/go-1.18%2B-00ADD8?logo=go)](go.mod)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-active%20development-orange.svg)](#project-status)
 
-## Typical Use Cases
+[Repository](https://github.com/oneprolabs/hyperbdrctl) · [Issues](https://github.com/oneprolabs/hyperbdrctl/issues) · [Releases](https://github.com/oneprolabs/hyperbdrctl/releases)
 
-- Integrate HyperBDR / HyperMotion operations into shell scripts, CI/CD jobs, or batch tasks
-- Consume raw JSON output from custom automation systems
-- Manage multiple environments and switch between `dr` and `migration`
-- Complete common operational tasks without using the web UI
+</div>
 
-## Requirements
+`hyperbdrctl` is a Go command-line client for HyperBDR / HyperMotion. It is primarily built for AI agents
+and automation systems that inspect state, execute operations, wait for asynchronous tasks, and consume
+results without browser UI scraping. It supports both `dr` and `migration` scenes.
 
-- Go 1.18 or later
+## Usage
+
+### Requirements
+
 - A reachable HyperBDR / HyperMotion endpoint, for example `https://<host>:10443`
 - Valid platform credentials
+- A released binary
 
-## Build
+### Configure an endpoint
 
-Run in the current module directory:
-
-```sh
-go build -o hyperbdrctl ./cmd/hyperbdrctl
-```
-
-To generate a smaller binary for distribution:
+`config set` validates merged credentials before saving. Failed authentication does not overwrite the existing configuration.
 
 ```sh
-go build -trimpath -ldflags="-s -w" -o hyperbdrctl ./cmd/hyperbdrctl
+hyperbdrctl config set --host https://example:10443 --username admin --password <password> --scene migration --lang zh_cn
+hyperbdrctl config get
 ```
 
-For a release build, inject the CLI version explicitly and require Go to embed VCS metadata:
+For an explicitly trusted test environment with an untrusted certificate:
 
 ```sh
-VERSION=v1.2.3
-go build -trimpath -buildvcs=true \
-  -ldflags "\
-    -s -w \
-    -X 'hyperbdr-client/internal/version.Version=${VERSION}'" \
-  -o hyperbdrctl ./cmd/hyperbdrctl
+hyperbdrctl config set --insecure
 ```
 
-`-buildvcs=true` records the Git revision and commit time in the binary when the source tree is available. After building, verify the CLI version:
-
-```sh
-./hyperbdrctl --version
-./hyperbdrctl --output json --version
-go version -m ./hyperbdrctl
-```
-
-On Windows, output `hyperbdrctl.exe` if needed.
-
-## Quick Start
-
-### 1. Save Local Default Configuration
-
-```sh
-hyperbdrctl config set \
-  --host https://example:10443 \
-  --username admin \
-  --password <password> \
-  --scene migration \
-  --lang zh_cn
-```
-
-If you are in a test environment and must skip TLS verification, add:
-
-```sh
---insecure
-```
-
-`config set` validates the final merged credentials before saving. If authentication fails, nothing is written to the local config.
-
-### 2. Run Basic Queries
+### Query and operate
 
 ```sh
 hyperbdrctl host list --page 1 --page-size 10
 hyperbdrctl cloud-account list
 hyperbdrctl oss list
+hyperbdrctl host wait --id <host_id>
 ```
 
-### 3. Use JSON Output in Scripts
+Use `--help` at any level to discover supported flags and provider-specific examples:
 
 ```sh
-hyperbdrctl host list --page 1 --page-size 10 --output json
+hyperbdrctl --help
+hyperbdrctl host --help
+hyperbdrctl cloud-account create --help
 ```
 
-The default output mode is table. When `--output json` is used, the CLI returns raw API field names for direct script consumption.
+### Machine-readable output for agents
 
-## Configuration Sources
+Use JSON for tool calls, planning, validation, and follow-up actions. API field names are preserved.
 
-The CLI supports these configuration sources:
+```sh
+hyperbdrctl --output json host list --page 1 --page-size 10
+hyperbdrctl --output json cloud-resource fetch --cloud-account-id <account_id>
+```
 
-1. Command-line flags
-2. Environment variables
-3. Local config file
-4. Defaults
+The default output is a table. `--vertical` helps inspect one record and `--debug` enables request-level troubleshooting.
 
-The fixed priority order is:
+### Configuration sources
+
+Values are resolved in this order:
 
 ```text
-command-line flags > environment variables > config file > defaults
+command-line flags > environment variables > local config file > defaults
 ```
 
-Common environment variables:
+Supported environment variables:
 
 ```text
 HYPERBDR_HOST
@@ -127,155 +93,107 @@ HYPERBDR_INSECURE
 HYPERBDR_DEBUG
 ```
 
-Notes:
+`--lang` controls CLI messages and the HTTP `X-LANG` header. Supported values are `en` and `zh_cn`.
+TLS verification is enabled by default; use `--insecure` only in a test environment.
 
-- `--lang` controls both CLI text and the HTTP `X-LANG` header
-- Supported languages are `en` and `zh_cn`
-- The default output mode is `table`
-- `config get` hides saved passwords by default
-- TLS verification is enabled by default, and `--insecure` should only be used explicitly in test environments
-
-## Common Workflows
-
-### Hosts and Boot Configuration
+### Common workflows
 
 ```sh
+# Hosts and boot configuration
 hyperbdrctl host list
 hyperbdrctl host detail --id <host_id>
 hyperbdrctl boot-config get --id <host_id>
 hyperbdrctl boot-config apply --id <host_id> --file ./boot-config.json
 hyperbdrctl host wait --id <host_id>
-```
 
-Notes:
-
-- Stable single-host boot configuration management uses `boot-config get` and `boot-config apply`
-
-### Source Preparation
-
-Inspect source-side install metadata:
-
-```sh
+# Source preparation
 hyperbdrctl agent install
 hyperbdrctl sync-proxy install
 hyperbdrctl sync-proxy list
-```
+hyperbdrctl production-site create --type vmware --synch-node-id <node_id> --auth-url https://vcenter.example:443 --auth-key <username> --auth-cert <password>
 
-Create an Agentless production site:
-
-```sh
-hyperbdrctl production-site create \
-  --type vmware \
-  --synch-node-id <node_id> \
-  --auth-url https://vcenter.example:443 \
-  --auth-key <username> \
-  --auth-cert <password>
-```
-
-After creation, validate the binding result:
-
-```sh
-hyperbdrctl production-site list --type vmware --binding-status binding
-```
-
-### Target Cloud Accounts
-
-```sh
+# Target cloud resources
 hyperbdrctl cloud-account list
-hyperbdrctl cloud-account create --help
-hyperbdrctl cloud-resource fetch --help
-```
-
-`cloud-account create --help` adapts its guidance from the selected `--cloud-type` and `--storage-type`. Use `cloud-resource fetch --help` to resolve cloud-side resource IDs before creating accounts, gateways, or boot configurations.
-
-### Cloud Sync Gateways
-
-```sh
-hyperbdrctl cloud-sync-gateway list
 hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --output json
 hyperbdrctl cloud-sync-gateway create --help
 hyperbdrctl cloud-sync-gateway wait --id <storage_id>
-```
-
-Recommended sequence:
-
-1. Confirm or create the target cloud account
-2. Query the required creation resources
-3. Run the provider-specific gateway creation command
-4. Use `wait` to confirm the final state
-
-### Object Storage
-
-```sh
-hyperbdrctl oss list
-hyperbdrctl oss detail --id <storage_id>
 hyperbdrctl oss catalog
-hyperbdrctl oss buckets --help
-hyperbdrctl oss create --help
-```
 
-### License Management
-
-```sh
+# Licenses
 hyperbdrctl license list
 hyperbdrctl license reg-code
 hyperbdrctl license activate --kkty <reg_code> --ddty <activation_code>
 ```
 
-## Command Overview
+### Command map
 
 ```text
 hyperbdrctl
-|- boot-config
-|  `- get / apply
-|- completion
-|- config
-|  `- get / set
-|- host
-|  `- list / detail / snapshots / register / sync / boot / clean / deregister / wait
-|- license
-|  `- list / reg-code / activate
-|- production-site
-|  `- list / detail / create / delete / vm-list
-|- agent
-|  `- install
-|- sync-proxy
-|  `- install / list / delete
-|- cloud-account
-|  `- list / detail / create / wait / delete
-|- cloud-resource
-|  `- fetch
-|- cloud-sync-gateway
-|  `- list / detail / create / wait / delete
-`- oss
-   `- list / detail / catalog / buckets / create / wait / delete
+├── config                 get / set
+├── completion             generate shell completion scripts
+├── host                   list / detail / snapshots / register / sync / boot / clean / deregister / wait
+├── boot-config            get / apply
+├── production-site        list / detail / create / delete / vm-list
+├── agent                  install
+├── sync-proxy             install / list / delete
+├── cloud-account          list / detail / create / wait / delete
+├── cloud-resource         fetch
+├── cloud-sync-gateway     list / detail / create / wait / delete
+├── oss                    list / detail / catalog / buckets / create / wait / delete
+└── license                list / reg-code / activate
 ```
 
-For full flags and examples for a specific command, run:
+## Features
+
+- **Built for AI agents** — predictable subcommands, explicit flags, machine-readable JSON, and asynchronous `wait` operations make commands easy to plan, execute, and verify.
+- **Automation-first configuration** — flags, environment variables, or a local config file; no browser session or interactive console is required.
+- **One API surface for DR and migration** — switch `--scene` without changing your automation model.
+- **End-to-end operational coverage** — hosts, snapshots, boot configuration, source preparation, cloud discovery, gateways, object storage, and licenses.
+- **Safe by default** — TLS verification is on, secrets are hidden by `config get`, and configuration is saved only after credentials are validated.
+- **Operator-friendly** — table/vertical output, bilingual messages (`en` / `zh_cn`), and command-local help.
+- **Portable** — one Go binary with no runtime dependency beyond network access to the platform endpoint.
+
+## Build and development
+
+### Build from source
+
+Building from source requires Go 1.18 or later.
 
 ```sh
-hyperbdrctl --help
-hyperbdrctl config set --help
-hyperbdrctl host --help
-hyperbdrctl production-site create --help
-hyperbdrctl cloud-account create --help
-hyperbdrctl cloud-sync-gateway create --help
+go build -o hyperbdrctl ./cmd/hyperbdrctl
+go build -trimpath -ldflags="-s -w" -o hyperbdrctl ./cmd/hyperbdrctl
 ```
 
-## Release and Integration Notes
+On Windows, use `hyperbdrctl.exe` when needed.
 
-- Prefer `--output json` for automation scenarios
-- Set `--scene` explicitly when switching across environments
-- Do not enable `--insecure` by default in production
-- To minimize manual input, prefer environment variables or a pre-populated config file
-- Add `--debug` when request-level troubleshooting is needed
+### Release build and version metadata
 
-## Development Verification
+```sh
+VERSION=v1.2.3
+go build -trimpath -buildvcs=true -ldflags "-s -w -X hyperbdr-client/internal/version.Version=${VERSION}" -o hyperbdrctl ./cmd/hyperbdrctl
+./hyperbdrctl --version
+go version -m ./hyperbdrctl
+```
 
-When code changes are made, run the standard verification commands in this module directory:
+### Development checks
 
 ```sh
 gofmt -w cmd internal
 go test ./...
 go build -o hyperbdrctl ./cmd/hyperbdrctl
 ```
+
+When changing a command, update its localized help text and tests. Keep agent-facing JSON stable and document breaking changes.
+
+## Project status
+
+`hyperbdrctl` is in active development. The command surface and provider-specific request fields may evolve
+with HyperBDR / HyperMotion APIs. Pin a known binary version in production automation and validate upgrades first.
+
+## Contributing
+
+Issues and pull requests are welcome. Include tests for behavior changes, run the development checks, and describe the API or automation impact.
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
