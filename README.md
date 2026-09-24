@@ -23,64 +23,36 @@ results without browser UI scraping. It supports both `dr` and `migration` scene
 
 ## Usage
 
-### Requirements
+### Configure the environment
 
-- A reachable HyperBDR / HyperMotion endpoint, for example `https://<host>:10443`
-- Valid platform credentials
-- A released binary
+Before using the CLI, prepare a reachable HyperBDR / HyperMotion endpoint, valid platform credentials, and a released binary.
 
-### Configure an endpoint
-
-`config set` validates merged credentials before saving. Failed authentication does not overwrite the existing configuration.
+Configure the endpoint and credentials:
 
 ```sh
-hyperbdrctl config set --host https://example:10443 --username admin --password <password> --scene migration --lang zh_cn
+hyperbdrctl config set \
+  --host https://<host>:10443 \
+  --username <username> \
+  --password <password> \
+  --scene dr \
+  --lang zh_cn
+
 hyperbdrctl config get
 ```
 
-For an explicitly trusted test environment with an untrusted certificate:
+`config set` validates the credentials before saving the configuration. Enable this only when a test environment uses an untrusted certificate:
 
 ```sh
 hyperbdrctl config set --insecure
 ```
 
-### Query and operate
-
-```sh
-hyperbdrctl host list --page 1 --page-size 10
-hyperbdrctl cloud-account list
-hyperbdrctl oss list
-hyperbdrctl host wait --id <host_id>
-```
-
-Use `--help` at any level to discover supported flags and provider-specific examples:
-
-```sh
-hyperbdrctl --help
-hyperbdrctl host --help
-hyperbdrctl cloud-account create --help
-```
-
-### Machine-readable output for agents
-
-Use JSON for tool calls, planning, validation, and follow-up actions. API field names are preserved.
-
-```sh
-hyperbdrctl --output json host list --page 1 --page-size 10
-hyperbdrctl --output json cloud-resource fetch --cloud-account-id <account_id>
-```
-
-The default output is a table. `--vertical` helps inspect one record and `--debug` enables request-level troubleshooting.
-
-### Configuration sources
-
-Values are resolved in this order:
+Configuration can also be provided through environment variables. Values are resolved in this order:
 
 ```text
 command-line flags > environment variables > local config file > defaults
 ```
 
-Supported environment variables:
+Common environment variables:
 
 ```text
 HYPERBDR_HOST
@@ -93,54 +65,60 @@ HYPERBDR_INSECURE
 HYPERBDR_DEBUG
 ```
 
-`--lang` controls CLI messages and the HTTP `X-LANG` header. Supported values are `en` and `zh_cn`.
-TLS verification is enabled by default; use `--insecure` only in a test environment.
+`--lang` supports `en` and `zh_cn`. TLS verification is enabled by default.
 
-### Common workflows
+### Workflow and command help
 
-```sh
-# Hosts and boot configuration
-hyperbdrctl host list
-hyperbdrctl host detail --id <host_id>
-hyperbdrctl boot-config get --id <host_id>
-hyperbdrctl boot-config apply --id <host_id> --file ./boot-config.json
-hyperbdrctl host wait --id <host_id>
-
-# Source preparation
-hyperbdrctl agent install
-hyperbdrctl sync-proxy install
-hyperbdrctl sync-proxy list
-hyperbdrctl production-site create --type vmware --synch-node-id <node_id> --auth-url https://vcenter.example:443 --auth-key <username> --auth-cert <password>
-
-# Target cloud resources
-hyperbdrctl cloud-account list
-hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --output json
-hyperbdrctl cloud-sync-gateway create --help
-hyperbdrctl cloud-sync-gateway wait --id <storage_id>
-hyperbdrctl oss catalog
-
-# Licenses
-hyperbdrctl license list
-hyperbdrctl license reg-code
-hyperbdrctl license activate --kkty <reg_code> --ddty <activation_code>
-```
-
-### Command map
+The basic HyperBDR workflow is:
 
 ```text
-hyperbdrctl
-├── config                 get / set
-├── completion             generate shell completion scripts
-├── host                   list / detail / snapshots / register / sync / boot / clean / deregister / wait
-├── boot-config            get / apply
-├── production-site        list / detail / create / delete / vm-list
-├── agent                  install
-├── sync-proxy             install / list / delete
-├── cloud-account          list / detail / create / wait / delete
-├── cloud-resource         fetch
-├── cloud-sync-gateway     list / detail / create / wait / delete
-├── oss                    list / detail / catalog / buckets / create / wait / delete
-└── license                list / reg-code / activate
+Source preparation → Target preparation → DR configuration → Sync and boot → Resource cleanup
+```
+
+Use the following commands to view detailed flags and examples for each stage:
+
+```sh
+# Source preparation: production sites, sync proxies, and VM registration
+hyperbdrctl production-site --help
+hyperbdrctl sync-proxy --help
+hyperbdrctl host register --help
+
+# Target preparation: cloud accounts, cloud resources, object storage, and sync gateways
+hyperbdrctl cloud-account --help
+hyperbdrctl cloud-resource --help
+hyperbdrctl oss --help
+hyperbdrctl cloud-sync-gateway --help
+
+# DR configuration: hosts, snapshots, and boot configuration
+hyperbdrctl host --help
+hyperbdrctl host snapshots --help
+hyperbdrctl boot-config --help
+
+# Sync and boot
+hyperbdrctl host sync --help
+hyperbdrctl host boot --help
+hyperbdrctl host wait --help
+
+# Resource cleanup
+hyperbdrctl host clean --help
+hyperbdrctl host deregister --help
+hyperbdrctl cloud-sync-gateway delete --help
+hyperbdrctl oss delete --help
+```
+
+For any command, use `--help` to see its available subcommands, flags, and examples.
+
+`sync`, `boot`, and `clean` are asynchronous operations. After starting one, use `host wait` to confirm the result:
+
+```sh
+hyperbdrctl host sync --id <host_id>
+hyperbdrctl host wait --id <host_id> --operation sync
+```
+
+For automation, use JSON output. For troubleshooting, use `--vertical` and `--debug`:
+
+```sh
+hyperbdrctl --output json host list
 ```
 
 ## Features

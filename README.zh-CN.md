@@ -23,64 +23,36 @@ CLI 通过统一的 HTTP API 与平台通信，同时支持 `dr` 和 `migration`
 
 ## 使用方式
 
-### 前置条件
+### 配置环境
 
-- 一个可访问的 HyperBDR / HyperMotion 地址，例如 `https://<host>:10443`
-- 有效的平台凭据
-- 已发布的二进制
+使用前准备一个可访问的 HyperBDR / HyperMotion 地址、有效的平台凭据和已发布的二进制。
 
-### 配置平台地址
-
-`config set` 会先校验合并后的凭据，只有认证成功才会写入文件；认证失败不会覆盖已有配置。
+配置平台地址和认证信息：
 
 ```sh
-hyperbdrctl config set --host https://example:10443 --username admin --password <password> --scene migration --lang zh_cn
+hyperbdrctl config set \
+  --host https://<host>:10443 \
+  --username <username> \
+  --password <password> \
+  --scene dr \
+  --lang zh_cn
+
 hyperbdrctl config get
 ```
 
-如果测试环境使用不受信任的证书，需要显式启用：
+`config set` 会先校验凭据，认证成功后才保存配置。测试环境使用不受信任的证书时，才启用：
 
 ```sh
 hyperbdrctl config set --insecure
 ```
 
-### 查询和执行操作
-
-```sh
-hyperbdrctl host list --page 1 --page-size 10
-hyperbdrctl cloud-account list
-hyperbdrctl oss list
-hyperbdrctl host wait --id <host_id>
-```
-
-在任意层级使用 `--help` 查看可用参数和云厂商专属示例：
-
-```sh
-hyperbdrctl --help
-hyperbdrctl host --help
-hyperbdrctl cloud-account create --help
-```
-
-### 为 AI agent 输出机器可读结果
-
-在工具调用、规划、校验和后续动作中使用 JSON。JSON 会保留 API 字段名，适合直接交给下一个自动化步骤处理。
-
-```sh
-hyperbdrctl --output json host list --page 1 --page-size 10
-hyperbdrctl --output json cloud-resource fetch --cloud-account-id <account_id>
-```
-
-默认输出为表格；`--vertical` 适合查看单条记录，`--debug` 可开启请求级故障排查。
-
-### 配置来源
-
-配置按以下优先级解析：
+配置也可以通过环境变量提供，优先级如下：
 
 ```text
 命令行参数 > 环境变量 > 本地配置文件 > 默认值
 ```
 
-支持的环境变量：
+常用环境变量：
 
 ```text
 HYPERBDR_HOST
@@ -93,54 +65,51 @@ HYPERBDR_INSECURE
 HYPERBDR_DEBUG
 ```
 
-`--lang` 同时控制 CLI 文案和 HTTP `X-LANG` 请求头，支持 `en` 和 `zh_cn`。默认启用 TLS 校验；
-只有在明确可信的测试环境中才应使用 `--insecure`。
+`--lang` 支持 `en` 和 `zh_cn`；默认启用 TLS 校验。
 
-### 常见工作流
+### 使用流程与命令帮助
 
-```sh
-# 主机和启动配置
-hyperbdrctl host list
-hyperbdrctl host detail --id <host_id>
-hyperbdrctl boot-config get --id <host_id>
-hyperbdrctl boot-config apply --id <host_id> --file ./boot-config.json
-hyperbdrctl host wait --id <host_id>
-
-# 源端准备
-hyperbdrctl agent install
-hyperbdrctl sync-proxy install
-hyperbdrctl sync-proxy list
-hyperbdrctl production-site create --type vmware --synch-node-id <node_id> --auth-url https://vcenter.example:443 --auth-key <username> --auth-cert <password>
-
-# 目标云资源
-hyperbdrctl cloud-account list
-hyperbdrctl cloud-resource fetch --cloud-account-id <account_id> --output json
-hyperbdrctl cloud-sync-gateway create --help
-hyperbdrctl cloud-sync-gateway wait --id <storage_id>
-hyperbdrctl oss catalog
-
-# License 管理
-hyperbdrctl license list
-hyperbdrctl license reg-code
-hyperbdrctl license activate --kkty <reg_code> --ddty <activation_code>
-```
-
-### 命令概览
+HyperBDR 的基本流程是：
 
 ```text
-hyperbdrctl
-├── config                 get / set
-├── completion             生成 Shell 自动补全脚本
-├── host                   list / detail / snapshots / register / sync / boot / clean / deregister / wait
-├── boot-config            get / apply
-├── production-site        list / detail / create / delete / vm-list
-├── agent                  install
-├── sync-proxy             install / list / delete
-├── cloud-account          list / detail / create / wait / delete
-├── cloud-resource         fetch
-├── cloud-sync-gateway     list / detail / create / wait / delete
-├── oss                    list / detail / catalog / buckets / create / wait / delete
-└── license                list / reg-code / activate
+源端准备 → 目标端准备 → 容灾配置 → 同步和启动 → 清理资源
+```
+
+按流程查看对应命令的详细参数和示例：
+
+```sh
+# 源端准备：生产站点、同步代理、虚拟机注册
+hyperbdrctl production-site --help
+hyperbdrctl sync-proxy --help
+hyperbdrctl host register --help
+
+# 目标端准备：云账号、云资源、对象存储、同步网关
+hyperbdrctl cloud-account --help
+hyperbdrctl cloud-resource --help
+hyperbdrctl oss --help
+hyperbdrctl cloud-sync-gateway --help
+
+# 容灾配置：主机、快照、启动配置
+hyperbdrctl host --help
+hyperbdrctl host snapshots --help
+hyperbdrctl boot-config --help
+
+# 同步和启动
+hyperbdrctl host sync --help
+hyperbdrctl host boot --help
+hyperbdrctl host wait --help
+
+# 清理资源
+hyperbdrctl host clean --help
+hyperbdrctl host deregister --help
+hyperbdrctl cloud-sync-gateway delete --help
+hyperbdrctl oss delete --help
+```
+
+自动化场景建议使用 JSON 输出；人工排障时可使用 `--vertical` 和 `--debug`：
+
+```sh
+hyperbdrctl --output json host list
 ```
 
 ## 特性
