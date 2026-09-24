@@ -1,0 +1,156 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  GO_VERSION: '1.22.x'
+  BINARY_NAME: hyperbdrctl
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Run tests
+        run: go test ./...
+
+  build:
+    name: Build release packages
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Build packages
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          version="${GITHUB_REF_NAME#v}"
+          commit="$(git rev-parse HEAD)"
+          build_date="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          mkdir -p dist
+
+          targets=(
+            "linux amd64 tar.gz"
+            "linux arm64 tar.gz"
+            "darwin amd64 tar.gz"
+            "darwin arm64 tar.gz"
+            "windows amd64 zip"
+            "windows arm64 zip"
+          )
+
+          for target in "${targets[@]}"; do
+            read -r goos goarch archive_format <<< "${target}"
+            package_name="${BINARY_NAME}_${version}_${goos}_${goarch}"
+            work_dir="$(mktemp -d)"
+            mkdir -p "${work_dir}/${package_name}"
+
+            binary="${BINARY_NAME}"
+            if [[ "${goos}" == "windows" ]]; then
+              binary+=".exe"
+            fi
+
+            echo "Building ${goos}/${goarch}"
+            GOOS="${goos}" GOARCH="${goarch}" CGO_ENABLED=0 \
+              go build -trimpath -buildvcs=false \
+              -ldflags "-s -w -X hyperbdr-client/internal/version.Version=${version} -X hyperbdr-client/internal/version.Commit=${commit} -X hyperbdr-client/internal/version.BuildDate=${build_date}" \
+              -o "${work_dir}/${package_name}/${binary}" ./cmd/hyperbdrctl
+
+            cp README.md "${work_dir}/${package_name}/README.md"
+
+            if [[ "${archive_format}" == "zip" ]]; then
+              (cd "${work_dir}" && zip -q -r "${GITHUB_WORKSPACE}/dist/${package_name}.zip" "${package_name}")
+            else
+              tar -C "${work_dir}" -czf "${GITHUB_WORKSPACE}/dist/${package_name}.tar.gz" "${package_name}"
+            fi
+
+            rm -rf "${work_dir}"
+          done
+
+          (cd dist && sha256sum * > SHA256SUMS)
+          ls -lh dist
+
+      - name: Upload packages as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyperbdrctl-${{ github.ref_name }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tag history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: hyperbdrctl-${{ github.ref_name }}
+          path: dist
+
+      - name: Generate release notes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          current_tag="${GITHUB_REF_NAME}"
+          previous_tag="$(git tag --sort=-version:refname --list 'v*' | awk -v current="${current_tag}" '$0 != current { print; exit }')"
+          repository_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+
+          {
+            echo "# hyperbdrctl ${current_tag}"
+            echo
+            echo "## Changes"
+            echo
+
+            if [[ -n "${previous_tag}" ]]; then
+              git log --no-merges --pretty=format:'- %s (`%h`)' "${previous_tag}..${current_tag}"
+              echo
+              echo
+              echo "**Full Changelog**: ${repository_url}/compare/${previous_tag}...${current_tag}"
+            else
+              git log --no-merges --pretty=format:'- %s (`%h`)' "${current_tag}"
+              echo
+            fi
+          } > release-notes.md
+
+          cat release-notes.md
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: hyperbdrctl ${{ github.ref_name }}
+          body_path: release-notes.md
+          files: dist/*
