@@ -526,6 +526,44 @@ func TestSourcesListSupportsExplicitVerificationFlags(t *testing.T) {
 	}
 }
 
+func TestSourcesVMListNormalizesVMwareFieldsForTableOutput(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/hypermotion/v1/sources/vms" {
+			t.Fatalf("path = %q", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": []map[string]interface{}{
+				{
+					"id":              "vm-1",
+					"defhost_name":    "demo-vm",
+					"disks_num":       1,
+					"disks_size":      "50GB",
+					"synchronization": "是",
+					"increment":       "是",
+					"os_type":         "Ubuntu Linux (64-bit)",
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--lang", "zh_cn", "production-site", "vm-list", "--connection-type", "vmware"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := out.String()
+	for _, want := range []string{"名称", "系统", "磁盘数量", "磁盘总容量", "支持同步", "支持增量", "demo-vm", "1", "50GB", "是", "Ubuntu Linux (64-bit)"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output = %q, missing %q", text, want)
+		}
+	}
+}
+
 func TestSourcesCreatePreviewRequestBuildsVMwarePayload(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

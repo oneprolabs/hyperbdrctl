@@ -133,7 +133,7 @@ func runSources(ctx *context, args []string) error {
 		if err != nil {
 			return err
 		}
-		return writeResponse(ctx, resp, "vms", vmColumns())
+		return writeVMListResponse(ctx, resp)
 	case "agent-install":
 		fs := newFlagSet("source agent-install")
 		q := queryFromPairs()
@@ -270,11 +270,44 @@ func sourceListRowsFromRaw(raw map[string]interface{}) []map[string]interface{} 
 
 func vmColumns() []output.Column {
 	return []output.Column{
-		{HeaderKey: "table.id", Field: "id"},
 		{HeaderKey: "table.name", Field: "name"},
-		{HeaderKey: "table.status", Field: "status"},
 		{HeaderKey: "table.os_type", Field: "os_type"},
+		{HeaderKey: "table.disk_count", Field: "disk_count"},
+		{HeaderKey: "table.disk_capacity", Field: "disk_capacity"},
+		{HeaderKey: "table.support_sync", Field: "support_sync"},
+		{HeaderKey: "table.support_increment", Field: "support_increment"},
 	}
+}
+
+func writeVMListResponse(ctx *context, resp client.APIResponse) error {
+	if ctx.cfg.Output == "json" {
+		return writeResponse(ctx, resp, "", nil)
+	}
+	return writeRows(ctx, vmListRows(resp), vmColumns())
+}
+
+func vmListRows(resp client.APIResponse) []map[string]interface{} {
+	rows := listFromData(resp.Data, "vms")
+	if len(rows) == 0 {
+		rows = listFromData(resp.Raw, "vms")
+	}
+
+	out := make([]map[string]interface{}, 0, len(rows))
+	for _, row := range rows {
+		normalized := make(map[string]interface{}, len(row)+4)
+		for key, value := range row {
+			normalized[key] = value
+		}
+		normalized["id"] = mapString(row, "id", "uuid")
+		normalized["name"] = mapString(row, "name", "defhost_name", "host_name", "display_name")
+		normalized["os_type"] = mapString(row, "os_type", "os_name", "system")
+		normalized["disk_count"] = firstNonEmptyValue(row, "disks_num", "disk_count", "disks")
+		normalized["disk_capacity"] = firstNonEmptyValue(row, "disks_size", "disk_capacity", "disk_total_size")
+		normalized["support_sync"] = firstNonEmptyValue(row, "synchronization", "sync_status", "support_sync")
+		normalized["support_increment"] = firstNonEmptyValue(row, "increment", "support_increment")
+		out = append(out, normalized)
+	}
+	return out
 }
 
 func writeSyncNodesResponse(ctx *context, resp client.APIResponse) error {

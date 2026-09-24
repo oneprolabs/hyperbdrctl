@@ -817,6 +817,20 @@ func firstNonEmptyString(values ...string) string {
 	return ""
 }
 
+func firstNonEmptyValue(row map[string]interface{}, keys ...string) interface{} {
+	for _, key := range keys {
+		value, ok := row[key]
+		if !ok || value == nil {
+			continue
+		}
+		if text, ok := value.(string); ok && text == "" {
+			continue
+		}
+		return value
+	}
+	return nil
+}
+
 func nestedMap(data interface{}, path ...string) map[string]interface{} {
 	value := data
 	for _, key := range path {
