@@ -401,7 +401,7 @@ func TestServiceFetchResourcesUsesTargetAuthForOpenStackPassword(t *testing.T) {
 			CloudType:            "openstack",
 			CloudAuthType:        "password",
 			StorageType:          "HyperGate",
-			AuthURL:              "http://192.168.10.201:5000/v3",
+			AuthURL:              "http://openstack.example.invalid:5000/v3",
 			CloudAccountUsername: "demo",
 			CloudAccountPassword: "secret",
 			UserDomainID:         "default",

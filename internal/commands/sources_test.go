@@ -222,7 +222,7 @@ func TestSourcesListDefaultOutputSupportsWrappedSourcesPayload(t *testing.T) {
 				"data": []interface{}{
 					map[string]interface{}{
 						"uuid":                  "eb5ab5af-980e-4303-9d19-3f19a7750008",
-						"displayname":           "https://192.168.10.2:443 (User: zhangtianjie@vsphere.local)",
+						"displayname":           "https://vcenter.example.invalid:443 (User: vcenter-user@example.invalid)",
 						"display_source_status": "正常",
 						"type":                  "vsphere",
 					},
@@ -245,7 +245,7 @@ func TestSourcesListDefaultOutputSupportsWrappedSourcesPayload(t *testing.T) {
 		"Type",
 		"Status",
 		"eb5ab5af-980e-4303-9d19-3f19a7750008",
-		"https://192.168.10.2:443 (User: zhangtianjie@vsphere.local)",
+		"https://vcenter.example.invalid:443 (User: vcenter-user@example.invalid)",
 		"vmware",
 		"正常",
 	} {
@@ -350,7 +350,7 @@ func TestSourcesSyncNodesDefaultOutput(t *testing.T) {
 					map[string]interface{}{
 						"uuid":           "node-1",
 						"name":           "proxy-1",
-						"host_ip":        "192.168.8.22",
+						"host_ip":        "192.0.2.22",
 						"version":        "7.4.0",
 						"type":           "proxy",
 						"status":         "online",
@@ -359,7 +359,7 @@ func TestSourcesSyncNodesDefaultOutput(t *testing.T) {
 							map[string]interface{}{
 								"type":     "vsphere",
 								"status":   "active",
-								"auth_url": "https://192.168.10.2:443",
+								"auth_url": "https://vcenter.example.invalid:443",
 								"uuid":     "conn-1",
 							},
 							map[string]interface{}{
@@ -398,12 +398,12 @@ func TestSourcesSyncNodesDefaultOutput(t *testing.T) {
 		"Connections:",
 		"node-1",
 		"proxy-1",
-		"192.168.8.22",
+		"192.0.2.22",
 		"7.4.0",
 		"正常",
 		"1. vmware",
 		"Status  active",
-		"Address  https://192.168.10.2:443",
+		"Address  https://vcenter.example.invalid:443",
 		"UUID    conn-1",
 		"2. aws",
 		"Status  idle",
@@ -428,7 +428,7 @@ func TestSourcesSyncNodesDefaultOutputShowsNoneWhenNoConnections(t *testing.T) {
 					map[string]interface{}{
 						"uuid":           "node-2",
 						"name":           "proxy-2",
-						"host_ip":        "192.168.8.23",
+						"host_ip":        "192.0.2.23",
 						"version":        "7.4.0",
 						"status":         "offline",
 						"display_status": "offline",
@@ -471,12 +471,12 @@ func TestSourcesSyncNodesJSONOutputPreservesRawFields(t *testing.T) {
 					map[string]interface{}{
 						"uuid":    "node-3",
 						"name":    "proxy-3",
-						"host_ip": "192.168.8.24",
+						"host_ip": "192.0.2.24",
 						"connections": []interface{}{
 							map[string]interface{}{
 								"type":     "vsphere",
 								"status":   "active",
-								"auth_url": "https://192.168.10.3:443",
+								"auth_url": "https://vcenter-secondary.example.invalid:443",
 								"uuid":     "conn-3",
 							},
 						},
@@ -535,9 +535,9 @@ func TestSourcesCreatePreviewRequestBuildsVMwarePayload(t *testing.T) {
 		"production-site", "create",
 		"--type", "vmware",
 		"--synch-node-id", "node-1",
-		"--auth-url", "https://192.168.10.2:443",
-		"--auth-key", "zhangtianjie@vsphere.local",
-		"--auth-cert", "2b24",
+		"--auth-url", "https://vcenter.example.invalid:443",
+		"--auth-key", "vcenter-user@example.invalid",
+		"--auth-cert", "test-vsphere-password",
 		"--preview-request",
 	), &out, &errOut)
 	if err != nil {
@@ -549,9 +549,9 @@ func TestSourcesCreatePreviewRequestBuildsVMwarePayload(t *testing.T) {
 		`"synch_node_ids": [`,
 		`"node-1"`,
 		`"vsphere": {`,
-		`"auth_url": "https://192.168.10.2:443"`,
-		`"auth_key": "zhangtianjie@vsphere.local"`,
-		`"auth_cert": "2b24"`,
+		`"auth_url": "https://vcenter.example.invalid:443"`,
+		`"auth_key": "vcenter-user@example.invalid"`,
+		`"auth_cert": "test-vsphere-password"`,
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("output = %q, missing %q", text, want)
@@ -590,7 +590,7 @@ func TestSourcesCreateSendsAWSPayload(t *testing.T) {
 		"--synch-node-id", "node-1",
 		"--auth-url", "test",
 		"--auth-key", "testak",
-		"--auth-cert", "1e2334261801",
+		"--auth-cert", "test-aws-secret",
 		"--region-id", "test-region",
 	), &out, &errOut)
 	if err != nil {
@@ -604,7 +604,7 @@ func TestSourcesCreateSendsAWSPayload(t *testing.T) {
 		t.Fatalf("connection.type = %v", connection["type"])
 	}
 	aws := connection["aws"].(map[string]interface{})
-	if aws["auth_key"] != "testak" || aws["auth_cert"] != "1e2334261801" || aws["region_id"] != "test-region" {
+	if aws["auth_key"] != "testak" || aws["auth_cert"] != "test-aws-secret" || aws["region_id"] != "test-region" {
 		t.Fatalf("aws payload = %#v", aws)
 	}
 }

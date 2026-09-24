@@ -150,10 +150,10 @@ func TestApplyAutofillsCloudAccountAndObjectStorageMetadata(t *testing.T) {
 					"pool_id":      "pool-1",
 					"pool_name":    "pool-name",
 					"network_addrs_for_write_data": []interface{}{
-						map[string]interface{}{"name": "public_endpoint", "display_name": "192.168.8.171:9000(Public Network)", "value": "public_endpoint"},
+						map[string]interface{}{"name": "public_endpoint", "display_name": "object-storage.example.invalid:9000(Public Network)", "value": "public_endpoint"},
 					},
 					"network_addrs_for_read_data": []interface{}{
-						map[string]interface{}{"name": "internal_endpoint", "display_name": "192.168.8.171:9000(Private Network)", "value": "internal_endpoint"},
+						map[string]interface{}{"name": "internal_endpoint", "display_name": "object-storage.example.invalid:9000(Private Network)", "value": "internal_endpoint"},
 					},
 				}}, nil
 			},
@@ -192,10 +192,10 @@ func TestApplyAutofillsCloudAccountAndObjectStorageMetadata(t *testing.T) {
 	if meta["storage_name"] != "storage-name" || meta["storage_display_name"] != "storage-display" {
 		t.Fatalf("metadata = %+v", meta)
 	}
-	if meta["network_addr_for_write_data"] != "public_endpoint" || meta["network_addr_for_write_data_name"] != "192.168.8.171:9000(Public Network)" {
+	if meta["network_addr_for_write_data"] != "public_endpoint" || meta["network_addr_for_write_data_name"] != "object-storage.example.invalid:9000(Public Network)" {
 		t.Fatalf("metadata = %+v", meta)
 	}
-	if meta["network_addr_for_read_data"] != "internal_endpoint" || meta["network_addr_for_read_data_name"] != "192.168.8.171:9000(Private Network)" {
+	if meta["network_addr_for_read_data"] != "internal_endpoint" || meta["network_addr_for_read_data_name"] != "object-storage.example.invalid:9000(Private Network)" {
 		t.Fatalf("metadata = %+v", meta)
 	}
 	if meta["default_pool_id"] != "pool-1" || meta["default_pool_name"] != "pool-name" {
@@ -782,7 +782,7 @@ func TestApplyObjectStorageCloudInfoAutofillAndFallbacks(t *testing.T) {
 				return client.APIResponse{Data: map[string]interface{}{
 					"cloud_info": map[string]interface{}{
 						"networks": []interface{}{
-							map[string]interface{}{"id": "vpc-1", "name": "terraform-vpc", "display_name": "terraform-vpc (192.168.0.0/16)"},
+							map[string]interface{}{"id": "vpc-1", "name": "terraform-vpc", "display_name": "terraform-vpc (198.51.100.0/24)"},
 						},
 						"security_groups": []interface{}{},
 					},
@@ -794,7 +794,7 @@ func TestApplyObjectStorageCloudInfoAutofillAndFallbacks(t *testing.T) {
 				}
 				return client.APIResponse{Data: map[string]interface{}{
 					"subnets": []interface{}{
-						map[string]interface{}{"id": "vsw-1", "name": "terraform-vswitch", "display_name": "terraform-vswitch (192.168.0.0/24)"},
+						map[string]interface{}{"id": "vsw-1", "name": "terraform-vswitch", "display_name": "terraform-vswitch (198.51.100.0/24)"},
 					},
 				}}, nil
 			},
@@ -842,10 +842,10 @@ func TestApplyObjectStorageCloudInfoAutofillAndFallbacks(t *testing.T) {
 	if meta["volume_type_name"] != "cloud_essd_entry" || meta["system_volume_type_name"] != "cloud_essd_entry" || meta["default_volume_type_name"] != "cloud_essd_entry" {
 		t.Fatalf("metadata = %+v", meta)
 	}
-	if meta["network_name"] != "terraform-vpc" || meta["network_display_name"] != "terraform-vpc (192.168.0.0/16)" {
+	if meta["network_name"] != "terraform-vpc" || meta["network_display_name"] != "terraform-vpc (198.51.100.0/24)" {
 		t.Fatalf("metadata = %+v", meta)
 	}
-	if meta["subnet_name"] != "terraform-vswitch" || meta["subnet_display_name"] != "terraform-vswitch (192.168.0.0/24)" {
+	if meta["subnet_name"] != "terraform-vswitch" || meta["subnet_display_name"] != "terraform-vswitch (198.51.100.0/24)" {
 		t.Fatalf("metadata = %+v", meta)
 	}
 	if meta["security_group_name"] != "sg-1" {
@@ -865,10 +865,10 @@ func TestApplyObjectStorageCloudInfoAutofillAndFallbacks(t *testing.T) {
 	if nic["index"] != 0 || nic["network_id"] != "vpc-1" || nic["subnet_id"] != "vsw-1" {
 		t.Fatalf("nic = %+v", nic)
 	}
-	if nic["network_name"] != "terraform-vpc" || nic["network_display_name"] != "terraform-vpc (192.168.0.0/16)" {
+	if nic["network_name"] != "terraform-vpc" || nic["network_display_name"] != "terraform-vpc (198.51.100.0/24)" {
 		t.Fatalf("nic = %+v", nic)
 	}
-	if nic["subnet_name"] != "terraform-vswitch" || nic["subnet_display_name"] != "terraform-vswitch (192.168.0.0/24)" {
+	if nic["subnet_name"] != "terraform-vswitch" || nic["subnet_display_name"] != "terraform-vswitch (198.51.100.0/24)" {
 		t.Fatalf("nic = %+v", nic)
 	}
 	if nic["is_fixed_ip_input"] != "false" || nic["is_fixed_ip_select"] != "false" || nic["bandwidth_size"] != "100" {
@@ -895,10 +895,10 @@ func TestApplyGeneratesDefaultNICWithoutExistingScaffold(t *testing.T) {
 		Dynamic: map[string]string{
 			"network_id":                  "vpc-1",
 			"network_name":                "terraform-vpc",
-			"network_display_name":        "terraform-vpc (192.168.0.0/16)",
+			"network_display_name":        "terraform-vpc (198.51.100.0/24)",
 			"subnet_id":                   "vsw-1",
 			"subnet_name":                 "terraform-vswitch",
-			"subnet_display_name":         "terraform-vswitch (192.168.0.0/24)",
+			"subnet_display_name":         "terraform-vswitch (198.51.100.0/24)",
 			"security_group_id":           "sg-1",
 			"security_group_name":         "t-1",
 			"security_group_display_name": "t-1",
@@ -1115,7 +1115,7 @@ func TestApplyBlockStorageSubnetConstrainsNetworkAndSecurityGroup(t *testing.T) 
 						map[string]interface{}{
 							"id":           "vsw-1",
 							"name":         "subnet-a",
-							"display_name": "subnet-a (192.168.1.0/24)",
+							"display_name": "subnet-a (198.51.100.1/24)",
 							"network_id":   "vpc-right",
 							"zone_id":      "cn-beijing-h",
 						},
@@ -1129,7 +1129,7 @@ func TestApplyBlockStorageSubnetConstrainsNetworkAndSecurityGroup(t *testing.T) 
 				return client.APIResponse{Data: map[string]interface{}{
 					"cloud_info": map[string]interface{}{
 						"networks": []interface{}{
-							map[string]interface{}{"id": "vpc-right", "name": "vpc-a", "display_name": "vpc-a (192.168.0.0/16)"},
+							map[string]interface{}{"id": "vpc-right", "name": "vpc-a", "display_name": "vpc-a (198.51.100.0/24)"},
 						},
 						"security_groups": []interface{}{
 							map[string]interface{}{"id": "sg-1", "name": "sg-a", "display_name": "sg-a", "network_id": "vpc-right"},

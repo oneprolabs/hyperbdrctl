@@ -120,7 +120,7 @@ func TestServicePrepareCreateAllowsEmptyRegionForCustom(t *testing.T) {
 	service := NewService(&fakeAPI{})
 
 	prepared, err := service.PrepareCreate(CreateProfile{Mode: "custom", ProviderID: "custom"}, CreateSpec{
-		AuthURL:         "192.168.8.171:9000",
+		AuthURL:         "object-storage.example.invalid:9000",
 		AccessKeyID:     "ak",
 		AccessKeySecret: "sk",
 		BucketName:      "bucket-1",

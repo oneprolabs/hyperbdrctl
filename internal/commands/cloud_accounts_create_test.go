@@ -233,9 +233,9 @@ func TestCloudAccountsCreateBlockHuaweiRejectsLegacyRegionFlags(t *testing.T) {
 func TestCloudAccountsCreateBlockOpenStackUsesValidatedWorkflow(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block",
-		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--auth-url", "http://openstack.example.invalid:5000/v3",
 		"--username", "autotest",
-		"--password", "0b33333d1f0f3533",
+		"--password", "test-openstack-password",
 		"--user-domain-id", "default",
 		"--project-domain-id", "default",
 		"--project-name", "autotest",
@@ -1245,9 +1245,9 @@ func TestCloudAccountsCreateOSSAliyunUsesValidatedWorkflow(t *testing.T) {
 func TestCloudAccountsCreateOSSOpenStackUsesValidatedWorkflow(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
-		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--auth-url", "http://openstack.example.invalid:5000/v3",
 		"--username", "autotest",
-		"--password", "0b33333d1f0f3533",
+		"--password", "test-openstack-password",
 		"--user-domain-id", "default",
 	})
 
@@ -1289,7 +1289,7 @@ func TestCloudAccountsCreateOSSOpenStackRejectsRemovedRootFlag(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
-		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--auth-url", "http://openstack.example.invalid:5000/v3",
 		"--username", "autotest",
 		"--password", "autotest",
 		"--user-domain-id", "default",
@@ -1352,7 +1352,7 @@ func TestCloudAccountsCreateBlockRejectsRemovedRootFlag(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block",
-		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--auth-url", "http://openstack.example.invalid:5000/v3",
 		"--username", "autotest",
 		"--password", "autotest",
 		"--user-domain-id", "default",
@@ -1373,7 +1373,7 @@ func TestCloudAccountsCreateBlockRejectsLegacyCredentialFlags(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block",
-		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--auth-url", "http://openstack.example.invalid:5000/v3",
 		"--cloud-account-username", "autotest",
 		"--cloud-account-password", "autotest",
 		"--user-domain-id", "default",
@@ -1477,9 +1477,9 @@ func TestCloudAccountsCreateBlockOpenStackSupportsFileSetAndDynamicMetadata(t *t
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "block",
 		"--file", filePath,
-		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--auth-url", "http://openstack.example.invalid:5000/v3",
 		"--username", "autotest",
-		"--password", "0b33333d1f0f3533",
+		"--password", "test-openstack-password",
 		"--user-domain-id", "default",
 		"--project-domain-id", "flag-domain",
 		"--region-name", "RegionOne",
@@ -1717,9 +1717,9 @@ func TestCloudAccountsCreateOSSHuaweiAutoGeneratesCustomName(t *testing.T) {
 func TestCloudAccountsCreateOSSOpenStackKeepsAccessAliasAsDynamicMetadata(t *testing.T) {
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
-		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--auth-url", "http://openstack.example.invalid:5000/v3",
 		"--username", "autotest",
-		"--password", "0b33333d1f0f3533",
+		"--password", "test-openstack-password",
 		"--user-domain-id", "default",
 		"--access-id", "ak",
 		"--access-secret", "sk",
@@ -1823,7 +1823,7 @@ func TestCloudAccountsCreateOSSRejectsLegacyCredentialFlags(t *testing.T) {
 	var out, errOut bytes.Buffer
 	err := Execute(withHost(t, "https://example.invalid",
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
-		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--auth-url", "http://openstack.example.invalid:5000/v3",
 		"--cloud-account-username", "autotest",
 		"--cloud-account-password", "autotest",
 		"--user-domain-id", "default",
@@ -1843,9 +1843,9 @@ func TestCloudAccountsCreateOSSOpenStackSupportsFileSetAndDynamicMetadata(t *tes
 	path, body := executeCloudAccountCreateAtPath(t, []string{
 		"cloud-account", "create", "--cloud-type", "openstack", "--storage-type", "object",
 		"--file", filePath,
-		"--auth-url", "http://192.168.10.201:5000/v3",
+		"--auth-url", "http://openstack.example.invalid:5000/v3",
 		"--username", "autotest",
-		"--password", "0b33333d1f0f3533",
+		"--password", "test-openstack-password",
 		"--user-domain-id", "default",
 		"--set", "project_id=set-project",
 		"--boot-loader-flavor-id", "manual-flavor",

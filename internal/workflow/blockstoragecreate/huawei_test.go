@@ -139,7 +139,7 @@ func TestBuildRequestHuaweiValidatesExplicitResourcesAndDynamicValueTypes(t *tes
 		SubnetID:           "subnet-1",
 		SystemDiskSize:     "40",
 		BandwidthSize:      "300",
-		FixedIP:            "10.0.0.8",
+		FixedIP:            "192.0.2.8",
 		ControlNATIP:       "192.0.2.10",
 		DataNATIP:          "192.0.2.11",
 		BootLoaderImageID:  "win-image-1",
@@ -153,7 +153,7 @@ func TestBuildRequestHuaweiValidatesExplicitResourcesAndDynamicValueTypes(t *tes
 		t.Fatalf("dynamic value types are wrong: %#v", metadata)
 	}
 	for key, want := range map[string]interface{}{
-		"fixed_ip": "10.0.0.8", "control_nat_ip": "192.0.2.10", "data_nat_ip": "192.0.2.11",
+		"fixed_ip": "192.0.2.8", "control_nat_ip": "192.0.2.10", "data_nat_ip": "192.0.2.11",
 		"boot_loader_image_id": "win-image-1", "boot_loader_flavor_id": "boot-flavor-1",
 	} {
 		if metadata[key] != want {

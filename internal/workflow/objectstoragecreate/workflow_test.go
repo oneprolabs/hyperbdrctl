@@ -7,7 +7,7 @@ import (
 
 func TestBuildRequestCustomProfile(t *testing.T) {
 	prepared, err := BuildRequest(CustomProfile("Custom"), Spec{
-		AuthURL:         "192.168.8.171:9000",
+		AuthURL:         "object-storage.example.invalid:9000",
 		AccessKeyID:     "ak",
 		AccessKeySecret: "sk",
 		BucketName:      "bucket-1",

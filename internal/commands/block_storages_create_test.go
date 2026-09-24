@@ -681,7 +681,7 @@ func TestBlockStoragesCreateHuaweiPreviewMatchesPostedBody(t *testing.T) {
 		"--cloud-account-id", "account-1",
 		"--system-disk-size", "40",
 		"--bandwidth-size", "300",
-		"--fixed-ip", "10.0.0.8",
+		"--fixed-ip", "192.0.2.8",
 		"--preview-request",
 	), &previewOut, &previewErr); err != nil {
 		previewServer.Close()
@@ -703,7 +703,7 @@ func TestBlockStoragesCreateHuaweiPreviewMatchesPostedBody(t *testing.T) {
 		"--cloud-account-id", "account-1",
 		"--system-disk-size", "40",
 		"--bandwidth-size", "300",
-		"--fixed-ip", "10.0.0.8",
+		"--fixed-ip", "192.0.2.8",
 	), &createOut, &createErr); err != nil {
 		t.Fatal(err)
 	}
