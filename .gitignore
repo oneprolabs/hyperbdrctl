@@ -1,0 +1,12 @@
+# Local build outputs
+hyperbdrctl
+*.exe
+dist/
+
+# Go test and coverage artifacts
+*.test
+coverage.out
+
+# OS metadata
+.DS_Store
+Thumbs.db
