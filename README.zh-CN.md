@@ -112,6 +112,13 @@ hyperbdrctl oss delete --help
 hyperbdrctl --output json host list
 ```
 
+## 文档
+
+参见[命令行样式文档](docs/README.md)，其中包含 help 页面和终端输出的双语规范：
+
+- [CLI Help 样式规范](docs/cli-help-style.zh.md) · [English](docs/cli-help-style.en.md)
+- [CLI 输出样式规范](docs/cli-output-style.zh.md) · [English](docs/cli-output-style.en.md)
+
 ## 特性
 
 - **为 AI agent 设计** — 子命令清晰、参数显式、支持 JSON 和异步 `wait`，便于 agent 规划、执行和校验每一步操作。

@@ -121,6 +121,14 @@ For automation, use JSON output. For troubleshooting, use `--vertical` and `--de
 hyperbdrctl --output json host list
 ```
 
+## Documentation
+
+See the [CLI style documentation](docs/README.md) for bilingual conventions covering help
+pages and terminal output:
+
+- [CLI Help Style](docs/cli-help-style.en.md) · [中文](docs/cli-help-style.zh.md)
+- [CLI Output Style](docs/cli-output-style.en.md) · [中文](docs/cli-output-style.zh.md)
+
 ## Features
 
 - **Built for AI agents** — predictable subcommands, explicit flags, machine-readable JSON, and asynchronous `wait` operations make commands easy to plan, execute, and verify.
