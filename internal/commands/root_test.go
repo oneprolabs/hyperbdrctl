@@ -295,7 +295,7 @@ func TestHostHelpMatchesArchivedChineseGuidance(t *testing.T) {
 		{[]string{"host", "--help"}, []string{"管理主机生命周期，包括查询、注册、同步、启动、清理和注销。", "hyperbdrctl boot-config get --id <host_id>"}},
 		{[]string{"host", "list", "--help"}, []string{"页码，默认值 1", "每页数量，默认值 10", "host list --status sync_snapshot_done --boot-status not_boot", "如需保留原始 API 字段名，便于脚本处理，可附加下面的参数："}},
 		{[]string{"host", "detail", "--help"}, []string{"资源 ID（必须）", "host detail --id <host_id>", "如需查看原始 API 字段，便于后续脚本处理，可附加下面的参数："}},
-		{[]string{"host", "snapshots", "--help"}, []string{"资源 ID（必须）", "只有在需要同步细节字段时，才附加下面的参数", "--sync-detail"}},
+		{[]string{"host", "snapshots", "--help"}, []string{"资源 ID（必须）", "create_done", "成功", "create_failed", "失败", "create_doing", "创建中", "只有在需要同步细节字段时，才附加下面的参数", "--sync-detail"}},
 		{[]string{"host", "sync", "--help"}, []string{"参数来源：", "--id 和 --ids 至少传入一个。", "host sync --ids <host_id_1,host_id_2>"}},
 		{[]string{"host", "register", "--help"}, []string{"hyperbdrctl production-site vm-list", "host register --vm-ids <vm_id_1,vm_id_2>"}},
 		{[]string{"host", "boot", "--help"}, []string{"--snapshot-id string", "hyperbdrctl host snapshots --id <host_id>", "host wait --id <host_id> --operation boot"}},

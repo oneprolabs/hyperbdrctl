@@ -87,7 +87,7 @@ func runHosts(ctx *context, args []string) error {
 		if err != nil {
 			return err
 		}
-		return writeResponse(ctx, resp, "snapshots", snapshotColumns())
+		return writeSnapshotResponse(ctx, resp.Data, resp.Raw)
 	case "sync":
 		return runHostsSync(ctx, args[1:])
 	case "register":
@@ -446,9 +446,112 @@ func hostColumns() []output.Column {
 
 func snapshotColumns() []output.Column {
 	return []output.Column{
-		{HeaderKey: "table.id", Field: "id"},
-		{HeaderKey: "table.name", Field: "name"},
-		{HeaderKey: "table.status", Field: "status"},
+		{HeaderKey: "table.snapshot_id", Field: "id"},
+		{HeaderKey: "table.sync_mode", Field: "sync_mode"},
+		{HeaderKey: "table.available", Field: "available"},
+		{HeaderKey: "table.sync_capacity", Field: "sync_capacity"},
 		{HeaderKey: "table.created_at", Field: "created_at"},
+		{HeaderKey: "table.execution_time", Field: "execution_time"},
 	}
+}
+
+func writeSnapshotResponse(ctx *context, data interface{}, raw map[string]interface{}) error {
+	if ctx.cfg.Output == "json" {
+		if raw != nil {
+			return output.JSON(ctx.out, raw)
+		}
+		return output.JSON(ctx.out, data)
+	}
+	return writeRows(ctx, snapshotRows(data), snapshotColumns())
+}
+
+func snapshotRows(data interface{}) []map[string]interface{} {
+	rows := listFromData(data, "snapshots")
+	normalized := make([]map[string]interface{}, 0, len(rows))
+	for _, row := range rows {
+		item := map[string]interface{}{
+			"id":             firstNonEmptyString(mapString(row, "id", "snapshot_id")),
+			"sync_mode":      snapshotSyncMode(row),
+			"available":      firstNonEmptyValue(row, "is_available", "available", "display_is_available"),
+			"sync_capacity":  snapshotSyncCapacity(row),
+			"created_at":     mapString(row, "created_at"),
+			"execution_time": snapshotExecutionTime(row),
+		}
+		normalized = append(normalized, item)
+	}
+	return normalized
+}
+
+func snapshotSyncMode(row map[string]interface{}) string {
+	if mode := mapString(row, "sync_mode"); mode != "" {
+		return mode
+	}
+	if isFull, ok := row["is_full"].(bool); ok {
+		if isFull {
+			return "full"
+		}
+		return "incremental"
+	}
+	return ""
+}
+
+func snapshotSyncCapacity(row map[string]interface{}) interface{} {
+	if value := firstNonEmptyValue(row, "sync_capacity", "size"); value != nil {
+		return value
+	}
+	return firstNonEmptyValue(nestedMap(row, "extra_info"), "actual_size", "transfer_size")
+}
+
+func snapshotExecutionTime(row map[string]interface{}) string {
+	if executionTime := mapString(row, "execution_time"); executionTime != "" {
+		return executionTime
+	}
+	start := mapString(row, "sync_start_at")
+	end := mapString(row, "sync_end_at")
+	if start != "" && end != "" {
+		if startTime, ok := parseSnapshotExecutionTime(start); ok {
+			if endTime, ok := parseSnapshotExecutionTime(end); ok && !endTime.Before(startTime) {
+				return formatSnapshotDuration(endTime.Sub(startTime))
+			}
+		}
+	}
+	return firstNonEmptyString(start, end)
+}
+
+func parseSnapshotExecutionTime(value string) (time.Time, bool) {
+	for _, layout := range []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04:05Z07:00",
+	} {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func formatSnapshotDuration(duration time.Duration) string {
+	seconds := int64(duration / time.Second)
+	days := seconds / (24 * 60 * 60)
+	seconds %= 24 * 60 * 60
+	hours := seconds / (60 * 60)
+	seconds %= 60 * 60
+	minutes := seconds / 60
+	seconds %= 60
+	parts := make([]string, 0, 4)
+	if days > 0 {
+		parts = append(parts, fmt.Sprintf("%d天", days))
+	}
+	if hours > 0 {
+		parts = append(parts, fmt.Sprintf("%d小时", hours))
+	}
+	if minutes > 0 {
+		parts = append(parts, fmt.Sprintf("%d分", minutes))
+	}
+	if seconds > 0 || len(parts) == 0 {
+		parts = append(parts, fmt.Sprintf("%d秒", seconds))
+	}
+	return strings.Join(parts, "")
 }

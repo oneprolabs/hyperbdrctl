@@ -124,7 +124,9 @@ func (s Service) Snapshots(spec SnapshotsSpec) (client.APIResponse, error) {
 	q := cloneValues(spec.Query)
 	q.Set("sheet", "snapshot")
 	q.Set("host_id", spec.ID)
-	q.Set("status", spec.Status)
+	if status := strings.TrimSpace(spec.Status); status != "" {
+		q.Set("status", status)
+	}
 	addBool(q, "sync_detail", spec.SyncDetail)
 	return s.api.Get("/api/v2/getHostDetail", q)
 }

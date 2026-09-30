@@ -52,6 +52,90 @@ func TestHostsListPassesUnknownFlagsAsQuery(t *testing.T) {
 	}
 }
 
+func TestHostsSnapshotsOmitsEmptyStatusAndRendersSnapshotColumns(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{
+				"snapshots": []map[string]interface{}{
+					{
+						"id":            "snapshot-1",
+						"is_full":       false,
+						"is_available":  true,
+						"size":          "12 GiB",
+						"created_at":    "2026-09-30T10:00:00Z",
+						"sync_start_at": "2026-09-30T10:00:00Z",
+						"sync_end_at":   "2026-09-30T10:00:35Z",
+					},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "--lang", "zh_cn", "host", "snapshots", "--id", "host-1"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(gotQuery, "status=") {
+		t.Fatalf("empty status must not be sent: %q", gotQuery)
+	}
+	for _, want := range []string{"快照 ID", "同步方式", "是否可用", "同步容量", "创建时间", "执行时间", "snapshot-1", "incremental", "true", "12 GiB", "35秒"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output missing %q: %q", want, out.String())
+		}
+	}
+}
+
+func TestFormatSnapshotDurationOmitsZeroUnits(t *testing.T) {
+	tests := []struct {
+		duration time.Duration
+		want     string
+	}{
+		{duration: 0, want: "0秒"},
+		{duration: 35 * time.Second, want: "35秒"},
+		{duration: 2*time.Minute + 3*time.Second, want: "2分3秒"},
+		{duration: time.Hour, want: "1小时"},
+		{duration: 24*time.Hour + 2*time.Minute, want: "1天2分"},
+	}
+
+	for _, tt := range tests {
+		if got := formatSnapshotDuration(tt.duration); got != tt.want {
+			t.Fatalf("formatSnapshotDuration(%s) = %q, want %q", tt.duration, got, tt.want)
+		}
+	}
+}
+
+func TestHostsSnapshotsPassesSpecifiedStatus(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var gotStatus string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotStatus = r.URL.Query().Get("status")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"code": "00000000",
+			"data": map[string]interface{}{"snapshots": []map[string]interface{}{}},
+		})
+	}))
+	defer srv.Close()
+
+	var out, errOut bytes.Buffer
+	err := Execute(withHost(t, srv.URL, "host", "snapshots", "--id", "host-1", "--status", "create_done"), &out, &errOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotStatus != "create_done" {
+		t.Fatalf("status = %q", gotStatus)
+	}
+}
+
 func TestHostsSyncWithFlags(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)

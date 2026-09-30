@@ -91,6 +91,38 @@ func TestServiceSnapshotsRequiresID(t *testing.T) {
 	}
 }
 
+func TestServiceSnapshotsOmitsEmptyStatus(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Snapshots(SnapshotsSpec{ID: "host-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.getPath != "/api/v2/getHostDetail" {
+		t.Fatalf("path = %q", api.getPath)
+	}
+	if api.getQuery.Get("host_id") != "host-1" || api.getQuery.Get("sheet") != "snapshot" {
+		t.Fatalf("query = %+v", api.getQuery)
+	}
+	if _, ok := api.getQuery["status"]; ok {
+		t.Fatalf("empty status must be omitted: %+v", api.getQuery)
+	}
+}
+
+func TestServiceSnapshotsPassesStatusWhenSpecified(t *testing.T) {
+	api := &fakeAPI{}
+	service := NewService(api)
+
+	_, err := service.Snapshots(SnapshotsSpec{ID: "host-1", Status: " create_done "})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := api.getQuery.Get("status"); got != "create_done" {
+		t.Fatalf("status = %q", got)
+	}
+}
+
 func TestServiceBootUsesLatestSnapshotWhenSnapshotIDOmitted(t *testing.T) {
 	api := &fakeAPI{
 		gets: []func(string, url.Values) (client.APIResponse, error){
