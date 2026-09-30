@@ -35,7 +35,7 @@ func renderCloudResourceCatalogSection(ctx *context, title string, clouds []cata
 	if err := writeSectionTitle(ctx, title); err != nil {
 		return err
 	}
-	return output.Table(ctx.out, ctx.loc, cloudCatalogRowsForDisplay(ctx, clouds), cloudResourceCatalogColumns())
+	return output.TableWithTimezone(ctx.out, ctx.loc, cloudCatalogRowsForDisplay(ctx, clouds), cloudResourceCatalogColumns(), ctx.cfg.Timezone)
 }
 
 func cloudCatalogRowsForDisplay(ctx *context, clouds []catalog.CloudEntry) []map[string]interface{} {

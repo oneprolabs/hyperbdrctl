@@ -291,7 +291,7 @@ func runHostsWait(ctx *context, args []string) error {
 		if err := output.JSON(ctx.out, result.Rows); err != nil {
 			return err
 		}
-	} else if err := output.Table(ctx.out, ctx.loc, result.Rows, waitColumns()); err != nil {
+	} else if err := output.TableWithTimezone(ctx.out, ctx.loc, result.Rows, waitColumns(), ctx.cfg.Timezone); err != nil {
 		return err
 	}
 	if result.Failed {

@@ -96,7 +96,7 @@ func writeWaitResult(ctx *context, rows []map[string]interface{}) error {
 	if ctx.cfg.Output == "json" {
 		return output.JSON(ctx.out, rows)
 	}
-	return output.Table(ctx.out, ctx.loc, rows, waitColumns())
+	return output.TableWithTimezone(ctx.out, ctx.loc, rows, waitColumns(), ctx.cfg.Timezone)
 }
 
 func waitRowsError(rows []map[string]interface{}, fallback string) error {

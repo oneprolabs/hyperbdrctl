@@ -217,6 +217,7 @@ func runConfig(ctx *context, args []string) error {
 			"password":    password,
 			"scene":       cfg.Scene,
 			"lang":        cfg.Lang,
+			"timezone":    cfg.Timezone,
 			"insecure":    cfg.Insecure,
 			"output":      cfg.Output,
 			"debug":       cfg.Debug,
@@ -229,6 +230,7 @@ func runConfig(ctx *context, args []string) error {
 		username := fs.String("username", "", "")
 		password := fs.String("password", "", "")
 		scene := fs.String("scene", "", "")
+		timezone := fs.String("timezone", "", "")
 		insecure := fs.Bool("insecure", false, "")
 		insecureSet := hasFlagToken(args[1:], "--insecure")
 		if err := fs.Parse(args[1:]); err != nil {
@@ -246,6 +248,9 @@ func runConfig(ctx *context, args []string) error {
 		}
 		if *scene != "" {
 			current.Scene = *scene
+		}
+		if *timezone != "" {
+			current.Timezone = *timezone
 		}
 		if insecureSet {
 			current.Insecure = *insecure
@@ -454,9 +459,9 @@ func writeValue(ctx *context, value interface{}) error {
 
 func writeRows(ctx *context, rows []map[string]interface{}, columns []output.Column) error {
 	if ctx.flags.Vertical {
-		return output.Vertical(ctx.out, ctx.loc, rows, columns)
+		return output.VerticalWithTimezone(ctx.out, ctx.loc, rows, columns, ctx.cfg.Timezone)
 	}
-	return output.Table(ctx.out, ctx.loc, rows, columns)
+	return output.TableWithTimezone(ctx.out, ctx.loc, rows, columns, ctx.cfg.Timezone)
 }
 
 func writeHumanValue(ctx *context, value interface{}) error {

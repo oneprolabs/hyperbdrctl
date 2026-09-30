@@ -89,5 +89,5 @@ func writeAuthResourceBody(ctx *context, envelope cloudinfo.ResourceEnvelope, se
 }
 
 func writeAuthTable(ctx *context, rows []map[string]interface{}, cols []output.Column) error {
-	return output.Table(ctx.out, ctx.loc, rows, gatewayVisibleColumns(rows, cols))
+	return output.TableWithTimezone(ctx.out, ctx.loc, rows, gatewayVisibleColumns(rows, cols), ctx.cfg.Timezone)
 }

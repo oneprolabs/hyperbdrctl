@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
+	_ "time/tzdata"
 )
 
 const (
@@ -24,6 +26,7 @@ type Config struct {
 	Lang     string `json:"lang,omitempty"`
 	Insecure bool   `json:"insecure,omitempty"`
 	Output   string `json:"output,omitempty"`
+	Timezone string `json:"timezone,omitempty"`
 	Debug    bool   `json:"debug,omitempty"`
 }
 
@@ -36,6 +39,7 @@ type Flags struct {
 	Insecure    bool
 	InsecureSet bool
 	Output      string
+	Timezone    string
 	Vertical    bool
 	Debug       bool
 	DebugSet    bool
@@ -74,7 +78,9 @@ func ResolveLangWithPath(flags Flags, path string) (string, error) {
 	}
 	cfg = mergeEnv(cfg)
 	cfg = mergeFlags(cfg, flags)
-	applyDefaults(&cfg)
+	if err := applyDefaults(&cfg); err != nil {
+		return "", err
+	}
 	return cfg.Lang, nil
 }
 
@@ -86,7 +92,9 @@ func ResolveWithPaths(flags Flags, path, cachePath string) (Resolved, error) {
 
 	cfg = mergeEnv(cfg)
 	cfg = mergeFlags(cfg, flags)
-	applyDefaults(&cfg)
+	if err := applyDefaults(&cfg); err != nil {
+		return Resolved{}, err
+	}
 	if err := Validate(cfg); err != nil {
 		return Resolved{}, err
 	}
@@ -136,7 +144,9 @@ func Save(path string, cfg Config) error {
 }
 
 func Normalize(cfg Config) (Config, error) {
-	applyDefaults(&cfg)
+	if err := applyDefaults(&cfg); err != nil {
+		return Config{}, err
+	}
 	if err := Validate(cfg); err != nil {
 		return Config{}, err
 	}
@@ -166,7 +176,25 @@ func Validate(cfg Config) error {
 	if cfg.Output != "" && cfg.Output != "table" && cfg.Output != "json" {
 		return fmt.Errorf("unsupported output %q, expected table or json", cfg.Output)
 	}
+	if cfg.Timezone != "" {
+		if _, err := LoadTimezone(cfg.Timezone); err != nil {
+			return fmt.Errorf("unsupported timezone %q: expected Local, a valid IANA time zone, or the current native OS zone identifier", cfg.Timezone)
+		}
+	}
 	return nil
+}
+
+// LoadTimezone loads an IANA time zone and supports the current native OS zone
+// identifier on platforms where it cannot be represented as an IANA name.
+func LoadTimezone(name string) (*time.Location, error) {
+	location, err := time.LoadLocation(name)
+	if err == nil {
+		return location, nil
+	}
+	if location, ok := nativeTimezoneLocation(name); ok {
+		return location, nil
+	}
+	return nil, err
 }
 
 func mergeEnv(cfg Config) Config {
@@ -187,6 +215,9 @@ func mergeEnv(cfg Config) Config {
 	}
 	if v := os.Getenv("HYPERBDR_OUTPUT"); v != "" {
 		cfg.Output = v
+	}
+	if v := os.Getenv("HYPERBDR_TIMEZONE"); v != "" {
+		cfg.Timezone = v
 	}
 	if v := os.Getenv("HYPERBDR_INSECURE"); v != "" {
 		if b, err := strconv.ParseBool(v); err == nil {
@@ -220,6 +251,9 @@ func mergeFlags(cfg Config, flags Flags) Config {
 	if flags.Output != "" {
 		cfg.Output = flags.Output
 	}
+	if flags.Timezone != "" {
+		cfg.Timezone = flags.Timezone
+	}
 	if flags.InsecureSet {
 		cfg.Insecure = flags.Insecure
 	}
@@ -229,7 +263,7 @@ func mergeFlags(cfg Config, flags Flags) Config {
 	return cfg
 }
 
-func applyDefaults(cfg *Config) {
+func applyDefaults(cfg *Config) error {
 	if cfg.Scene == "" {
 		cfg.Scene = DefaultScene
 	}
@@ -239,4 +273,12 @@ func applyDefaults(cfg *Config) {
 	if cfg.Output == "" {
 		cfg.Output = DefaultOutput
 	}
+	if cfg.Timezone == "" || cfg.Timezone == "Local" {
+		timezone, err := systemTimezone()
+		if err != nil {
+			return err
+		}
+		cfg.Timezone = timezone
+	}
+	return nil
 }

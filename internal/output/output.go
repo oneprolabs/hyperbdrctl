@@ -6,8 +6,10 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
+	"hyperbdr-client/internal/config"
 	"hyperbdr-client/internal/i18n"
 )
 
@@ -28,6 +30,14 @@ func JSON(w io.Writer, v interface{}) error {
 }
 
 func Table(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, cols []Column) error {
+	return TableWithTimezone(w, loc, rows, cols, "Local")
+}
+
+func TableWithTimezone(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, cols []Column, timezone string) error {
+	location, err := config.LoadTimezone(timezone)
+	if err != nil {
+		return err
+	}
 	headers := make([]string, len(cols))
 	widths := make([]int, len(cols))
 	for i, col := range cols {
@@ -38,7 +48,7 @@ func Table(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, cols 
 	for _, row := range rows {
 		line := make([]string, len(cols))
 		for i, col := range cols {
-			line[i] = scalar(row[col.Field])
+			line[i] = scalarWithTimezone(row[col.Field], location)
 			if width := displayWidth(line[i]); width > widths[i] {
 				widths[i] = width
 			}
@@ -57,6 +67,14 @@ func Table(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, cols 
 }
 
 func Vertical(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, cols []Column) error {
+	return VerticalWithTimezone(w, loc, rows, cols, "Local")
+}
+
+func VerticalWithTimezone(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, cols []Column, timezone string) error {
+	location, err := config.LoadTimezone(timezone)
+	if err != nil {
+		return err
+	}
 	for idx, row := range rows {
 		if _, err := fmt.Fprintf(w, "*************************** %d. row ***************************\n", idx+1); err != nil {
 			return err
@@ -65,7 +83,7 @@ func Vertical(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, co
 		for _, col := range cols {
 			pairs = append(pairs, KeyValueRow{
 				Key:   loc.T(col.HeaderKey),
-				Value: row[col.Field],
+				Value: formatTimestamp(row[col.Field], location),
 			})
 		}
 		if err := OrderedKeyValue(w, loc, pairs); err != nil {
@@ -78,6 +96,25 @@ func Vertical(w io.Writer, loc i18n.Localizer, rows []map[string]interface{}, co
 		}
 	}
 	return nil
+}
+
+func scalarWithTimezone(value interface{}, location *time.Location) string {
+	if timestamp, ok := formatTimestamp(value, location).(string); ok {
+		return timestamp
+	}
+	return scalar(value)
+}
+
+func formatTimestamp(value interface{}, location *time.Location) interface{} {
+	textValue, ok := value.(string)
+	if !ok {
+		return value
+	}
+	parsed, err := time.Parse(time.RFC3339Nano, textValue)
+	if err != nil {
+		return value
+	}
+	return parsed.In(location).Format(time.RFC3339Nano)
 }
 
 func KeyValue(w io.Writer, loc i18n.Localizer, m map[string]interface{}) error {

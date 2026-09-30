@@ -204,8 +204,80 @@ func TestResolveDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resolved.Scene != DefaultScene || resolved.Lang != DefaultLang || resolved.Output != DefaultOutput {
-		t.Fatalf("defaults = scene:%q lang:%q output:%q", resolved.Scene, resolved.Lang, resolved.Output)
+	if resolved.Scene != DefaultScene || resolved.Lang != DefaultLang || resolved.Output != DefaultOutput || resolved.Timezone == "" || resolved.Timezone == "Local" {
+		t.Fatalf("defaults = scene:%q lang:%q output:%q timezone:%q", resolved.Scene, resolved.Lang, resolved.Output, resolved.Timezone)
+	}
+}
+
+func TestNormalizeLocalTimezoneToSystemTimezone(t *testing.T) {
+	want, err := systemTimezone()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, input := range []string{"", "Local"} {
+		got, err := Normalize(Config{Timezone: input})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Timezone != want {
+			t.Errorf("Normalize(timezone=%q) = %q, want system zone %q", input, got.Timezone, want)
+		}
+	}
+
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := Save(path, Config{Timezone: "Local"}); err != nil {
+		t.Fatal(err)
+	}
+	saved, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.Timezone != want {
+		t.Fatalf("saved timezone = %q, want concrete system zone %q", saved.Timezone, want)
+	}
+}
+
+func TestResolveTimezonePrecedence(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.json")
+	if err := Save(configPath, Config{Timezone: "Asia/Tokyo"}); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HYPERBDR_TIMEZONE", "America/Los_Angeles")
+
+	resolved, err := ResolveWithPaths(Flags{Timezone: "Asia/Shanghai"}, configPath, filepath.Join(dir, "token.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Timezone != "Asia/Shanghai" {
+		t.Fatalf("flag timezone = %q", resolved.Timezone)
+	}
+
+	resolved, err = ResolveWithPaths(Flags{}, configPath, filepath.Join(dir, "token.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Timezone != "America/Los_Angeles" {
+		t.Fatalf("environment timezone = %q", resolved.Timezone)
+	}
+	t.Setenv("HYPERBDR_TIMEZONE", "")
+	resolved, err = ResolveWithPaths(Flags{}, configPath, filepath.Join(dir, "token.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Timezone != "Asia/Tokyo" {
+		t.Fatalf("config timezone = %q", resolved.Timezone)
+	}
+}
+
+func TestValidateTimezone(t *testing.T) {
+	for _, timezone := range []string{"Local", "Asia/Shanghai", "America/Los_Angeles"} {
+		if err := Validate(Config{Timezone: timezone}); err != nil {
+			t.Errorf("Validate(%q): %v", timezone, err)
+		}
+	}
+	if err := Validate(Config{Timezone: "+08:00"}); err == nil {
+		t.Fatal("expected fixed offset to be rejected")
 	}
 }
 

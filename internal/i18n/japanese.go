@@ -125,6 +125,7 @@ var japaneseOverrides = map[string]string{
 	"flag.username":                      "ログインユーザー名",
 	"flag.password":                      "ログインパスワード",
 	"flag.scene":                         "プラットフォームシーン",
+	"flag.timezone":                      "表示タイムゾーン。Local は OS の IANA 名に解決されます",
 	"flag.lang":                          "表示言語、使用可能な値 en / zh_cn / ja、デフォルト en",
 	"flag.insecure":                      "テスト環境で TLS 証明書の検証をスキップ",
 	"flag.output":                        "出力形式、使用可能な値 table / json、デフォルト table",

@@ -1035,6 +1035,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "debug"},
 			{name: "lang", choices: []string{"en", "zh_cn", "ja"}, defaultValue: config.DefaultLang},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "timezone"},
 			{name: "help"},
 		}
 	default:

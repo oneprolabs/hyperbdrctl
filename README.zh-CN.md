@@ -35,7 +35,8 @@ hyperbdrctl config set \
   --username <username> \
   --password <password> \
   --scene dr \
-  --lang zh_cn
+  --lang zh_cn \
+  --timezone Asia/Shanghai
 
 hyperbdrctl config get
 ```
@@ -61,11 +62,12 @@ HYPERBDR_PASSWORD
 HYPERBDR_SCENE
 HYPERBDR_LANG
 HYPERBDR_OUTPUT
+HYPERBDR_TIMEZONE
 HYPERBDR_INSECURE
 HYPERBDR_DEBUG
 ```
 
-`--lang` 支持 `en`、`zh_cn` 和 `ja`；默认启用 TLS 校验。
+`--lang` 支持 `en`、`zh_cn` 和 `ja`。`--timezone` 接受 `Local` 或 `Asia/Shanghai` 等 IANA 时区名。`Local` 会解析为操作系统的具体时区标识并保存到配置文件；该设置影响表格和竖排输出。JSON 输出保留 API 原始时间。默认启用 TLS 校验。
 
 ### 使用流程与命令帮助
 

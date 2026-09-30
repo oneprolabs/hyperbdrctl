@@ -35,7 +35,8 @@ hyperbdrctl config set \
   --username <username> \
   --password <password> \
   --scene dr \
-  --lang zh_cn
+  --lang zh_cn \
+  --timezone Asia/Shanghai
 
 hyperbdrctl config get
 ```
@@ -61,11 +62,12 @@ HYPERBDR_PASSWORD
 HYPERBDR_SCENE
 HYPERBDR_LANG
 HYPERBDR_OUTPUT
+HYPERBDR_TIMEZONE
 HYPERBDR_INSECURE
 HYPERBDR_DEBUG
 ```
 
-`--lang` supports `en`, `zh_cn`, and `ja`. TLS verification is enabled by default.
+`--lang` supports `en`, `zh_cn`, and `ja`. `--timezone` accepts `Local` or an IANA time zone such as `Asia/Shanghai`. `Local` resolves to the operating system's concrete time zone identifier, saved explicitly in the config file. The setting affects table and vertical output; JSON output keeps API timestamps unchanged. TLS verification is enabled by default.
 
 ### Workflow and command help
 

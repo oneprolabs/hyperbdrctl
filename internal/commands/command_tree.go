@@ -156,6 +156,7 @@ func newConfigCommand(ctx *context) *cobra.Command {
 		addFlagString(cmd, ctx, "username")
 		addFlagString(cmd, ctx, "password")
 		addFlagString(cmd, ctx, "scene")
+		addFlagString(cmd, ctx, "timezone")
 		addFlagBool(cmd, ctx, "insecure")
 	}, func(args []string) error {
 		return runConfig(ctx, append([]string{"set"}, args...))

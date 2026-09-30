@@ -54,7 +54,7 @@ func writeTargetResourceSection(ctx *context, section normalizetargetresource.Se
 	if isImageResource(section.Resource) {
 		rows = filterImageRows(rows, meta)
 	}
-	return output.Table(ctx.out, ctx.loc, rows, visibleColumns(rows, targetResourceColumns(section.Resource)))
+	return output.TableWithTimezone(ctx.out, ctx.loc, rows, visibleColumns(rows, targetResourceColumns(section.Resource)), ctx.cfg.Timezone)
 }
 
 func isImageResource(resource string) bool {

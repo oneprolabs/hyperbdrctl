@@ -93,3 +93,58 @@ func TestVerticalAcceptsEmptyRows(t *testing.T) {
 		t.Fatalf("expected empty output, got %q", out.String())
 	}
 }
+
+func TestTableWithTimezoneConvertsOnlyZonedTimestamps(t *testing.T) {
+	var out bytes.Buffer
+	rows := []map[string]interface{}{
+		{
+			"created_at": "2026-09-30T10:00:00Z",
+			"updated_at": "2026-09-30T10:00:00-04:00",
+			"raw_time":   "2026-09-30 10:00:00",
+			"name":       "plain text",
+		},
+	}
+	err := TableWithTimezone(&out, i18n.New("en"), rows, []Column{
+		{HeaderKey: "table.created_at", Field: "created_at"},
+		{HeaderKey: "table.updated_at", Field: "updated_at"},
+		{HeaderKey: "table.status", Field: "raw_time"},
+		{HeaderKey: "table.name", Field: "name"},
+	}, "Asia/Shanghai")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"2026-09-30T18:00:00+08:00",
+		"2026-09-30T22:00:00+08:00",
+		"2026-09-30 10:00:00",
+		"plain text",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("table output missing %q: %s", want, out.String())
+		}
+	}
+}
+
+func TestVerticalWithTimezoneConvertsTimestamp(t *testing.T) {
+	var out bytes.Buffer
+	err := VerticalWithTimezone(&out, i18n.New("en"), []map[string]interface{}{
+		{"created_at": "2026-09-30T10:00:00Z"},
+	}, []Column{{HeaderKey: "table.created_at", Field: "created_at"}}, "Asia/Shanghai")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "2026-09-30T18:00:00+08:00") {
+		t.Fatalf("vertical output did not convert timestamp: %s", out.String())
+	}
+}
+
+func TestJSONDoesNotConvertTimestamp(t *testing.T) {
+	var out bytes.Buffer
+	const timestamp = "2026-09-30T10:00:00Z"
+	if err := JSON(&out, map[string]interface{}{"created_at": timestamp}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), timestamp) {
+		t.Fatalf("JSON timestamp changed: %s", out.String())
+	}
+}

@@ -140,7 +140,7 @@ func writeGatewayResourceBody(ctx *context, data interface{}, resource string) e
 }
 
 func writeGatewayTable(ctx *context, rows []map[string]interface{}, cols []output.Column) error {
-	return output.Table(ctx.out, ctx.loc, rows, gatewayVisibleColumns(rows, cols))
+	return output.TableWithTimezone(ctx.out, ctx.loc, rows, gatewayVisibleColumns(rows, cols), ctx.cfg.Timezone)
 }
 
 func gatewayVisibleColumns(rows []map[string]interface{}, cols []output.Column) []output.Column {
