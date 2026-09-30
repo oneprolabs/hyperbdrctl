@@ -166,7 +166,7 @@ var commonEN = map[string]string{
 	"flag.username":                                          "Login username",
 	"flag.password":                                          "Login password",
 	"flag.scene":                                             "Platform scene",
-	"flag.lang":                                              "Display language, allowed values en / zh_cn, default en",
+	"flag.lang":                                              "Display language, allowed values en / zh_cn, default en (ja supported)",
 	"flag.insecure":                                          "Skip TLS certificate verification for test environments",
 	"flag.output":                                            "Output format, allowed values table / json, default table",
 	"flag.vertical":                                          "Render list rows vertically in mysql-style blocks",

@@ -1033,7 +1033,7 @@ func flagSpecsForCommand(cmd *cobra.Command) []flagHelpSpec {
 			{name: "scene", choices: []string{"dr", "migration"}, defaultValue: config.DefaultScene},
 			{name: "insecure"},
 			{name: "debug"},
-			{name: "lang", choices: []string{"en", "zh_cn"}, defaultValue: config.DefaultLang},
+			{name: "lang", choices: []string{"en", "zh_cn", "ja"}, defaultValue: config.DefaultLang},
 			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
 			{name: "help"},
 		}

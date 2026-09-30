@@ -166,7 +166,7 @@ var commonZH = map[string]string{
 	"flag.username":                                          "登录用户名",
 	"flag.password":                                          "登录密码",
 	"flag.scene":                                             "平台场景",
-	"flag.lang":                                              "显示语言，可选值 en / zh_cn，默认值 en",
+	"flag.lang":                                              "显示语言，可选值 en / zh_cn，默认值 en（支持 ja）",
 	"flag.insecure":                                          "测试环境跳过 TLS 证书校验",
 	"flag.output":                                            "输出格式，可选值 table / json，默认值 table",
 	"flag.vertical":                                          "按 mysql 风格逐条纵向展示列表结果",

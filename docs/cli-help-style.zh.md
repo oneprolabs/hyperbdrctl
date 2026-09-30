@@ -20,7 +20,7 @@
       --set-json stringArray       metadata 路径覆盖，格式 path=<json>，可重复
       --preview-request            输出请求体，但不发送请求
       --debug                      输出请求调试日志
-      --lang string                显示语言，可选值 en / zh_cn，默认值 en
+      --lang string                显示语言，可选值 en / zh_cn / ja，默认值 en
   -o, --output string              输出格式，可选值 table / json，默认值 table
   -h, --help                       显示帮助信息
 
@@ -132,7 +132,7 @@
       --name string     资源名称（必须）
       --type string     资源类型，可选值 a / b，默认值 a
       --debug           输出请求调试日志
-      --lang string     显示语言，可选值 en / zh_cn，默认值 en
+      --lang string     显示语言，可选值 en / zh_cn / ja，默认值 en
   -o, --output string   输出格式，可选值 table / json，默认值 table
   -h, --help            显示帮助信息
 ```
@@ -175,28 +175,28 @@
 - 区块标题命名应稳定，不随命令随意变体。
 - 同一含义只保留一套标题，例如不要并存多个近义标题来表达相同区块。
 
-### 中英文术语
+### 多语言术语
 
-CLI help 必须同时支持 `zh_cn` 和 `en`。新增或调整 help 文案时，应使用下列稳定术语：
+CLI help 必须同时支持 `zh_cn`、`en` 和 `ja`。新增或调整 help 文案时，应使用下列稳定术语：
 
-| 含义 | zh_cn | en |
-| --- | --- | --- |
-| 用法区块 | `用法` | `Usage` |
-| 参数区块 | `参数` | `Flags` |
-| 命令区块 | `命令` | `Commands` |
-| 使用说明区块 | `使用说明` | `Usage Notes` |
-| 参数来源子段 | `参数来源` | `Parameter Sources` |
-| 必填标记 | `（必须）` | `(required)` |
-| 可选值 | `可选值 a / b` | `allowed values a / b` |
-| 默认值 | `默认值 x` | `default x` |
-| 显示帮助信息 | `显示帮助信息` | `Show help information` |
+| 含义 | zh_cn | en | ja |
+| --- | --- | --- | --- |
+| 用法区块 | `用法` | `Usage` | `使い方` |
+| 参数区块 | `参数` | `Flags` | `フラグ` |
+| 命令区块 | `命令` | `Commands` | `コマンド` |
+| 使用说明区块 | `使用说明` | `Usage Notes` | `使用上の注意` |
+| 参数来源子段 | `参数来源` | `Parameter Sources` | `パラメータの出所` |
+| 必填标记 | `（必须）` | `(required)` | `(必須)` |
+| 可选值 | `可选值 a / b` | `allowed values a / b` | `使用可能な値 a / b` |
+| 默认值 | `默认值 x` | `default x` | `デフォルト x` |
+| 显示帮助信息 | `显示帮助信息` | `Show help information` | `ヘルプ情報を表示` |
 
 规则：
 
 - 同一语言内不要混用标题近义词，例如不要同时使用 `参数`、`选项`、`Flags` 表达同一区块。
 - 中文 help 使用全角中文标点；英文 help 使用英文标点。
 - 可选值在中英文中都使用 `/` 分隔，分隔符两侧保留一个空格。
-- `zh_cn` 和 `en` 的区块顺序、参数顺序和示例结构必须保持一致。
+- 所有语言的区块顺序、参数顺序和示例结构必须保持一致。
 
 ### 终端多段输出标题
 

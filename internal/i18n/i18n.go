@@ -5,7 +5,7 @@ type Localizer struct {
 }
 
 func New(lang string) Localizer {
-	if lang != "zh_cn" {
+	if lang != "zh_cn" && lang != "ja" {
 		lang = "en"
 	}
 	return Localizer{lang: lang}
@@ -14,6 +14,11 @@ func New(lang string) Localizer {
 func (l Localizer) T(key string) string {
 	if l.lang == "zh_cn" {
 		if v, ok := zhCN[key]; ok {
+			return v
+		}
+	}
+	if l.lang == "ja" {
+		if v, ok := ja[key]; ok {
 			return v
 		}
 	}

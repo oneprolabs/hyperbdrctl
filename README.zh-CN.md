@@ -65,7 +65,7 @@ HYPERBDR_INSECURE
 HYPERBDR_DEBUG
 ```
 
-`--lang` 支持 `en` 和 `zh_cn`；默认启用 TLS 校验。
+`--lang` 支持 `en`、`zh_cn` 和 `ja`；默认启用 TLS 校验。
 
 ### 使用流程与命令帮助
 
@@ -114,7 +114,7 @@ hyperbdrctl --output json host list
 
 ## 文档
 
-参见[命令行样式文档](docs/README.md)，其中包含 help 页面和终端输出的双语规范：
+参见[命令行样式文档](docs/README.md)，其中包含 help 页面和终端输出的多语言规范：
 
 - [CLI Help 样式规范](docs/cli-help-style.zh.md) · [English](docs/cli-help-style.en.md)
 - [CLI 输出样式规范](docs/cli-output-style.zh.md) · [English](docs/cli-output-style.en.md)
@@ -126,7 +126,7 @@ hyperbdrctl --output json host list
 - **统一支持 DR 和迁移** — 只需切换 `--scene`，无需改变自动化模型。
 - **覆盖完整运维流程** — 查询主机和快照、启动配置、源端准备、云资源发现、网关、对象存储和 License。
 - **安全默认值** — 默认开启 TLS 校验，`config get` 默认隐藏敏感信息，凭据校验成功后才保存配置。
-- **兼顾人工排障** — 提供表格、纵向输出、双语文案（`en` / `zh_cn`）和命令级帮助。
+- **兼顾人工排障** — 提供表格、纵向输出、多语言文案（`en` / `zh_cn` / `ja`）和命令级帮助。
 - **易集成、易分发** — 单个 Go 二进制即可运行，除访问平台地址外没有额外运行时依赖。
 
 ## 构建和开发
@@ -159,7 +159,7 @@ go test ./...
 go build -o hyperbdrctl ./cmd/hyperbdrctl
 ```
 
-新增或修改命令时，请同步更新双语帮助文案和测试。保持 agent 使用的 JSON 输出稳定，并明确记录破坏性变更。
+新增或修改命令时，请同步更新多语言帮助文案和测试。保持 agent 使用的 JSON 输出稳定，并明确记录破坏性变更。
 
 ## 项目状态
 

@@ -652,7 +652,7 @@ func errorMapValue(raw map[string]interface{}, key string) string {
 }
 
 func detailSeparator(lang string) string {
-	if lang == "zh_cn" {
+	if lang == "zh_cn" || lang == "ja" {
 		return "；"
 	}
 	return "; "

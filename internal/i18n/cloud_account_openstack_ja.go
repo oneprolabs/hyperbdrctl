@@ -1,0 +1,3 @@
+package i18n
+
+var cloud_account_openstackJA = mergeJapaneseFragment(japaneseFragment(cloud_account_openstackEN), cloudAccountCreateHelpJA)

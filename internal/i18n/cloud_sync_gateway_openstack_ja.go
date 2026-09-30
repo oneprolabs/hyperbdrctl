@@ -1,0 +1,3 @@
+package i18n
+
+var cloud_sync_gateway_openstackJA = japaneseFragment(cloud_sync_gateway_openstackEN)

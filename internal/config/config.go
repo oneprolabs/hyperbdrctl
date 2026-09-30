@@ -160,8 +160,8 @@ func TokenPath() (string, error) {
 }
 
 func Validate(cfg Config) error {
-	if cfg.Lang != "" && cfg.Lang != "en" && cfg.Lang != "zh_cn" {
-		return fmt.Errorf("unsupported lang %q, expected en or zh_cn", cfg.Lang)
+	if cfg.Lang != "" && cfg.Lang != "en" && cfg.Lang != "zh_cn" && cfg.Lang != "ja" {
+		return fmt.Errorf("unsupported lang %q, expected en, zh_cn, or ja", cfg.Lang)
 	}
 	if cfg.Output != "" && cfg.Output != "table" && cfg.Output != "json" {
 		return fmt.Errorf("unsupported output %q, expected table or json", cfg.Output)

@@ -21,7 +21,7 @@ Flags:
       --set-json stringArray       Override metadata path with path=<json>; repeatable
       --preview-request            Print the request body without sending it
       --debug                      Print request debugging logs
-      --lang string                Display language, allowed values en / zh_cn, default en
+      --lang string                Display language, allowed values en / zh_cn / ja, default en
   -o, --output string              Output format, allowed values table / json, default table
   -h, --help                       Show help information
 
@@ -128,7 +128,7 @@ Example:
       --name string     Resource name (required)
       --type string     Resource type, allowed values a / b, default a
       --debug           Print request debugging logs
-      --lang string     Display language, allowed values en / zh_cn, default en
+      --lang string     Display language, allowed values en / zh_cn / ja, default en
   -o, --output string   Output format, allowed values table / json, default table
   -h, --help            Show help information
 ```
@@ -156,20 +156,20 @@ the same issue, fix the shared logic instead of adding repeated command-specific
 
 ### Stable terminology
 
-| Meaning | zh_cn | en |
-| --- | --- | --- |
-| Usage section | `用法` | `Usage` |
-| Flags section | `参数` | `Flags` |
-| Commands section | `命令` | `Commands` |
-| Usage notes section | `使用说明` | `Usage Notes` |
-| Parameter sources | `参数来源` | `Parameter Sources` |
-| Required marker | `（必须）` | `(required)` |
-| Allowed values | `可选值 a / b` | `allowed values a / b` |
-| Default value | `默认值 x` | `default x` |
-| Help description | `显示帮助信息` | `Show help information` |
+| Meaning | zh_cn | en | ja |
+| --- | --- | --- | --- |
+| Usage section | `用法` | `Usage` | `使い方` |
+| Flags section | `参数` | `Flags` | `フラグ` |
+| Commands section | `命令` | `Commands` | `コマンド` |
+| Usage notes section | `使用说明` | `Usage Notes` | `使用上の注意` |
+| Parameter sources | `参数来源` | `Parameter Sources` | `パラメータの出所` |
+| Required marker | `（必须）` | `(required)` | `(必須)` |
+| Allowed values | `可选值 a / b` | `allowed values a / b` | `使用可能な値 a / b` |
+| Default value | `默认值 x` | `default x` | `デフォルト x` |
+| Help description | `显示帮助信息` | `Show help information` | `ヘルプ情報を表示` |
 
 Chinese help uses full-width Chinese punctuation; English help uses English punctuation.
-Both languages must retain the same section order, flag order, and example structure.
+All languages must retain the same section order, flag order, and example structure.
 
 ### Multiline output headings
 

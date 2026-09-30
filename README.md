@@ -65,7 +65,7 @@ HYPERBDR_INSECURE
 HYPERBDR_DEBUG
 ```
 
-`--lang` supports `en` and `zh_cn`. TLS verification is enabled by default.
+`--lang` supports `en`, `zh_cn`, and `ja`. TLS verification is enabled by default.
 
 ### Workflow and command help
 
@@ -123,7 +123,7 @@ hyperbdrctl --output json host list
 
 ## Documentation
 
-See the [CLI style documentation](docs/README.md) for bilingual conventions covering help
+See the [CLI style documentation](docs/README.md) for multilingual conventions covering help
 pages and terminal output:
 
 - [CLI Help Style](docs/cli-help-style.en.md) · [中文](docs/cli-help-style.zh.md)
@@ -136,7 +136,7 @@ pages and terminal output:
 - **One API surface for DR and migration** — switch `--scene` without changing your automation model.
 - **End-to-end operational coverage** — hosts, snapshots, boot configuration, source preparation, cloud discovery, gateways, object storage, and licenses.
 - **Safe by default** — TLS verification is on, secrets are hidden by `config get`, and configuration is saved only after credentials are validated.
-- **Operator-friendly** — table/vertical output, bilingual messages (`en` / `zh_cn`), and command-local help.
+- **Operator-friendly** — table/vertical output, localized messages (`en` / `zh_cn` / `ja`), and command-local help.
 - **Portable** — one Go binary with no runtime dependency beyond network access to the platform endpoint.
 
 ## Build and development
