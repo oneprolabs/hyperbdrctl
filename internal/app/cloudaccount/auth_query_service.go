@@ -223,6 +223,10 @@ func buildFetchGenericMetadata(spec FetchResourcesSpec, authType string) (map[st
 		}
 	}
 
+	if spec.AppID != "" {
+		metadata["app_id"] = spec.AppID
+	}
+
 	if spec.RegionID != "" && !isHuaweiObjectStorage(spec.CloudType, spec.StorageType) {
 		metadata["region_type"] = "1"
 		metadata["region_type_list"] = spec.RegionID

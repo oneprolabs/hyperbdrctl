@@ -13,8 +13,8 @@ func TestProvidersAreUniqueWithinEachCatalog(t *testing.T) {
 func TestEnabledBlockCloudsReturnsOnlyEnabledEntries(t *testing.T) {
 	got := EnabledBlockClouds()
 
-	if len(got) != 3 {
-		t.Fatalf("EnabledBlockClouds() len = %d, want %d", len(got), 3)
+	if len(got) != 4 {
+		t.Fatalf("EnabledBlockClouds() len = %d, want %d", len(got), 4)
 	}
 	if containsCloudType(got, "huaweicloud") {
 		t.Fatalf("EnabledBlockClouds() unexpectedly contains disabled huaweicloud entry")
@@ -100,6 +100,7 @@ func TestFindCloudMiss(t *testing.T) {
 func TestBlockCloudTypesStableOrdered(t *testing.T) {
 	want := []string{
 		"aliyun_bs",
+		"tencent_bs",
 		"huawei_bs",
 		"openstack",
 	}
@@ -212,5 +213,20 @@ func assertUniqueProviders(t *testing.T, name string, items []CloudEntry) {
 			t.Fatalf("%s provider %q is duplicated by %q and %q", name, item.Provider, prevKey, item.Key)
 		}
 		seen[item.Provider] = item.Key
+	}
+}
+
+func TestTencentBlockUsesRecommendedPlatform(t *testing.T) {
+	for _, name := range []string{"tencent", "tencent_bs"} {
+		entry, ok := FindBlockCloud(name)
+		if !ok || entry.CloudType != "tencent_bs" || entry.Architecture != AtomyV2 {
+			t.Fatalf("FindBlockCloud(%q) = %#v, %v", name, entry, ok)
+		}
+	}
+	if _, ok := FindBlockCloud("tencentcloud"); ok {
+		t.Fatal("legacy Tencent platform unexpectedly enabled")
+	}
+	if _, ok := FindObjectCloud("tencent"); ok {
+		t.Fatal("Tencent object platform unexpectedly enabled")
 	}
 }

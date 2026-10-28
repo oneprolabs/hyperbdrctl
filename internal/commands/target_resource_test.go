@@ -185,6 +185,17 @@ func TestCloudResourceDirectHelpShowsProviderProfile(t *testing.T) {
 			unwanted: []string{"cloud-sync-gateway create", "--cloud-auth-type string"},
 		},
 		{
+			args: []string{"cloud-resource", "fetch", "--cloud-type", "tencent", "--storage-type", "block", "--help"},
+			want: []string{
+				"Usage: hyperbdrctl cloud-resource fetch --cloud-type tencent --storage-type block [flags]",
+				"--app-id string",
+				"Tencent Cloud App ID",
+				"--app-id <app_id>",
+				"--cloud-account-id <account_id>",
+			},
+			unwanted: []string{"%!(EXTRA"},
+		},
+		{
 			args: []string{"--lang", "zh_cn", "cloud-resource", "fetch", "--cloud-type", "huawei", "--storage-type", "object", "--help"},
 			want: []string{
 				"获取华为云对象存储只读资源。",
@@ -331,6 +342,15 @@ func TestCloudResourceRejectsCloudAccountIDWithDirectFlags(t *testing.T) {
 	), &out, &errOut)
 	if err == nil || err.Error() != "cloud-account-id cannot be used with cloud-type, storage-type, or credential flags" {
 		t.Fatalf("err=%v", err)
+	}
+
+	err = Execute(withHost(t, "https://example.invalid",
+		"cloud-resource", "fetch",
+		"--cloud-account-id", "account-1",
+		"--app-id", "1000000001",
+	), &out, &errOut)
+	if err == nil || err.Error() != "cloud-account-id cannot be used with cloud-type, storage-type, or credential flags" {
+		t.Fatalf("app-id err=%v", err)
 	}
 }
 
@@ -852,6 +872,7 @@ func TestCloudResourceFetchValidation(t *testing.T) {
 		{args: []string{"cloud-resource", "fetch", "--storage-type", "block_storage"}, want: "storage-type must be block or object"},
 		{args: []string{"cloud-resource", "fetch", "--storage-type", "object_storage"}, want: "storage-type must be block or object"},
 		{args: []string{"cloud-resource", "fetch", "--cloud-type", "vmware", "--storage-type", "block"}, want: `cloud-type "vmware" does not support storage-type block`},
+		{args: []string{"cloud-resource", "fetch", "--cloud-type", "tencent", "--storage-type", "block", "--access-key-id", "ak", "--access-key-secret", "sk", "--fetch-res", "regions"}, want: "app-id is required"},
 	}
 	for _, tt := range cases {
 		var out, errOut bytes.Buffer

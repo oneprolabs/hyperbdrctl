@@ -66,7 +66,7 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 		case "storage-type":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("storage-type cannot be used with %s", commandName)
 		case "region-id", "region-name":
-			if cloudType == "aliyun_bs" || cloudType == "huawei_bs" {
+			if cloudType == "aliyun_bs" || cloudType == "huawei_bs" || cloudType == "tencent_bs" {
 				return parsedCloudAccountCreateCommand{}, fmt.Errorf("%s cannot be used with %s; use --auth-region-id", name, commandName)
 			}
 			v, next, err := strictFlagValue(args, i, value, hasInline)
@@ -99,7 +99,7 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 		case "only-verify":
 			return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
 		default:
-			if fixedAKSK && huaweiBlockRejectsPasswordStyleFlag(name) {
+			if fixedAKSK && fixedAKSKBlockRejectsPasswordStyleFlag(name) {
 				return parsedCloudAccountCreateCommand{}, fmt.Errorf("unknown flag: --%s", name)
 			}
 			if handled, err := parseSpecializedBlockFlag(name, args, i, value, hasInline, cloudType, &spec, &assignments); handled {
@@ -171,10 +171,10 @@ func parseCloudAccountCreateBlockArgs(commandName, cloudType string, specialized
 }
 
 func fixedAKSKBlockCloudType(cloudType string) bool {
-	return cloudType == "huawei_bs"
+	return cloudType == "huawei_bs" || cloudType == "tencent_bs"
 }
 
-func huaweiBlockRejectsPasswordStyleFlag(name string) bool {
+func fixedAKSKBlockRejectsPasswordStyleFlag(name string) bool {
 	switch name {
 	case "auth-url", "username", "password":
 		return true
@@ -200,6 +200,11 @@ func parseSpecializedBlockFlag(name string, args []string, idx int, inline strin
 
 func createBlockExplicitFlagAllowed(cloudType, name string) bool {
 	switch cloudType {
+	case "tencent_bs":
+		switch name {
+		case "access-key-id", "access-key-secret", "app-id", "account-name", "auth-region-id":
+			return true
+		}
 	case "aliyun_bs":
 		switch name {
 		case "access-key-id", "access-key-secret", "account-name", "auth-region-id":

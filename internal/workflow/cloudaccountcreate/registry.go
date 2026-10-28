@@ -12,6 +12,10 @@ type adapter struct {
 }
 
 var adapters = map[string]adapter{
+	workflow.CloudAccountCreateKey("tencent_bs", "").String(): {
+		key:   workflow.CloudAccountCreateKey("tencent_bs", "").String(),
+		build: buildTencentBlock,
+	},
 	workflow.CloudAccountCreateKey("aliyun_bs", "").String(): {
 		key:   workflow.CloudAccountCreateKey("aliyun_bs", "").String(),
 		build: buildAliyunBlock,

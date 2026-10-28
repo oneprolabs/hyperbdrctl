@@ -78,7 +78,7 @@ func addCloudResourceFetchAllFlags(cmd *cobra.Command, ctx *context) {
 	for _, name := range []string{
 		"cloud-account-id", "cloud-type", "storage-type", "cloud-auth-type",
 		"fetch-res", "region-id", "zone-id", "flavor-id", "flavor-vcpus", "flavor-ram", "network-id", "os-type", "image-type", "boot-mode", "purpose",
-		"access-key-id", "access-key-secret", "access-id", "access-secret",
+		"access-key-id", "access-key-secret", "access-id", "access-secret", "app-id",
 		"auth-url", "username", "password", "user-domain-id",
 		"project-id", "project-domain-id", "project-name", "compute-zone-id", "block-store-zone-id",
 	} {
@@ -279,7 +279,7 @@ func parseCloudResourceFetchSelection(args []string) (cloudResourceFetchSelectio
 
 func isCloudResourceCredentialFlag(name string) bool {
 	switch name {
-	case "cloud-auth-type", "access-key-id", "access-key-secret", "access-id", "access-secret", "auth-url", "username", "password", "user-domain-id":
+	case "cloud-auth-type", "access-key-id", "access-key-secret", "access-id", "access-secret", "app-id", "auth-url", "username", "password", "user-domain-id":
 		return true
 	default:
 		return false
@@ -455,6 +455,9 @@ func cloudResourceStorageUsageNotes(ctx *context, storageType string) string {
 }
 
 func applyCloudResourceDirectHelp(ctx *context, cmd *cobra.Command, profile cloudResourceFetchProfile) {
+	if profile.Provider == "tencent" && profile.Kind == "block" {
+		overrideFlagUsage(cmd, ctx, "app-id", "flag.cloud-account.tencent.app-id")
+	}
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(cloudResourceDirectUsageLineKey(profile.Kind)), profile.Provider))
 	addAnnotationValue(cmd, usageNotesAnnotation, cloudResourceDirectUsageNotes(ctx, profile))
 	addHelpDescription(cmd, ctx, cloudResourceDirectShortKey(profile.Kind))
@@ -468,7 +471,10 @@ func cloudResourceDirectUsageNotes(ctx *context, profile cloudResourceFetchProfi
 	if profile.Provider == "openstack" {
 		return ctx.loc.T(fmt.Sprintf("help.cloud_resource.fetch.openstack.%s", cloudResourcePublicStorageType(profile.Kind)))
 	}
-	return fmt.Sprintf(ctx.loc.T("cmd.cloud_resource.fetch.provider.usage_notes"), localizedCloudEntryName(ctx, profile.Entry), profile.Provider, cloudResourcePublicStorageType(profile.Kind), profile.Provider, cloudResourcePublicStorageType(profile.Kind))
+	if profile.Provider == "tencent" && profile.Kind == "block" {
+		return ctx.loc.T("help.cloud_resource.fetch.tencent.block")
+	}
+	return fmt.Sprintf(ctx.loc.T("cmd.cloud_resource.fetch.provider.usage_notes"), localizedCloudEntryName(ctx, profile.Entry), profile.Provider, cloudResourcePublicStorageType(profile.Kind))
 }
 
 func cloudResourceDirectUsageLineKey(kind string) string {

@@ -1332,6 +1332,9 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 		{name: "network-id"},
 		{name: "boot-mode"},
 	}
+	directTencentBlock := append(append([]flagHelpSpec{}, directAK...),
+		flagHelpSpec{name: "app-id", required: true},
+	)
 	directHuaweiObject := append(append([]flagHelpSpec{}, directAK...),
 		flagHelpSpec{name: "os-type"},
 		flagHelpSpec{name: "image-type"},
@@ -1370,6 +1373,8 @@ func cloudResourceFetchFlagSpecsForProfile(profile string) []flagHelpSpec {
 		}, commonGlobal...)
 	case strings.HasPrefix(profile, "direct|openstack|"):
 		return append(directOpenStack, commonGlobal...)
+	case profile == "direct|tencent|block":
+		return append(directTencentBlock, commonGlobal...)
 	case profile == "direct|huawei|object":
 		return append(directHuaweiObject, commonGlobal...)
 	case strings.HasPrefix(profile, "direct|"):
@@ -1471,6 +1476,22 @@ func cloudAccountCreateFlagSpecsForProfile(profile string) (specs []flagHelpSpec
 	}()
 
 	switch profile {
+	case "block|tencent":
+		return []flagHelpSpec{
+			{name: "access-key-id", required: true},
+			{name: "access-key-secret", required: true},
+			{name: "app-id", required: true},
+			{name: "auth-region-id", required: true},
+			{name: "account-name"},
+			{name: "file"},
+			{name: "set"},
+			{name: "set-json"},
+			{name: "preview-request"},
+			{name: "debug"},
+			{name: "lang"},
+			{name: "output", choices: []string{"table", "json"}, defaultValue: config.DefaultOutput},
+			{name: "help"},
+		}
 	case "block|aliyun":
 		return []flagHelpSpec{
 			{name: "cloud-type", required: true},

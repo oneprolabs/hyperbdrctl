@@ -265,7 +265,8 @@ func newCloudAccountsCreateProviderCommand(ctx *context, entry catalog.CloudEntr
 	addHelpLayout(cmd, helpLayoutFourSection)
 	addAnnotationValue(cmd, usageLineAnnotation, fmt.Sprintf(ctx.loc.T(cloudAccountCreateProviderUsageLineKey(storageType)), entry.Provider))
 	notes := cloudAccountCreateProviderUsageNotes(ctx, entry, storageType, specialized)
-	if storageType == "objectstorage" && (entry.Provider == "huawei" || entry.Provider == "openstack" || (specialized && entry.Provider == "aliyun")) {
+	if (storageType == "block" && specialized && entry.Provider == "tencent") ||
+		(storageType == "objectstorage" && (entry.Provider == "huawei" || entry.Provider == "openstack" || (specialized && entry.Provider == "aliyun"))) {
 		helpContext := dynamicParameterHelpContext{
 			Command:      dynamicParameterHelpCloudAccountCreate,
 			Provider:     entry.Provider,
@@ -284,6 +285,8 @@ func newCloudAccountsCreateProviderCommand(ctx *context, entry catalog.CloudEntr
 	addAnnotationValue(cmd, usageNotesAnnotation, notes)
 
 	switch {
+	case specialized && storageType == "block" && entry.Provider == "tencent":
+		addCloudAccountCreateTencentBlockFlags(cmd, ctx)
 	case specialized && storageType == "block" && entry.Provider == "aliyun":
 		addCloudAccountCreateAliyunBlockFlags(cmd, ctx)
 	case specialized && storageType == "block" && entry.Provider == "openstack":
@@ -341,6 +344,16 @@ func localizedCloudEntryName(ctx *context, entry catalog.CloudEntry) string {
 		return entry.NameZhCN
 	}
 	return entry.NameEn
+}
+
+func addCloudAccountCreateTencentBlockFlags(cmd *cobra.Command, ctx *context) {
+	for _, name := range []string{"access-key-id", "access-key-secret", "app-id", "auth-region-id", "account-name"} {
+		addFlagString(cmd, ctx, name)
+	}
+	addFlagString(cmd, ctx, "file")
+	cmd.Flags().StringArray("set", nil, ctx.loc.T("flag.set"))
+	cmd.Flags().StringArray("set-json", nil, ctx.loc.T("flag.set-json"))
+	addFlagBool(cmd, ctx, "preview-request")
 }
 
 func addCloudAccountCreateAliyunBlockFlags(cmd *cobra.Command, ctx *context) {
@@ -468,6 +481,16 @@ func overrideFlagUsage(cmd *cobra.Command, ctx *context, name, key string) {
 
 func cloudAccountCreateProviderTextKeys(provider, storageType string, specialized bool) (short, longText, exampleKey, notesKey, workflowKey, minimumKey, optionalKey, relatedKey, nextKey string) {
 	switch {
+	case storageType == "block" && provider == "tencent":
+		return "cmd.cloud_accounts.create.block.tencent.short",
+			"cmd.cloud_accounts.create.block.tencent.long",
+			"cmd.cloud_accounts.create.block.tencent.examples",
+			"cmd.cloud_accounts.create.block.tencent.notes",
+			"cmd.cloud_accounts.create.block.tencent.workflow",
+			"cmd.cloud_accounts.create.block.tencent.minimum_flags",
+			"cmd.cloud_accounts.create.block.tencent.common_optional_flags",
+			"cmd.cloud_accounts.create.block.tencent.related",
+			"cmd.cloud_accounts.create.block.tencent.next_steps"
 	case storageType == "block" && provider == "aliyun":
 		return "cmd.cloud_accounts.create.block.aliyun.short",
 			"cmd.cloud_accounts.create.block.aliyun.long",
@@ -609,6 +632,8 @@ func cloudAccountCreateProviderUsageLineKey(storageType string) string {
 
 func cloudAccountCreateProviderUsageNotes(ctx *context, entry catalog.CloudEntry, storageType string, specialized bool) string {
 	switch {
+	case storageType == "block" && entry.Provider == "tencent" && specialized:
+		return ctx.loc.T("help.cloud_account.block.tencent")
 	case storageType == "block" && entry.Provider == "aliyun" && specialized:
 		return ctx.loc.T("cmd.target.account.create_block.aliyun.usage_notes")
 	case storageType == "block" && entry.Provider == "huawei":

@@ -251,6 +251,8 @@ func applyCreateCloudAccountSpecValue(spec *cloudAccountCreateSpec, name, value 
 	case "access-secret":
 		spec.HasDirectAKSKStyle = true
 		spec.AccessSecret = value
+	case "app-id":
+		spec.AppID = value
 	case "account-name":
 		spec.AccountName = value
 	case "auth-region-id":

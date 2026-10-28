@@ -9,6 +9,7 @@ func NormalizeSpec(spec Spec) Spec {
 	metadata := spec.MetadataOverrides
 
 	spec = normalizeAccessKeySpec(spec, metadata)
+	spec.AppID = firstNonEmptyString(spec.AppID, overrideStringValue(metadata, "app_id"))
 	spec.RegionID = firstNonEmptyString(spec.RegionID, overrideStringValue(metadata, "region_id"))
 	spec.RegionName = firstNonEmptyString(spec.RegionName, overrideStringValue(metadata, "region_name"))
 	spec.AccountName = firstNonEmptyString(spec.AccountName, overrideStringValue(metadata, "account_name"))

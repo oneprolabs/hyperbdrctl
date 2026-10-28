@@ -52,25 +52,25 @@ Usage Notes:
       --access-key-secret <sk> \
       --auth-region-id <auth_region_id>
 
-  After creation, wait for the task to finish:
+  Wait for creation to finish:
     hyperbdrctl cloud-account wait --id <account_id>
 
-  Then inspect the account:
+  View the cloud account:
     hyperbdrctl cloud-account detail --id <account_id>
     hyperbdrctl cloud-account list --storage-type block
 
-  Add optional fields as needed:
+  Add fields:
     --set path=value
     --set-json path=<json>
 
   Override precedence is fixed:
     --set-json < --set < explicit creation flags
 
-  Optional dynamic parameter:
+  Add an optional dynamic parameter:
     --account-name <name>
       Account name
 
-  Add the following flag to inspect the final request body first:
+  Preview the final request body:
     --preview-request
 ```
 
@@ -191,9 +191,26 @@ aliyun         Alibaba Cloud (Recommended, SDK v2.0)
 
 ### Wording
 
-Use formal, direct, operator-oriented language. Keep short descriptions to one sentence.
-Avoid conversational openings such as “This command is” and avoid placing background or
-implementation history in the short description.
+Help text contains only information needed to complete the operation: purpose, inputs, outputs,
+prerequisites, execution order, and result handling.
+
+- Use formal, direct, operator-oriented language. Describe an action and its object; do not write conversational text.
+- Do not use openings such as “This command is”, “Here you can”, “You can”, “If needed”, or “Below we will”.
+- Keep short descriptions to one sentence and state the concrete action and object, for example “View the boot configuration”, not “Handle related configuration operations”.
+- State conditions, steps, and complete commands directly. Prefer “List available regions”, “Add fields”, and “Preview the final request body” over conversational prompts.
+- Do not explain implementation details such as internal package names, renderers, workflows, API paths, payload construction, compatibility history, or response-field origins unless they change the user's required input or operation.
+- Avoid vague wording such as “provide related capabilities”, “process the request”, “make it easier to use”, “support related operations”, or “complete the configuration”. State the concrete action, object, or result; delete the sentence when none can be stated.
+- Long descriptions may add command boundaries, automatic behavior, prerequisites, and applicable conditions, but not background or implementation rationale.
+- Flag descriptions identify the represented object or accepted value; they do not explain internal behavior.
+
+Avoid and prefer:
+
+| Avoid | Prefer |
+| --- | --- |
+| `Here you can create a cloud account.` | `Create a cloud account.` |
+| `If needed, you can first fetch resources.` | `List available authentication regions first:` |
+| `This command calls the API through a workflow.` | `List available authentication regions.` |
+| `Used to process related configuration.` | `View the boot configuration.` |
 
 ## Command categories
 

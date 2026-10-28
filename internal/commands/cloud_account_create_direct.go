@@ -28,7 +28,7 @@ type cloudAccountCreateProfile struct {
 func addCloudAccountCreateAllFlags(cmd *cobra.Command, ctx *context) {
 	for _, name := range []string{
 		"cloud-type", "storage-type", "file", "body", "cloud-auth-type",
-		"access-key-id", "access-key-secret", "region-id", "region-name", "account-name", "auth-region-id",
+		"access-key-id", "access-key-secret", "app-id", "region-id", "region-name", "account-name", "auth-region-id",
 		"auth-project-id", "control-access-ip",
 		"auth-url", "username", "password", "user-domain-id", "project-domain-id", "project-id", "project-name",
 		"use-internal-ip", "boot-loader-image-id", "boot-loader-image-name", "boot-loader-flavor-id",
@@ -156,6 +156,9 @@ func renderCloudAccountCreateHelp(ctx *context, cmd *cobra.Command, selection cl
 }
 
 func applyCloudAccountCreateProviderHelp(ctx *context, cmd *cobra.Command, profile cloudAccountCreateProfile) {
+	if profile.StorageType == "block" && profile.Provider == "tencent" {
+		overrideFlagUsage(cmd, ctx, "app-id", "flag.cloud-account.tencent.app-id")
+	}
 	if profile.StorageType == "objectstorage" && (profile.Provider == "aliyun" || profile.Provider == "openstack" || profile.Provider == "huawei") {
 		overrideFlagUsage(cmd, ctx, "use-internal-ip", "flag.cloud-account.use-internal-ip")
 	}
@@ -209,6 +212,8 @@ func cloudAccountCreateProviderDirectUsageNotes(ctx *context, profile cloudAccou
 	switch {
 	case profile.StorageType == "block" && profile.Provider == "aliyun":
 		directKey = "help.cloud_account.block.aliyun"
+	case profile.StorageType == "block" && profile.Provider == "tencent":
+		directKey = "help.cloud_account.block.tencent"
 	case profile.StorageType == "block" && profile.Provider == "huawei":
 		directKey = "help.cloud_account.block.huawei"
 	case profile.StorageType == "block" && profile.Provider == "openstack":

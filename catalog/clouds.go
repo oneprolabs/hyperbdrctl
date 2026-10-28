@@ -55,6 +55,15 @@ var BlockClouds = []CloudEntry{
 		Enabled:      false,
 	},
 	{
+		Key:          "tencent_bs_block",
+		Provider:     "tencent",
+		CloudType:    "tencent_bs",
+		Architecture: AtomyV2,
+		NameZhCN:     "腾讯云(推荐使用)",
+		NameEn:       "Tencent Cloud(Recommended)",
+		Enabled:      true,
+	},
+	{
 		Key:          "tencentcloud_block",
 		Provider:     "tencentcloud",
 		CloudType:    "tencentcloud",

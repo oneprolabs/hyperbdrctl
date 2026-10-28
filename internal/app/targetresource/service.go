@@ -432,6 +432,10 @@ func buildGenericMetadata(spec DirectAuthSpec, authType string) (map[string]inte
 		}
 	}
 
+	if strings.EqualFold(strings.TrimSpace(spec.CloudType), "tencent_bs") && isBlockStorageType(spec.StorageType) && strings.TrimSpace(fields["app_id"]) == "" {
+		return nil, fmt.Errorf("app-id is required")
+	}
+
 	if spec.RegionID != "" && !isHuaweiObjectStorage(spec.CloudType, spec.StorageType) {
 		metadata["region_type"] = "1"
 		metadata["region_type_list"] = spec.RegionID

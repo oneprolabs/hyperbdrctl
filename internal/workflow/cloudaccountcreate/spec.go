@@ -8,6 +8,7 @@ type Spec struct {
 	HasDirectPasswordStyle   bool
 	AccessKeyID              string
 	AccessKeySecret          string
+	AppID                    string
 	AccessID                 string
 	AccessSecret             string
 	RegionID                 string
