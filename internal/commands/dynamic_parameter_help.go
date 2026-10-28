@@ -46,13 +46,14 @@ type dynamicParameterHelpGroup struct {
 }
 
 type dynamicParameterHelpAttachment struct {
-	GroupKey         string
-	Command          string
-	Provider         string
-	ExcludedProvider string
-	CloudType        string
-	Architecture     string
-	StorageType      string
+	GroupKey          string
+	Command           string
+	Provider          string
+	ExcludedProvider  string
+	ExcludedProviders []string
+	CloudType         string
+	Architecture      string
+	StorageType       string
 }
 
 var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
@@ -321,6 +322,21 @@ var dynamicParameterHelpGroups = map[string]dynamicParameterHelpGroup{
 			},
 		},
 	},
+	"tencent-cloud-sync-gateway-advanced": {
+		Key:      "tencent-cloud-sync-gateway-advanced",
+		TitleKey: "help.dynamic_parameter.optional",
+		Parameters: []dynamicParameterHelpParameter{
+			{Flag: "hg-control-network", Placeholder: "<mode>", DescriptionKey: "help.dynamic_parameter.hg_control_network", DefaultValue: "floating_ip_without_proxy", Choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}},
+			{Flag: "control-nat-ip", Placeholder: "<ip>", DescriptionKey: "help.dynamic_parameter.control_nat_ip"},
+			{Flag: "hg-data-network", Placeholder: "<mode>", DescriptionKey: "help.dynamic_parameter.hg_data_network", DefaultValue: "floating_ip_without_proxy", Choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_proxy", "fixed_ip_with_proxy"}},
+			{Flag: "data-nat-ip", Placeholder: "<ip>", DescriptionKey: "help.dynamic_parameter.data_nat_ip"},
+			{Flag: "boot-loader-image-id", Placeholder: "<image_id>", DescriptionKey: "help.dynamic_parameter.boot_loader_image_id", SourceKey: "help.dynamic_parameter.boot_loader_image_id.source"},
+			{Flag: "fixed-ip", Placeholder: "<ip>", DescriptionKey: "help.dynamic_parameter.fixed_ip", SourceKey: "help.dynamic_parameter.fixed_ip.source"},
+			{Flag: "system-disk-size", Placeholder: "<size_gib>", DescriptionKey: "help.dynamic_parameter.system_disk_size", DefaultValue: "50"},
+			{Flag: "bandwidth-size", Placeholder: "<size_mbps>", DescriptionKey: "help.dynamic_parameter.bandwidth_size", SourceKey: "help.dynamic_parameter.bandwidth_size.source"},
+			{Flag: "hd-control-network", Placeholder: "<mode>", DescriptionKey: "help.dynamic_parameter.hd_control_network", DefaultValue: "fixed_ip_with_hg_proxy", Choices: []string{"floating_ip_without_proxy", "fixed_ip_without_proxy", "floating_ip_with_hg_proxy", "fixed_ip_with_hg_proxy"}},
+		},
+	},
 	"openstack-cloud-sync-gateway-advanced": {
 		Key:      "openstack-cloud-sync-gateway-advanced",
 		TitleKey: "help.dynamic_parameter.optional",
@@ -450,10 +466,10 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		StorageType: "block",
 	},
 	{
-		GroupKey:         "atomy-v2-cloud-sync-gateway",
-		Command:          dynamicParameterHelpCloudSyncGatewayCreate,
-		ExcludedProvider: "huawei",
-		Architecture:     catalog.AtomyV2,
+		GroupKey:          "atomy-v2-cloud-sync-gateway",
+		Command:           dynamicParameterHelpCloudSyncGatewayCreate,
+		ExcludedProviders: []string{"huawei", "tencent"},
+		Architecture:      catalog.AtomyV2,
 	},
 	{
 		GroupKey:    "aliyun-cloud-sync-gateway-advanced",
@@ -465,6 +481,12 @@ var dynamicParameterHelpAttachments = []dynamicParameterHelpAttachment{
 		GroupKey:    "huawei-cloud-sync-gateway-advanced",
 		Command:     dynamicParameterHelpCloudSyncGatewayCreate,
 		Provider:    "huawei",
+		StorageType: "block",
+	},
+	{
+		GroupKey:    "tencent-cloud-sync-gateway-advanced",
+		Command:     dynamicParameterHelpCloudSyncGatewayCreate,
+		Provider:    "tencent",
 		StorageType: "block",
 	},
 	{
@@ -641,7 +663,14 @@ func matchingDynamicParameterHelpGroups(helpContext dynamicParameterHelpContext)
 
 func dynamicParameterHelpAttachmentMatches(attachment dynamicParameterHelpAttachment, helpContext dynamicParameterHelpContext) bool {
 	excludedProvider := strings.TrimSpace(attachment.ExcludedProvider)
-	return (excludedProvider == "" || !strings.EqualFold(excludedProvider, strings.TrimSpace(helpContext.Provider))) &&
+	providerExcluded := excludedProvider != "" && strings.EqualFold(excludedProvider, strings.TrimSpace(helpContext.Provider))
+	for _, provider := range attachment.ExcludedProviders {
+		if strings.EqualFold(strings.TrimSpace(provider), strings.TrimSpace(helpContext.Provider)) {
+			providerExcluded = true
+			break
+		}
+	}
+	return !providerExcluded &&
 		dynamicParameterHelpFieldMatches(attachment.Command, helpContext.Command) &&
 		dynamicParameterHelpFieldMatches(attachment.Provider, helpContext.Provider) &&
 		dynamicParameterHelpFieldMatches(attachment.CloudType, helpContext.CloudType) &&

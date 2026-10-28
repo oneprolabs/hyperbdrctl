@@ -36,7 +36,7 @@ func (s Service) PrepareCreate(spec CreateSpec) (PreparedCreateRequest, error) {
 	}
 	spec.CloudType = defaults.CloudType
 	spec.RegionID = defaults.RegionID
-	if (spec.CloudType == "aliyun_bs" || spec.CloudType == "huawei_bs") && spec.RegionID == "" {
+	if gatewayCloudTypeUsesAccountRegion(spec.CloudType) && spec.RegionID == "" {
 		return PreparedCreateRequest{}, fmt.Errorf("region-id is required")
 	}
 
@@ -132,7 +132,7 @@ func (s Service) gatewayAccountDefaults(accountID, explicitCloudType, explicitRe
 
 func gatewayCloudTypeUsesAccountRegion(cloudType string) bool {
 	switch cloudType {
-	case "aliyun_bs", "huawei_bs":
+	case "aliyun_bs", "huawei_bs", "tencent_bs":
 		return true
 	default:
 		return false

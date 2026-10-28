@@ -180,7 +180,6 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 				"--data-nat-ip string",
 				"--boot-loader-flavor-id string",
 				"--fixed-ip string",
-				"--system-disk-size string",
 				"--bandwidth-size string",
 				"--hd-control-network string",
 				"--cloud-type string",
@@ -214,9 +213,49 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 			},
 			unwanted: []string{
 				"--boot-loader-image-id string",
-				"--system-disk-size string",
 				"--boot-types-id string",
 				"--cloud-type string",
+			},
+		},
+		{
+			name: "Tencent account shows Tencent-specific gateway flow",
+			args: []string{
+				"--lang", "zh_cn",
+				"cloud-sync-gateway", "create",
+				"--cloud-account-id", "account-1",
+				"--help",
+			},
+			account: map[string]interface{}{
+				"cloud_type": "tencent_bs", "storage_type": "HyperGate", "auth_region_id": "ap-beijing",
+			},
+			want: []string{
+				"创建腾讯云云同步网关",
+				"云账号 ID（必须）",
+				"可用区 ID（必须）",
+				"规格 ID（必须）",
+				"镜像 ID（必须）",
+				"网络 ID（必须）",
+				"子网 ID（必须）",
+				"系统盘类型 ID（必须）",
+				"系统盘大小 (GiB)",
+				"默认值：50",
+				"默认值：fixed_ip_with_hg_proxy",
+				"--fetch-res win_hd_images",
+				"--bandwidth-size <size_mbps>",
+				"省略时，浮动 IP 网关模式默认使用 100 Mbps",
+				"--hg-control-network <mode>",
+				"--hg-data-network <mode>",
+				"--hd-control-network <mode>",
+				"hyperbdrctl cloud-sync-gateway wait --id <storage_id>",
+			},
+			unwanted: []string{
+				"--project-id string",
+				"--compute-zone-id string",
+				"--volume-type-id string",
+				"--block-store-zone-id string",
+				"--boot-loader-flavor-id",
+				"boot_from_volume",
+				"默认值：floating_ip_with_hg_proxy",
 			},
 		},
 		{
@@ -308,6 +347,50 @@ func TestBlockStoragesCreateHelpInfersProviderFromCloudAccount(t *testing.T) {
 	}
 }
 
+func TestCloudSyncGatewayCreateTencentProviderHelpUsesTencentProfile(t *testing.T) {
+	dir := t.TempDir()
+	setUserDirs(t, dir)
+
+	var out, errOut bytes.Buffer
+	if err := Execute([]string{
+		"--lang", "en", "cloud-sync-gateway", "create",
+		"--cloud-type", "tencent", "--help",
+	}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	text := out.String()
+	for _, want := range []string{
+		"Create a Tencent Cloud block-storage cloud sync gateway.",
+		"Zone ID (required)",
+		"Image ID (required)",
+		"Flavor ID (required)",
+		"Network ID (required)",
+		"Subnet ID (required)",
+		"System disk type ID (required)",
+		"Default: 50",
+		"Default: fixed_ip_with_hg_proxy",
+		"--fetch-res win_hd_images",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("Tencent help missing %q: %s", want, text)
+		}
+	}
+	for _, unwanted := range []string{
+		"browser-selected",
+		"Tencent Cloud console defaults",
+		"CLOUD_BSSD",
+		"To override network mode, IP, disk size",
+		"--boot-loader-flavor-id",
+		"--project-domain-id string",
+		"--boot-types-id string",
+		"Default: floating_ip_with_hg_proxy",
+	} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("Tencent help contains unsupported or misleading text %q: %s", unwanted, text)
+		}
+	}
+}
+
 func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 	dir := t.TempDir()
 	setUserDirs(t, dir)
@@ -374,7 +457,6 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 		"--boot-loader-flavor-id string",
 		"--boot-loader-image-id string",
 		"--fixed-ip string",
-		"--system-disk-size string",
 		"--bandwidth-size string",
 		"--hd-control-network string",
 		"未显式传入 `--hg-control-network`",
@@ -440,7 +522,6 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 		"--hg-control-network string",
 		"--hg-data-network string",
 		"--boot-loader-image-id string",
-		"--system-disk-size string",
 		"--block-store-zone-id string",
 		"--project-domain-id string",
 		"--boot-types-id string",
@@ -487,7 +568,6 @@ func TestCloudSyncGatewayCreateAtomyDynamicParameterHelp(t *testing.T) {
 	for _, unwanted := range []string{
 		"--hg-control-network string",
 		"--boot-loader-image-id string",
-		"--system-disk-size string",
 		"--block-store-zone-id string",
 		"--project-domain-id string",
 		"--boot-types-id string",
@@ -975,7 +1055,6 @@ func TestBlockStoragesCreateOpenStackHelpShowsFourSectionWorkflow(t *testing.T) 
 		"--boot-types-id string",
 		"--hg-control-network string",
 		"--fixed-ip string",
-		"--system-disk-size string",
 		"--block-store-zone-id string",
 	} {
 		if strings.Contains(text, unwanted) {

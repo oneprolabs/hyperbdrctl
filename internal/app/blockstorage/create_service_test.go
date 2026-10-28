@@ -164,6 +164,24 @@ func TestServicePrepareCreateUsesCloudAccountRegionForHuaweiDefaults(t *testing.
 	}
 }
 
+func TestServicePrepareCreateUsesCloudAccountRegionForTencentDefaults(t *testing.T) {
+	api := &createFakeAPI{cloudType: "tencent_bs", regionID: "ap-beijing"}
+	service := NewService(api)
+
+	prepared, err := service.PrepareCreate(CreateSpec{CloudAccountID: "account-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !api.sawAccountDetail {
+		t.Fatal("Tencent cloud account detail was not queried")
+	}
+	createStorage := prepared.Body["create_storage"].(map[string]interface{})
+	metadata := createStorage["metadata"].(map[string]interface{})
+	if createStorage["cloud_type"] != "tencent_bs" || metadata["region_id"] != "ap-beijing" {
+		t.Fatalf("prepared Tencent request = %#v", prepared.Body)
+	}
+}
+
 func TestApplyCreateMetadataOverridesHonorsPrecedenceAndPaths(t *testing.T) {
 	body := map[string]interface{}{
 		"create_storage": map[string]interface{}{

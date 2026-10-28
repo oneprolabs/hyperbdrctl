@@ -201,6 +201,9 @@ func buildJapaneseCatalog(_ map[string]string) map[string]string {
 	for key, value := range cloudAccountTencentJA {
 		ja[key] = value
 	}
+	for key, value := range cloud_sync_gateway_tencentJA {
+		ja[key] = value
+	}
 	applyJapaneseTextCorrections(ja)
 	return ja
 }

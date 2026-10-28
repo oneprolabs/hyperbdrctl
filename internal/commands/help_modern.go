@@ -1264,6 +1264,20 @@ func cloudSyncGatewayCreateFlagSpecsForProfile(profile string) []flagHelpSpec {
 			{name: "bandwidth-size"},
 			{name: "hd-control-network", defaultValue: "floating_ip_with_hg_proxy"},
 		})
+	case "tencent-account":
+		return withCommonCommand([]flagHelpSpec{
+			{name: "cloud-account-id", required: true},
+			{name: "zone-id", required: true},
+			{name: "image-id", required: true},
+			{name: "flavor-id", required: true},
+			{name: "network-id", required: true},
+			{name: "subnet-id", required: true},
+			{name: "system-disk-type-id", required: true},
+			{name: "system-disk-size", defaultValue: "50"},
+			{name: "fixed-ip"},
+			{name: "bandwidth-size"},
+			{name: "hd-control-network", defaultValue: "fixed_ip_with_hg_proxy"},
+		})
 	case "huawei-account":
 		return withCommonCommand([]flagHelpSpec{
 			{name: "cloud-account-id", required: true},

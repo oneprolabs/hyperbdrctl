@@ -21,6 +21,10 @@ type adapter struct {
 }
 
 var adapters = map[string]adapter{
+	workflow.BlockStorageCreateKey("tencent_bs").String(): {
+		key:   workflow.BlockStorageCreateKey("tencent_bs").String(),
+		build: buildTencent,
+	},
 	workflow.BlockStorageCreateKey("aliyun_bs").String(): {
 		key:   workflow.BlockStorageCreateKey("aliyun_bs").String(),
 		build: buildAliyun,

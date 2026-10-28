@@ -236,6 +236,8 @@ func cloudSyncGatewayCreateDescription(ctx *context, profile cloudSyncGatewayCre
 		return ctx.loc.T("cmd.cloud_sync_gateway.create.aliyun.short")
 	case "huawei":
 		return ctx.loc.T("cmd.cloud_sync_gateway.create.huawei.short")
+	case "tencent":
+		return ctx.loc.T("cmd.cloud_sync_gateway.create.tencent.short")
 	case "openstack":
 		return ctx.loc.T("cmd.cloud_sync_gateway.create.openstack.short")
 	default:
@@ -273,6 +275,8 @@ func resolveCloudSyncGatewayCreateAccountProfile(ctx *context, accountID string)
 		switch entry.Provider {
 		case "aliyun":
 			kind = "aliyun"
+		case "tencent":
+			kind = "tencent"
 		case "openstack":
 			kind = "openstack"
 		}
@@ -300,6 +304,8 @@ func resolveCloudSyncGatewayCreateProfile(provider string) (cloudSyncGatewayCrea
 			switch entry.Provider {
 			case "aliyun":
 				kind = "aliyun"
+			case "tencent":
+				kind = "tencent"
 			case "openstack":
 				kind = "openstack"
 			}
@@ -314,6 +320,8 @@ func cloudSyncGatewayCreateUsageNotes(ctx *context, profile cloudSyncGatewayCrea
 	switch profile.Kind {
 	case "aliyun":
 		notes = ctx.loc.T("cmd.target.cloud_sync_gateway.create.aliyun.usage_notes")
+	case "tencent":
+		notes = ctx.loc.T("cmd.target.cloud_sync_gateway.create.tencent.usage_notes")
 	case "openstack":
 		notes = ctx.loc.T("cmd.target.cloud_sync_gateway.create.openstack.usage_notes")
 	default:
@@ -324,7 +332,7 @@ func cloudSyncGatewayCreateUsageNotes(ctx *context, profile cloudSyncGatewayCrea
 
 func cloudSyncGatewayCreateAccountHelpProfile(profile cloudSyncGatewayCreateProfile) string {
 	switch profile.Provider {
-	case "aliyun", "huawei", "openstack":
+	case "aliyun", "huawei", "tencent", "openstack":
 		return profile.Provider + "-account"
 	default:
 		return "provider-account"
@@ -337,6 +345,8 @@ func cloudSyncGatewayCreateAccountUsageNotes(ctx *context, profile cloudSyncGate
 		return ctx.loc.T("help.cloud_sync_gateway.create.aliyun")
 	case "huawei":
 		return ctx.loc.T("help.cloud_sync_gateway.create.huawei")
+	case "tencent":
+		return ctx.loc.T("help.cloud_sync_gateway.create.tencent")
 	case "openstack":
 		return ctx.loc.T("help.cloud_sync_gateway.create.openstack")
 	default:
